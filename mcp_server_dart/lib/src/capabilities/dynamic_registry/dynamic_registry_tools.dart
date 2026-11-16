@@ -26,7 +26,7 @@ final class DynamicRegistryTools {
   CoreCommandExecutor get _executor => server.coreCommandExecutor;
 
   static const _setupWorkflowText =
-      'To create new tools/resources: 1) Define AgentCallEntry.tool() or AgentCallEntry.resource() '
+      'To register custom surfaces: define AgentCallEntry.tool() or AgentCallEntry.resource() '
       '(namespace, name, description, inputSchema, handler returning AgentResult), '
       '2) Register in the Flutter app (main.dart or bootstrap) via MCPToolkitBinding.addEntries() or addMcpTool(), '
       '3) Use fmt_list_client_tools_and_resources to verify registration, '

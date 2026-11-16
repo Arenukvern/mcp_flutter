@@ -50,12 +50,12 @@ Build only layers the repo needs. See [references/layer-catalog.md](references/l
 
 | Layer | Typical path | Holds |
 |-------|--------------|--------|
-| **Router** | `docs/start_here/docs_map.mdx` | Tables: “I want to…” → one link |
+| **Router** | `docs/index.mdx` | Tables: “I want to…” → one link |
 | **Charter** | `docs/NORTH_STAR.mdx` | What the product owns; extension model; boundaries |
 | **Decisions** | `docs/decisions/` or `decisions/` | ADRs — why the codebase looks like this |
-| **Concepts** | `docs/core/`, `docs/start_here/why_*` | Architecture mental model, flows, glossary |
-| **Agent ops** | `docs/ai_agents/`, `AGENTS.md` | Playbooks, init, troubleshooting for agents |
-| **Programs** (optional) | `docs/superpowers/` | `specs/`, `plans/`, `tracker/*.yaml`, `closure/` |
+| **Concepts** | `docs/concepts/`, `docs/install/` | Architecture mental model, flows, glossary |
+| **Agent ops** | `AGENTS.md`, `docs/contributing/`, `llms.txt` | Playbooks, init, troubleshooting for agents |
+| **Programs** (optional) | `maintainers/superpowers/` | `specs/`, `plans/`, `tracker/*.yaml`, `closure/` |
 | **Skills** | `skills/`, `plugin/skills/` | Procedural tasks — not architecture essays |
 | **Published guides** | `docs/guides/` | Human-facing workflows |
 

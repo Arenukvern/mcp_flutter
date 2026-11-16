@@ -1,0 +1,60 @@
+---
+title: Glossary
+description: Terms you will see in docs, skills, and MCP tool names.
+---
+
+# Glossary
+
+## `fmt_*`
+
+Prefix on every **built-in** MCP tool from the Flutter capability (`fmt_semantic_snapshot`, `fmt_tap_widget`, …). v3 renamed tools from bare names like `tap_widget`. CLI `exec --name` still accepts catalog bare names for many tools.
+
+## MCP (Model Context Protocol)
+
+JSON-RPC over stdio between your **AI client** and **`flutter-mcp-toolkit-server`**. The client lists tools; the server executes them against your debug app.
+
+## VM service / Dart VM
+
+Debug protocol Flutter exposes while running in debug mode. The toolkit discovers VM WebSocket URIs (`ws://127.0.0.1:…`) and calls **service extensions**.
+
+## `mcp_toolkit`
+
+Flutter package you add to **your app**. Registers `ext.mcp.toolkit.*` extensions (screenshots, errors, snapshots, etc.). Without it, the server can only see generic VM data.
+
+## Semantic snapshot
+
+Structured description of the widget tree: stable **refs**, accessibility labels, roles, and bounds. Preferred for “what’s on screen?” before tapping. Tool: `fmt_semantic_snapshot`.
+
+## Dynamic registry / client tools
+
+Your app can register **custom** MCP tools and resources at runtime (`AgentCallEntry`). The server exposes host tools `fmt_list_client_tools_and_resources`, `fmt_client_tool`, `fmt_client_resource`.
+
+## `flutter-mcp-toolkit` vs `flutter-mcp-toolkit-server`
+
+| Binary | Role |
+| --- | --- |
+| `flutter-mcp-toolkit` | CLI: doctor, exec, codegen-init, init, validate-runtime |
+| `flutter-mcp-toolkit-server` | MCP stdio server for AI clients |
+
+Alias **`fmtk`** may point at the CLI.
+
+## Connection targeting
+
+When several debug apps run, tools accept `arguments.connection` with `uri` or `targetId` from `fmt_discover_debug_apps`. Errors: `connection_selection_required`, `target_not_found`.
+
+## Resources vs tools
+
+**Resources** (e.g. `visual://localhost/view/screenshots`) are MCP resources; **tools** perform actions. Both can mirror similar data; flags `--resources` / `--images` on the server control defaults.
+
+## Runner session
+
+Optional `.flutter_mcp/runner-session.json` when an external runner (e.g. `oka dev`) owns reload. Hot reload tools **delegate** to that owner.
+
+## Skills
+
+Markdown guides under `plugin/skills/` installed by `flutter-mcp-toolkit init`. They teach agents **how** to call tools; they do not replace the server or `mcp_toolkit`.
+
+## Related
+
+- [Tool reference](../reference/tools.mdx)
+- [Errors](../reference/errors.mdx)

@@ -1,0 +1,117 @@
+# ADR-0017: The invoke tier — surface actions read the registry
+
+## Status
+
+Accepted (2026-10-02)
+
+## Context
+
+The automation family's verbs are a sealed hierarchy
+(`AutomationAction` in `universal_automation_interface`): navigate, click,
+type, key, scroll, evaluate. Growing that set is a family-wide release —
+every driver (toolkit/CDP/WebDriver/AT-SPI/UIA/AX) switches over it
+exhaustively. Meanwhile the verbs apps actually need are mostly
+app-specific: a checkout flow, a gesture choreography, a Jaspr component
+contract, a test backdoor. Two failure modes threaten here:
+
+1. **Sealed-set churn**: every new idea becomes a family release and six
+   driver implementations, most of which can only throw "unsupported".
+2. **A second registry**: teaching the harness its own app-side
+   registration API would duplicate the intentcall registry
+   (`AgentCallEntry` is already name + description + inputSchema +
+   handler, registered app-side and dispatched over the wire) and split
+   "register once, projected everywhere".
+
+There is also a symmetry gap: the app's registry already reaches MCP
+(dynamic tools) and platform projections (ADR-0016), but not the harness
+driver — and web surfaces without a VM service (Jaspr, plain JS) have no
+registry story at all.
+
+## Decision
+
+Three tiers, one rule: **the registry is the single action source; the
+invoke tier reads it.**
+
+1. **Universal verbs stay sealed.** Only genuinely protocol-agnostic
+   operations (observe/act/verify vocabulary) join `AutomationAction`,
+   via a family release.
+
+2. **One generic action: `InvokeAction(name, args)`.** A single sealed
+   case as the escape hatch. Each driver dispatches it through its own
+   transport's generic invoke; drivers whose tier has no registry refuse
+   loudly (`DriverUnsupportedException`), never silently degrade.
+
+3. **Surface action catalogs, per tier:**
+   - **Instrumented tier (Flutter/mcp_toolkit):** the binding exposes two
+     verbs over the existing intentcall registry —
+     `ext.mcp.toolkit.agent_catalog` (lists tool entries as
+     `SurfaceActionDescriptor`s) and `ext.mcp.toolkit.agent_invoke`
+     (dispatches by registry name; arguments travel JSON-encoded in one
+     `json` parameter because service-extension parameters are
+     string-valued; the registration's own schema validation runs before
+     the handler). Zero new registration API: an app that registers
+     entries already exposed them to every tier.
+   - **CDP tier (any web surface — Jaspr, plain JS, Flutter web):** the
+     page registry convention `window.__mcpActions` — a map of
+     `{description, schema, invoke(args)}` handlers. `CdpDriver` lists it
+     (`actions()`) and dispatches through it, awaiting async handlers and
+     surfacing JS rejections. A page opts in by assigning the object; no
+     package dependency required.
+   - **WebDriver / AT-SPI / UIA / AX tiers:** refuse `InvokeAction` —
+     those protocols have no registry.
+
+4. **Schemas are plain data.** `SurfaceActionDescriptor.inputSchema`
+   carries a JSON-Schema subset as `Map<String, Object?>`; the family
+   depends on no schema library. Consumers that want pre-flight
+   validation do it where the dependency already exists: the mcp_flutter
+   harness validates `InvokeAction` args against the catalog descriptor
+   with `intentcall_schema` before the wire, so bad arguments fail on the
+   caller's side with an actionable message.
+
+5. **IntentCall routing.** `IntentAutomationAction.custom` routes a hint
+   to a catalog action: the action name rides `locator['name']`, and the
+   invocation's arguments pass through to the action (they are the
+   invocation — `IntentDriverRouter` maps them to `InvokeAction`).
+
+## Layering (why this is the foundation for both repos)
+
+- `universal_automation_*` (dart_flutter_packages): transport-agnostic
+  contracts — the shared foundation mcp_flutter and intentcall tooling
+  both build on. Nothing here knows about registries or Flutter.
+- `intentcall` (intentcall_core): the registry / truth layer. It states
+  intents and hints; it never drives.
+- `mcp_flutter`: composition + proof. `mcp_toolkit` exposes the
+  registry to the wire; `flutter_mcp_harness` drives it; the server
+  needs no new code — entries already project as MCP tools.
+
+## Consequences
+
+- Adding an app-specific verb is now: register an entry (Flutter) or
+  assign `window.__mcpActions` (web) — no family release, no driver
+  changes.
+- Exhaustive switches over `AutomationAction` must handle
+  `InvokeAction` (breaking; family 0.2.0, harness 0.2.0). All family
+  drivers do.
+- Action *results* stay out of the act contract: a handler that wants to
+  report state writes the surface; the caller observes (`snapshot()`).
+  This keeps observe/act/verify clean and matches `EvaluateAction`'s
+  discard semantics.
+- The legacy `mcpToolkitTool` adapter keeps normalizing arguments to its
+  string-typed service-extension map; native `AgentCallEntry` handlers
+  receive typed JSON. Both are visible through `agent_invoke` unchanged.
+- The retired external `flutter_harness` repo's HS-DSL idea (declarative
+  scenario documents) can now be re-homed on top of this tier without
+  the server-internals coupling that rotted it (see ADR-0012's boundary
+  note).
+
+## Alternatives considered
+
+- **A dedicated `HarnessAction` registry on the binding** — rejected in
+  review: duplicates the intentcall registry, splits the registration
+  story, and leaves the MCP tier needing its own bridge. The registry
+  already *is* the dynamic-registry feature; the harness just needed to
+  read it.
+- **Growing the sealed verb set per request** — rejected: family-wide
+  cost for app-specific value, and most tiers would throw anyway.
+- **Routing custom actions through `evaluate`** — rejected: string-typed
+  Dart/JS as an API has no schema, no discovery, and no honest refusal.

@@ -16,7 +16,7 @@
 /// - Wire types: [MCPCallResult], [MCPToolDefinition], [MCPResourceDefinition].
 ///
 /// For removed legacy call-entry migrations, use
-/// [flutter-mcp-toolkit migrate agent-entries](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/start_here/migration_mcp_call_entry_to_agent_call_entry.md).
+/// [flutter-mcp-toolkit migrate agent-entries](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/migration/migration_mcp_call_entry_to_agent_call_entry.md).
 ///
 /// See [MCPToolkitBinding] for bootstrap and registration.
 library;

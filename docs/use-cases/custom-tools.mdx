@@ -1,0 +1,118 @@
+---
+title: Custom tools
+description: Expose app-specific MCP tools from the running Flutter app.
+---
+
+# Custom tools
+
+Built-in `fmt_*` tools are generic. **Dynamic registration** lets your Flutter app publish tools and resources at runtime; the MCP server bridges them via `fmt_list_client_tools_and_resources`, `fmt_client_tool`, and `fmt_client_resource`.
+
+## When to use
+
+Use dynamic tools when:
+
+- You need diagnostics only your app code can provide.
+- You want repeatable agent workflows as named tools with schemas.
+- You expose read-only snapshots of internal state.
+
+Skip them when built-in inspection tools are enough, or when the handler would be unsafe in debug without extra guards.
+
+## Minimal setup
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:mcp_toolkit/mcp_toolkit.dart';
+
+Future<void> main() async {
+  final binding = MCPToolkitBinding.instance;
+  await binding.addEntries(
+    entries: {
+      AgentCallEntry.tool(
+        namespace: 'demo',
+        name: 'ping',
+        description: 'Health check',
+        inputSchema: const {
+          'type': 'object',
+          'additionalProperties': false,
+          'properties': {},
+        },
+        handler: (args) async => AgentResult.success(message: 'pong'),
+      ),
+    },
+  );
+  await binding.bootstrapFlutter(runApp: () => runApp(const MyApp()));
+}
+```
+
+Compatibility bridge (legacy handlers): see [`mcp_toolkit/example/fibonacci_tool_example.dart`](../../mcp_toolkit/example/fibonacci_tool_example.dart).
+
+After code changes to registrations, **hot restart** (not reload-only).
+
+## Agent workflow
+
+1. App running in debug with `mcp_toolkit` initialized.
+2. Server running with **`--dynamics`** (default in [`plugin/mcp.json`](../../plugin/mcp.json)).
+3. `fmt_list_client_tools_and_resources` → names + schemas.
+4. `fmt_client_tool` / `fmt_client_resource` with validated args.
+
+## Multi-app / multi-target
+
+Several debug targets can make dynamic calls return `connection_selection_required`. Retry with explicit nested `connection`:
+
+```json
+{
+  "name": "fmt_client_tool",
+  "arguments": {
+    "toolName": "say_hello",
+    "arguments": {"name": "Anton"},
+    "connection": {
+      "targetId": "ws://127.0.0.1:59490/<token>/ws"
+    }
+  }
+}
+```
+
+Supported `connection` fields:
+
+- `targetId` (preferred — full VM WebSocket URI)
+- `mode` (`auto`, `manual`, `uri`)
+- `host`, `port`, `uri`, `forceReconnect`
+
+## Use it correctly
+
+- Register entries before `bootstrapFlutter` (or immediately after `initialize()` when not using bootstrap).
+- Keep names stable (`snake_case`) and unique; provide clear `description` and strict `inputSchema`.
+- Keep handlers deterministic; return compact structured `data` for agents.
+- Guard debug-only tools with `kDebugMode`.
+- Avoid hidden side effects; make destructive actions explicit in the name/description.
+
+## Common mistakes
+
+| Symptom | Likely cause | Fix |
+| --- | --- | --- |
+| Tool/resource not visible | Entry not registered or stale client list | Ensure `addEntries` ran; hot **restart**; reload MCP client if cached |
+| `tool not found` | Name mismatch | Copy exact `toolName` from `fmt_list_client_tools_and_resources` |
+| `resource not found` | URI mismatch | Copy exact `resourceUri` from the listing |
+| `connection_selection_required` | Multiple debug targets | Retry with `arguments.connection.targetId` |
+| Oversized responses | Verbose handler payload | Return summaries; only required fields in `data` |
+
+## Registry model
+
+- Entries are **`AgentCallEntry`** values registered through **`MCPToolkitBinding.addEntries`** before **`bootstrapFlutter`**.
+- IntentCall owns registry/session/schema semantics upstream; this repo owns the Flutter VM bridge and `fmt_*` host tools.
+- Namespace + name become stable tool identifiers for the agent.
+
+## Migration
+
+- Legacy call-entry API → `AgentCallEntry`: [migration guide](../migration/migration_mcp_call_entry_to_agent_call_entry.md).
+- Maintainer notes: [SIMPLIFIED_DYNAMIC_REGISTRATION.md](../../mcp_server_dart/docs/SIMPLIFIED_DYNAMIC_REGISTRATION.md).
+
+## Skills
+
+- `flutter-mcp-toolkit-custom-tools`
+- `flutter-mcp-toolkit-intentcall-migration`
+
+## See also
+
+- [App setup](../install/app-setup.mdx)
+- [Tools reference](../reference/tools.mdx)

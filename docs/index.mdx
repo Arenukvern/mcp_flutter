@@ -1,46 +1,49 @@
-# Flutter MCP Toolkit Documentation
+# Flutter MCP Toolkit
 
-Flutter MCP Toolkit connects a running Flutter debug app to AI assistants through MCP, so your assistant can inspect UI, read runtime errors, hot reload, and run app-defined tools.
+Connect a **debug** Flutter app to your AI assistant: semantic UI, errors, input, hot reload, and tools your app defines at runtime.
 
-![Watercolor comic infographic explaining Flutter MCP Toolkit: install fmtk, add it to a Flutter app, connect an AI agent, then inspect, tap, reload, and prove changes in a close feedback loop.](/assets/flutter-mcp-toolkit-infographic.png)
+**Agents:** read [llms.txt](./llms.txt) or repo-root [llms.txt](https://github.com/Arenukvern/mcp_flutter/blob/main/llms.txt).
 
-The toolkit gives an AI assistant a shared window and control loop into a running Flutter app, so it can stop guessing and verify changes with runtime proof.
+## Evaluate quickly
 
-## Choose Your Path
-
-| Audience | Start Here |
+| | |
 | --- | --- |
-| Human developer | [Execution playbook](/ai_agents/execution_playbook) |
-| AI agent (Codex, Claude, Cursor, Cline, RooCode) | [AI agent overview](/ai_agents/overview) |
-| CI / automation workflow | [CLI vs MCP](/start_here/cli_vs_mcp) |
+| **What** | `flutter-mcp-toolkit-server` + `mcp_toolkit` in your app |
+| **Agent superpowers** | Discover app → snapshot UI → tap/type → reload → custom tools |
+| **vs Dart MCP** | Dart MCP = project tooling. This = **live** app UI and app-registered tools. |
+| **Install** | [Marketplace / plugin](./install/clients.mdx) or [install script](./install/platforms.mdx) |
+| **Proof** | [Quickstart](./quickstart.mdx) → `doctor` → `fmt_semantic_snapshot` |
+| **Tools** | [Generated reference](./reference/tools.mdx) |
 
-## Why This Repo Matters
+## Get started
 
-- Flutter-specific workflows: screenshots, app errors, view details, hot reload/restart.
-- Dynamic tool registry: your app can register custom tools/resources at runtime.
-- Better AI debugging loops: tools return structured data and retry guidance.
-- Multi-target safety: explicit `connection.targetId` flow when multiple debug apps are running.
+1. [Quickstart](./quickstart.mdx) — five minutes to first snapshot  
+2. [Instrument your app](./install/app-setup.mdx)  
+3. [Connect your agent](./install/clients.mdx)
 
-Read more in [Why this repo matters](/start_here/why_this_repo_matters).
+## Use cases
 
-## Feature Discovery
+| Goal | Page |
+| --- | --- |
+| Debug loop | [Debug a running app](./use-cases/debug-a-running-app.mdx) |
+| See UI | [See the UI](./use-cases/see-the-ui.mdx) |
+| Drive UI | [Drive the UI](./use-cases/drive-the-ui.mdx) |
+| Hot reload | [Hot reload loop](./use-cases/hot-reload-loop.mdx) |
+| Custom tools | [Custom tools](./use-cases/custom-tools.mdx) |
+| CI / scripts | [CI and scripts](./use-cases/ci-and-scripts.mdx) |
+| E2E | [E2E scenarios](./use-cases/e2e-scenarios.mdx) |
+| Many apps | [Multiple apps](./use-cases/multiple-apps.mdx) |
 
-Use [Feature map](/start_here/feature_map) for a capabilities overview and where to learn each one.
-Need a complete page-by-page index? [Docs map](/start_here/docs_map)
+## Concepts
 
-Need to decide between terminal automation and AI-client tool usage?
-[CLI vs MCP](/start_here/cli_vs_mcp)
+- [How it works](./concepts/how-it-works.mdx) — includes history (born as Flutter Inspector MCP)  
+- [CLI vs MCP](./concepts/cli-vs-mcp.mdx)  
+- [Automation chain](./concepts/automation-chain.mdx)  
+- [Glossary](./concepts/glossary.mdx)
 
-Need ready-to-run terminal commands?
-[CLI quick recipes](/start_here/cli_quick_recipes)
+## Help
 
-## Video Walkthroughs
-
-- [Dynamic Tools Registration (YouTube)](https://www.youtube.com/watch?v=Qog3x2VcO98)
-- [Cursor Setup Walkthrough (YouTube)](https://www.youtube.com/watch?v=pyDHaI81uts)
-- [All videos and watch order](/start_here/video_walkthroughs)
-
-## Contributors And Community
-
-- [Who contributed and how](/contributing/contributors)
-- [How to contribute](/contributing/contribution_guide)
+- [Troubleshooting](./troubleshooting.mdx)  
+- [Migrations](./migration/migration_v2_to_v3.mdx)  
+- [Decisions (ADRs)](./decisions/index.mdx)  
+- [Contributing](./contributing/guide.mdx)

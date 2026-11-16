@@ -1,0 +1,14 @@
+# flutter-mcp-toolkit (docs site)
+# Same contract as /llms.txt — paths relative to repo root on GitHub.
+
+> MCP server + `mcp_toolkit` for live Flutter debug apps. Compare: [index](./index.mdx).
+
+- Quickstart: [quickstart.mdx](./quickstart.mdx)
+- Clients: [install/clients.mdx](./install/clients.mdx)
+- Platforms: [install/platforms.mdx](./install/platforms.mdx)
+- Tools (generated): [reference/tools.mdx](./reference/tools.mdx)
+- CLI (generated): [reference/cli.mdx](./reference/cli.mdx)
+- Troubleshooting: [troubleshooting.mdx](./troubleshooting.mdx)
+- vs Dart MCP: [concepts/how-it-works.mdx](./concepts/how-it-works.mdx)
+
+Agents should call `doctor` and `fmt_discover_debug_apps` before claiming UI access.

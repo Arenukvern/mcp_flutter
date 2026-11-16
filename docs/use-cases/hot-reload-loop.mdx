@@ -1,0 +1,30 @@
+---
+title: Hot reload loop
+description: Agent changes code, reloads, and re-checks the UI.
+---
+
+# Hot reload loop
+
+The toolkit supports the **edit → reload → verify** cycle agents use for UI work.
+
+## MCP flow
+
+1. Agent edits Dart source (your normal IDE flow).
+2. **`fmt_hot_reload_flutter`** or **`fmt_hot_reload_and_capture`**.
+3. **`fmt_semantic_snapshot`** or **`fmt_get_app_errors`** to confirm state.
+
+If an **external runner** owns the session (`oka dev`, runner-session file), reload **delegates** to that owner ([automation chain](../concepts/automation-chain.mdx)).
+
+## Limits
+
+A plain VM attach without an owning `flutter run` may report `changed: false` on reload — only the **compile-capable** session can apply code deltas.
+
+## Skills
+
+- `flutter-mcp`
+- `flutter-mcp-toolkit-debug`
+
+## See also
+
+- [Drive the UI](./drive-the-ui.mdx)
+- [ADR 0014 — dev sessions](../decisions/0014_external_dev_sessions_runner_delegation.mdx)

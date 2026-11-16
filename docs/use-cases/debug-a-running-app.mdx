@@ -1,0 +1,32 @@
+---
+title: Debug a running app
+description: Attach to an already running Flutter debug session.
+---
+
+# Debug a running app
+
+You already have `flutter run --debug` (or a desktop build with a known VM port). The agent should **discover** or **connect** without restarting your workflow.
+
+## Steps
+
+1. Confirm [app setup](../install/app-setup.mdx) — `mcp_toolkit` initialized.
+2. Ensure `flutter-mcp-toolkit-server` is connected in your AI client ([clients](../install/clients.mdx)).
+3. Ask the agent to run **`fmt_discover_debug_apps`** or **`fmt_connect_debug_app`** with your VM URI.
+
+If discovery fails for a desktop bundle, pass **`--scan-ports`** on the server or an explicit `connection.uri` ([troubleshooting](../troubleshooting.mdx)).
+
+## What you get
+
+- VM metadata (`fmt_get_vm`)
+- Registered extensions (`fmt_get_extension_rpcs`)
+- Recent logs and app errors
+
+## Skills
+
+- `flutter-mcp-toolkit-debug`
+- `flutter-mcp-toolkit-guide` (router)
+
+## See also
+
+- [Quickstart](../quickstart.mdx)
+- [Multiple apps](./multiple-apps.mdx)

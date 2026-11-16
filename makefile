@@ -28,6 +28,11 @@ check-contracts:
 	bash tool/contracts/test_oka_consumer_overrides_guard.sh && \
 	bash tool/contracts/check_version_sync.sh && \
 	bash tool/contracts/check_skill_assets_drift.sh && \
+	bash tool/contracts/check_docs_reference_drift.sh && \
+	bash tool/contracts/test_hardcoded_tool_counts_fixtures.sh && \
+	bash tool/contracts/check_no_hardcoded_tool_counts.sh && \
+	bash tool/contracts/check_docs_links.sh && \
+	bash tool/contracts/check_decisions_docs_sync.sh && \
 	bash tool/contracts/check_no_personal_paths.sh && \
 	bash tool/contracts/check_changelog_markdown.sh && \
 	bash tool/contracts/check_tool_prefix.sh && \
@@ -114,6 +119,11 @@ web-showcase-tests:
 sync-skills:
 	dart run mcp_server_dart/tool/build_skill_assets.dart
 	@echo "OK: skill assets regenerated"
+
+.PHONY: docs-reference
+docs-reference:
+	cd $(CURDIR)/mcp_server_dart && flutter pub get
+	dart run $(CURDIR)/tool/docs/gen_reference.dart
 
 .PHONY: check-intentcall-hosted-consumer check-intentcall-sibling-matrix check-intentcall-integration macos-validate-runtime
 check-intentcall-hosted-consumer:

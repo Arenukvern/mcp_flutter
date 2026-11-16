@@ -9,7 +9,7 @@ Three layers (not “MCP server only”):
 ```text
 AI agent
     │
-    ├─► flutter-mcp-toolkit-server (30 fmt_* tools: inspect, control, debug)
+    ├─► flutter-mcp-toolkit-server (fmt_* tools — see docs/reference/tools.mdx)
     │
     └─► fmt_list_client_tools_and_resources / fmt_client_tool / fmt_client_resource
               │
@@ -20,13 +20,13 @@ AI agent
 ```
 
 - **Static tools** — semantic snapshot, tap, scroll, hot-reload, errors, etc.
-- **Dynamic registry** — your app or game defines custom tools/resources at runtime; see [Dynamic tool registry](../docs/core/dynamic_tools_registry.mdx) and [Creating dynamic tools](../docs/guides/creating_dynamic_tools.mdx).
+- **Dynamic registry** — your app defines custom tools at runtime; see [Custom tools](../docs/use-cases/custom-tools.mdx).
 - **`plugin/mcp.json`** passes `--dynamics` so the server bridges the in-app registry.
 
 ## End-user install
 
 1. **`flutter-mcp-toolkit init <agent>`** — skills + MCP config (recommended)
-2. **`npx skills add Arenukvern/mcp_flutter`** — skills only ([open skills ecosystem](https://skills.sh)); see [docs/ai_agents/overview.mdx](../docs/ai_agents/overview.mdx)
+2. **`npx skills add Arenukvern/mcp_flutter`** — skills only ([skills.sh](https://skills.sh)); add MCP via [client setup](../docs/install/clients.mdx)
 3. **Claude git marketplace** — `/plugin marketplace add Arenukvern/mcp_flutter`
 4. **Codex git marketplace** — `codex plugin marketplace add Arenukvern/mcp_flutter`
 
@@ -55,7 +55,7 @@ Harness and video-production skills live in their owner repositories. This
 plugin only ships the Flutter MCP Toolkit runtime, maintenance, migration, and
 boundary-audit skills listed above.
 
-Store listing copy: [docs/ai_agents/marketplace_copy.yaml](../docs/ai_agents/marketplace_copy.yaml).
+Store listing copy: [plugin/assets/marketplace_copy.yaml](assets/marketplace_copy.yaml).
 
 ## Layout
 
@@ -68,7 +68,7 @@ Store listing copy: [docs/ai_agents/marketplace_copy.yaml](../docs/ai_agents/mar
 - `EXPECTED_SERVER_VERSION` — must match repo root `VERSION`
 - `agents/flutter-mcp-toolkit-runtime.md` — Claude specialist agent
 - `assets/` — store icons/screenshots (see [assets/README.md](assets/README.md))
-- `skills/` — skill bodies; repo root [`skills/`](../skills) symlinks here for `npx skills`
+- `skills/` — skill bodies; repo root `skills/` symlinks here for `npx skills`
 
 ## Editing skills
 

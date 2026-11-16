@@ -105,16 +105,16 @@ Publish pub.dev packages locally only as a fallback: `make publish-pub`.
 
 | Topic                    | Canonical doc                                                                                                                                                    |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| End-user agent install   | [docs/ai_agents/overview.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/ai_agents/overview.mdx)                                                   |
-| `npx skills` + lockfile  | overview § Install via `npx skills`; [.skills.json.example](https://github.com/Arenukvern/mcp_flutter/blob/main/.skills.json.example)                            |
-| Contributor / releases   | [docs/contributing/contribution_guide.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/contributing/contribution_guide.mdx)                         |
+| End-user agent install   | [docs/install/clients.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/install/clients.mdx)                                                         |
+| `npx skills` + lockfile  | [clients.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/install/clients.mdx) § skills; [.skills.json.example](https://github.com/Arenukvern/mcp_flutter/blob/main/.skills.json.example) |
+| Contributor / releases   | [docs/contributing/guide.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/contributing/guide.mdx)                                                    |
 | Plugin layout            | [plugin/README.md](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/README.md)                                                                         |
-| Marketplace copy SSOT    | [docs/ai_agents/marketplace_copy.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/ai_agents/marketplace_copy.yaml)                                 |
-| Distribution / stores    | [docs/ai_agents/marketplace_distribution.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/ai_agents/marketplace_distribution.mdx)                   |
+| Marketplace copy SSOT    | [plugin/assets/marketplace_copy.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/assets/marketplace_copy.yaml)                                   |
+| Distribution / stores    | [docs/install/clients.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/install/clients.mdx)                                                         |
 | Store submission runbook | [docs/contributing/marketplace_submission_runbook.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/contributing/marketplace_submission_runbook.mdx) |
 | Skill bodies             | `plugin/skills/<id>/SKILL.md` → `make sync-skills`                                                                                                               |
 
-Avoid duplicating install tables in README — link to overview.
+Avoid duplicating install tables in README — link to [docs/index.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/index.mdx).
 
 ## Skills maintenance
 

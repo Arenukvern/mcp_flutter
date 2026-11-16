@@ -6,7 +6,7 @@ set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "${here}/../.." && pwd)"
 ws_uri="${WS_URI:-${MACOS_WS_URI:-}}"
-output="${repo_root}/docs/evidence/generated/mcp_flutter.runtime-enter-text-greeting.redacted.json"
+output="${repo_root}/maintainers/evidence/generated/mcp_flutter.runtime-enter-text-greeting.redacted.json"
 text="steward runtime proof"
 platform="${RUNTIME_PLATFORM:-macos}"
 launch_command="${RUNTIME_LAUNCH_COMMAND:-make showcase}"

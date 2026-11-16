@@ -1,0 +1,80 @@
+---
+title: AI client setup
+description: Marketplace install and manual MCP JSON for Cursor, Codex, and Claude.
+---
+
+# AI client setup
+
+## Prefer marketplace or plugin
+
+| Client | Typical install |
+| --- | --- |
+| **Cursor** | `flutter-mcp-toolkit init cursor` or repo marketplace plugin |
+| **Codex** | `codex plugin marketplace add Arenukvern/mcp_flutter` |
+| **Claude Code** | `/plugin marketplace add Arenukvern/mcp_flutter` then `/plugin install flutter-mcp-toolkit@flutter-mcp-toolkit` |
+| **ChatGPT** | No supported MCP plugin path yet — use Cursor/Codex/Claude or manual `mcpServers` JSON |
+| **Cline** | `flutter-mcp-toolkit init cline` (skills); add MCP JSON below |
+| **Any agent** | `npx skills add Arenukvern/mcp_flutter` then configure MCP manually |
+
+Marketplace flows bundle **skills** and often **MCP registration**. See also [quickstart](../quickstart.mdx).
+
+### `init` behavior
+
+| Target | Skills | MCP `mcp.json` |
+| --- | --- | --- |
+| `cursor`, `codex` | Yes | Yes (plugin-local) |
+| `claude-code`, `cline`, `agents-skills` | Yes | No — configure host yourself |
+| `all` | Yes for cursor, codex, claude-code, cline, zcode | Where that target normally writes it |
+
+When the host **already** references `flutter-mcp-toolkit` in `mcp.json`, re-running `init` is safe for skill refresh; merge any MCP block changes by hand if you customized args.
+
+## Manual `mcpServers` JSON
+
+Use binary **`flutter-mcp-toolkit-server`** on PATH. Marketplace/plugin flows install **skills** (and sometimes MCP JSON) but **do not** download the server binary — run [install.sh](../../install.sh) (or a release package) so `flutter-mcp-toolkit` and `flutter-mcp-toolkit-server` are available. Registry key **`flutter-mcp-toolkit`**. Legacy key renames: [migration v2→v3](../migration/migration_v2_to_v3.mdx).
+
+### Cursor (`~/.cursor/mcp.json` or project `.cursor/mcp.json`)
+
+```json
+{
+  "mcpServers": {
+    "flutter-mcp-toolkit": {
+      "command": "flutter-mcp-toolkit-server",
+      "args": [
+        "--dart-vm-host=localhost",
+        "--dart-vm-port=8181",
+        "--resources",
+        "--images",
+        "--dynamics"
+      ]
+    }
+  }
+}
+```
+
+### Claude Desktop / Claude Code
+
+Same shape under `mcpServers` in the Claude MCP config file for your install (user- or project-scoped).
+
+### Codex
+
+Plugin cache layout is written by `init codex`; for manual setup, use the same `command` and `args` as above in Codex’s MCP config.
+
+### Environment override
+
+The shipped plugin template supports:
+
+```json
+"command": "${FLUTTER_MCP_BIN:-flutter-mcp-toolkit-server}"
+```
+
+Point `FLUTTER_MCP_BIN` at a custom build if needed.
+
+## Docker (optional)
+
+Clients that can spawn containers may use the [registry OCI image](./docker.mdx) instead of a local binary.
+
+## Related
+
+- [App setup](./app-setup.mdx) — `mcp_toolkit` in the Flutter project
+- [Server flags](../reference/server-flags.mdx)
+- [Troubleshooting](../troubleshooting.mdx) — client does not list tools

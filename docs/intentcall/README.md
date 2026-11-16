@@ -230,7 +230,7 @@ claim only generated scaffold proof.
 
 | Symptom | Start here |
 |---------|------------|
-| `MCPCallEntry` compile errors or migration work | [MCPCallEntry to AgentCallEntry migration](../start_here/migration_mcp_call_entry_to_agent_call_entry.md) |
+| `MCPCallEntry` compile errors or migration work | [MCPCallEntry to AgentCallEntry migration](../migration/migration_mcp_call_entry_to_agent_call_entry.md) |
 | Hosted dependency or local path override drift | `tool/intentcall/check_no_path_deps.sh`; use `--strict-root` before release/cutover |
 | Platform hooks, WebMCP, deep links, app dynamic tools | [flutter_test_app/INTENTCALL_PLATFORM.md](../../showcase/flutter_test_app/INTENTCALL_PLATFORM.md) |
 | Schema, `fmt_*`, CLI `exec`, or app-dynamic parity debugging | `plugin/skills/flutter-mcp-boundary-audit/` |

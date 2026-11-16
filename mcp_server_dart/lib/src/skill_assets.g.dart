@@ -314,7 +314,7 @@ flutter-mcp-toolkit init all --mode cli      # install for every detected agent 
 
 Mode auto-detects (MCP if registered, else CLI). Override with `--mode mcp|cli|auto`.
 
-**Alternative (skills only, open ecosystem):** `npx skills add Arenukvern/mcp_flutter -a cursor -y` installs the same `SKILL.md` bundles via [skills.sh](https://skills.sh); it does not write `mcp.json` — run `init` afterward or configure `mcpServers` manually. See [AI agent overview](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/ai_agents/overview.mdx).
+**Alternative (skills only, open ecosystem):** `npx skills add Arenukvern/mcp_flutter -a cursor -y` installs the same `SKILL.md` bundles via [skills.sh](https://skills.sh); it does not write `mcp.json` — run `init` afterward or configure `mcpServers` manually. See [Connect your agent](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/install/clients.mdx).
 
 ---
 
@@ -1425,7 +1425,7 @@ If something should appear but does not: confirm **`addEntries`** completed (**`
 
 - **`flutter-mcp-toolkit-intentcall-migration`** — CLI migrator, breaking upgrade
 - **`flutter-mcp-toolkit-guide`** → inspect / control / debug skills
-- Repository **`ARCHITECTURE.md`** → “Dynamic Registry Architecture”
+- Docs [**How it works**](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/concepts/how-it-works.mdx) → dynamic registry overview
 ''',
       relativePath: 'skills/flutter-mcp-toolkit-custom-tools/SKILL.md',
     ),
@@ -1671,7 +1671,7 @@ description: >-
 `MCPCallEntry` is **removed** from `mcp_toolkit`. App code must use
 `AgentCallEntry` (from `intentcall_core`, re-exported by `mcp_toolkit`).
 
-Canonical migration doc: [migration_mcp_call_entry_to_agent_call_entry.md](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/start_here/migration_mcp_call_entry_to_agent_call_entry.md)
+Canonical migration doc: [migration_mcp_call_entry_to_agent_call_entry.md](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/migration/migration_mcp_call_entry_to_agent_call_entry.md)
 
 ## When to use this skill
 
@@ -1788,13 +1788,13 @@ IntentCall now lives outside this repository. Normal consumer state uses hosted 
     SkillAsset(
       id: 'flutter-mcp',
       frontmatter: r'''name: flutter-mcp
-description: Use this skill whenever inspecting, interacting with, or live-editing a running Flutter app via the Flutter MCP toolkit server (`mcpServers` key **`flutter-mcp-toolkit`**, or legacy **`flutter-inspector`**). Covers preflight, snapshot/tap/enter/scroll loop, hot-reload validation, and error envelope parsing.''',
+description: Use this skill whenever inspecting, interacting with, or live-editing a running Flutter app via the Flutter MCP toolkit server (`mcpServers` key **`flutter-mcp-toolkit`**). Covers preflight, snapshot/tap/enter/scroll loop, hot-reload validation, and error envelope parsing.''',
       body: r'''
 <!-- @FMT_MODE_PRELUDE -->
 
 # Flutter MCP
 
-Golden path for agents driving a live Flutter app via the **`flutter-mcp-toolkit`** MCP server entry. Older configs may use the legacy **`flutter-inspector`** `mcpServers` registry id for the same binary (that id is **not** the Claude subagent **`flutter-mcp-toolkit-runtime`**).
+Golden path for agents driving a live Flutter app via the **`flutter-mcp-toolkit`** MCP server entry (`flutter-mcp-toolkit-server` on stdio).
 
 ## When to use
 
@@ -1806,76 +1806,24 @@ Golden path for agents driving a live Flutter app via the **`flutter-mcp-toolkit
 
 Before any VM-dependent call:
 
-1. Call `doctor` (or run `flutter-mcp-toolkit doctor --json`) — parses env, ports, app reachability.
-2. Confirm required toolkit extensions exist on the target:
-   - `ext.mcp.toolkit.app_errors`
-   - `ext.mcp.toolkit.view_details`
-   - `ext.mcp.toolkit.view_screenshots`
-   - `ext.mcp.toolkit.inspect_widget_at_point`
+1. Ensure the app is running in **debug** mode with `mcp_toolkit` bootstrap (see `flutter-mcp-toolkit codegen-init`).
+2. Call **`fmt_discover_debug_apps`** or **`fmt_connect_debug_app`** (use `connection.uri` when multiple targets exist).
+3. Optionally run **`fmt_get_extension_rpcs`** to confirm `ext.mcp.toolkit.*` extensions exist.
 
-If missing, stop and report the instrumentation gap — do **not** guess:
+## Core loop
 
-- Add `mcp_toolkit` to `pubspec.yaml`.
-- Ensure `MCPToolkitBinding.instance..initialize()..initializeFlutterToolkit();` runs before `runApp`.
-- Hot **restart** (not reload) — reload is often insufficient for extension registration.
+1. **`fmt_semantic_snapshot`** — read UI structure and refs.
+2. **`fmt_tap_widget`** / **`fmt_enter_text`** / **`fmt_scroll`** — act on refs from the snapshot.
+3. **`fmt_hot_reload_flutter`** or **`fmt_hot_reload_and_capture`** — apply code changes.
+4. **`fmt_wait_for`** with `{kind: stable, stableWindowMs: 300}` then re-snapshot.
 
-## Tool naming (v3.0.0+)
+## Screenshots
 
-All MCP tools surface under the `fmt_` capability prefix
-(`fmt_tap_widget`, `fmt_hot_reload_and_capture`, etc.). The prefix is
-mandatory in `tools/call`. Skill-local references below use the bare name
-for readability — when invoking, prepend `fmt_`. Dynamic-registry host
-tools (`fmt_list_client_tools_and_resources`, `fmt_client_tool`,
-`fmt_client_resource`) use the same prefix for a single consistent surface.
+Prefer **`fmt_get_screenshots`** (Flutter render pipeline over VM service). They work when the app window is in the background. Use **`fmt_capture_ui_snapshot`** when you need a single PNG path on disk without the batch screenshot helper.
 
-## Interaction loop (Playwright-style)
+## Errors
 
-1. `fmt_semantic_snapshot` → returns `s_0..s_N` refs + `snapshot_id`.
-2. `fmt_tap_widget` / `fmt_enter_text` / `fmt_scroll` / `fmt_swipe` / `fmt_long_press` / `fmt_drag` — act on a ref. **Always pass `snapshotId`** — you get a structured `stale_snapshot` error if the tree moved, instead of a silent wrong tap.
-3. `fmt_reveal_search` — for off-screen semantic targets, bounded snapshot/search/scroll that returns a fresh `ref` + `snapshotId`.
-4. `fmt_evaluate_dart_expression` — read state directly (e.g. `AgentState.instance.counter`).
-5. `fmt_hot_reload_and_capture` — after a code edit, returns reload status + screenshot + fresh snapshot + errors in one response. Prefer this over manual reload + separate capture.
-
-## Error envelope contract
-
-Errors are `{code, message, details, descriptor, recovery}`. Parse `error.descriptor` (not the top-level object) for the machine-readable shape. Strict schemas default to `additionalProperties: false` — unknown params reject.
-
-Common codes and recovery:
-
-- `connection_selection_required` — retry with `arguments.connection.targetId` or exact `arguments.connection.uri` from `app.debugPort.wsUri`.
-- `target_not_found` — refresh targets, then prefer exact `arguments.connection.uri`.
-- `stale_snapshot` — call `fmt_semantic_snapshot` again, then retry the action with the new `snapshotId` input.
-- `tool_not_found` — confirm the prefixed name (`fmt_<tool>`); v3.0.0 dropped legacy unprefixed names.
-- Empty screenshot output — verify the server was not started with `--no-images`.
-- Missing view resource/tool — verify the server was not started with `--no-resources`.
-
-## Visual QA
-
-- Before/after screenshots are the proof artifact for any UI claim. Capture before with `fmt_capture_ui_snapshot` (or one of the `visual://localhost/...` resources), edit, `fmt_hot_reload_and_capture`, compare.
-- For each reported visual issue, attach coordinate + `fmt_inspect_widget_at_point` output.
-- Map defects to source via `fmt_get_app_errors` top stack frame (`file`, `line`, `column`) when available.
-- Do **not** use `fmt_debug_dump_*` unless explicitly requested (server must be started with `--dumps`; high token cost).
-
-## Permissions (macOS)
-
-Screen Recording permission belongs to the process running `flutter-mcp-toolkit` (or the MCP server host). If visual capture is denied:
-
-```bash
-flutter-mcp-toolkit permissions status
-flutter-mcp-toolkit permissions request
-flutter-mcp-toolkit permissions open-settings
-```
-
-## Non-modifiable apps
-
-If the target app cannot be instrumented (third-party binary, restricted env), report flutter-mcp as unavailable for that app. Do **not** claim screenshot/layout/error inspection success.
-
-## Related
-
-- For the dynamic-tools side (registering custom MCP tools from inside the Flutter app), see the `flutter-mcp-toolkit-custom-tools` skill.
-- For routing across setup / inspect / control / debug skills, see `flutter-mcp-toolkit-guide`.
-- For **repeatable** scenarios as checked-in Dart (build/launch/attach/drive/assert without MCP), see `flutter-mcp-e2e-harness`.
-''',
+Parse structured JSON envelopes (`ok`, `errorCode`). See skill **`flutter-mcp-toolkit-debug`** for recovery playbooks.''',
       relativePath: 'skills/flutter-mcp/SKILL.md',
     ),
     SkillAsset(
@@ -2082,16 +2030,16 @@ Publish pub.dev packages locally only as a fallback: `make publish-pub`.
 
 | Topic                    | Canonical doc                                                                                                                                                    |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| End-user agent install   | [docs/ai_agents/overview.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/ai_agents/overview.mdx)                                                   |
-| `npx skills` + lockfile  | overview § Install via `npx skills`; [.skills.json.example](https://github.com/Arenukvern/mcp_flutter/blob/main/.skills.json.example)                            |
-| Contributor / releases   | [docs/contributing/contribution_guide.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/contributing/contribution_guide.mdx)                         |
+| End-user agent install   | [docs/install/clients.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/install/clients.mdx)                                                         |
+| `npx skills` + lockfile  | [clients.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/install/clients.mdx) § skills; [.skills.json.example](https://github.com/Arenukvern/mcp_flutter/blob/main/.skills.json.example) |
+| Contributor / releases   | [docs/contributing/guide.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/contributing/guide.mdx)                                                    |
 | Plugin layout            | [plugin/README.md](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/README.md)                                                                         |
-| Marketplace copy SSOT    | [docs/ai_agents/marketplace_copy.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/ai_agents/marketplace_copy.yaml)                                 |
-| Distribution / stores    | [docs/ai_agents/marketplace_distribution.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/ai_agents/marketplace_distribution.mdx)                   |
+| Marketplace copy SSOT    | [plugin/assets/marketplace_copy.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/assets/marketplace_copy.yaml)                                   |
+| Distribution / stores    | [docs/install/clients.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/install/clients.mdx)                                                         |
 | Store submission runbook | [docs/contributing/marketplace_submission_runbook.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/contributing/marketplace_submission_runbook.mdx) |
 | Skill bodies             | `plugin/skills/<id>/SKILL.md` → `make sync-skills`                                                                                                               |
 
-Avoid duplicating install tables in README — link to overview.
+Avoid duplicating install tables in README — link to [docs/index.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/index.mdx).
 
 ## Skills maintenance
 
@@ -2281,7 +2229,7 @@ Pass `--web-browser-debugging-port <cdp>` if CDP discovery fails.
 
 ## Related
 
-- `docs/superpowers/evals/2026-05-26-webmcp-verification.md`
+- `maintainers/superpowers/evals/2026-05-26-webmcp-verification.md`
 - `flutter-mcp-cli-runtime-validation` — validate-runtime details
 - `flutter-mcp-toolkit-dogfood-iterations` — scored iterations
 - `flutter-mcp-e2e-harness` — programmatic scenarios over this showcase (`packages/harness`, `--web --detach` variant)
@@ -2381,9 +2329,9 @@ description: Runs and records showcase/flutter_test_app dogfood iterations (tool
 
 # Dogfood iterations
 
-Tracker: `docs/evidence/dogfood/dogfood_web_eval.yaml`  
-Rubric: `docs/superpowers/evals/tool_quality_rubric.yaml`  
-Overview: `docs/superpowers/evals/README.md`
+Tracker: `maintainers/evidence/dogfood/dogfood_web_eval.yaml`  
+Rubric: `maintainers/superpowers/evals/tool_quality_rubric.yaml`  
+Overview: `maintainers/superpowers/evals/README.md`
 
 ## Pass threshold
 
@@ -2440,7 +2388,7 @@ make dogfood-eval-static
 
 - Per run: `.showcase/eval_runs/<timestamp>/eval_run.yaml`
 - Snapshot: `.showcase/eval_run_<timestamp>.yaml`
-- With `--merge`: updates `docs/evidence/dogfood/dogfood_web_eval.yaml` (`yq` or `dart run mcp_server_dart/tool/merge_dogfood_tracker.dart`)
+- With `--merge`: updates `maintainers/evidence/dogfood/dogfood_web_eval.yaml` (`yq` or `dart run mcp_server_dart/tool/merge_dogfood_tracker.dart`)
 
 ## Verdicts
 
@@ -2780,7 +2728,7 @@ owner. Absence of the file is the liveness signal.
 | Need | Surface | Skill / doc |
 |---|---|---|
 | Chat-driven debugging ("tap X, what changed?") | MCP `fmt_*` tools | `flutter-mcp` |
-| Script/CI one-shot commands (snapshot, exec, batch) | CLI (`flutter-mcp-toolkit` / `fmtk`) | [CLI vs MCP](/start_here/cli_vs_mcp) |
+| Script/CI one-shot commands (snapshot, exec, batch) | CLI (`flutter-mcp-toolkit` / `fmtk`) | [CLI vs MCP](/concepts/cli-vs-mcp) |
 | Repeatable scenario as checked-in Dart, CI exit codes | `flutter_mcp_harness` | `flutter-mcp-e2e-harness` |
 | Build + install + launch + process lifecycle (Android/iOS devices) | **oka** (separate repo) | this skill, oka section below |
 | Browser tier (web demos, WebMCP dogfood) | `CdpDriver` over CDP | `flutter-mcp-toolkit-maintain-web` |
@@ -2880,9 +2828,9 @@ See `packages/harness/lib/src/intent_driver_router.dart` and
 
 - `flutter-mcp` — the interactive MCP loop
 - `flutter-mcp-e2e-harness` — scenario authoring, launch-path table, showcase launcher
-- [The Automation Chain](/start_here/automation_chain) — first-time guide
-- [Dev-session delegation roadmap](/guides/dev-session-delegation-roadmap) — spec v2 contract in full
-- [E2E Scenarios](/guides/e2e_scenarios) · [CLI vs MCP](/start_here/cli_vs_mcp)
+- [The Automation Chain](/concepts/automation-chain) — first-time guide
+- [ADR 0014 — external dev sessions](/decisions/0014_external_dev_sessions_runner_delegation) — runner delegation contract
+- [E2E Scenarios](/use-cases/e2e-scenarios) · [CLI vs MCP](/concepts/cli-vs-mcp)
 
 ## Sources
 
@@ -2890,10 +2838,9 @@ See `packages/harness/lib/src/intent_driver_router.dart` and
 - `decisions/0015_flutter_mcp_harness_extraction.mdx` — harness extraction and boundaries
 - `decisions/0012_fmtk_cli_alias_and_harness_boundary.mdx` — CLI/harness boundary
 - oka repo ([github.com/Arenukvern/oka](https://github.com/Arenukvern/oka)):
-  `packages/oka_harness/` (targets, `driverForLiveSession`),
-  `docs/decisions/0027-oka-harness-device-targets.mdx` (hosted
-  `flutter_mcp_harness` consumption), `docs/decisions/0024-declarative-test-workflows-and-agent-adapters.mdx`
-  (oracle/adapter layering)
+  `packages/oka_harness/` (targets, `driverForLiveSession`); hosted harness ADR
+  [Oka harness ADR](https://github.com/Arenukvern/oka/blob/main/docs/decisions/0026-oka-harness-device-targets.mdx).
+  In-repo boundary: [0015](/decisions/0015_flutter_mcp_harness_extraction).
 ''',
       relativePath: 'skills/flutter-mcp-automation-chain/SKILL.md',
     ),

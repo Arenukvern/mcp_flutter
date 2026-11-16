@@ -7,9 +7,9 @@ description: Runs and records showcase/flutter_test_app dogfood iterations (tool
 
 # Dogfood iterations
 
-Tracker: `docs/evidence/dogfood/dogfood_web_eval.yaml`  
-Rubric: `docs/superpowers/evals/tool_quality_rubric.yaml`  
-Overview: `docs/superpowers/evals/README.md`
+Tracker: `maintainers/evidence/dogfood/dogfood_web_eval.yaml`  
+Rubric: `maintainers/superpowers/evals/tool_quality_rubric.yaml`  
+Overview: `maintainers/superpowers/evals/README.md`
 
 ## Pass threshold
 
@@ -66,7 +66,7 @@ make dogfood-eval-static
 
 - Per run: `.showcase/eval_runs/<timestamp>/eval_run.yaml`
 - Snapshot: `.showcase/eval_run_<timestamp>.yaml`
-- With `--merge`: updates `docs/evidence/dogfood/dogfood_web_eval.yaml` (`yq` or `dart run mcp_server_dart/tool/merge_dogfood_tracker.dart`)
+- With `--merge`: updates `maintainers/evidence/dogfood/dogfood_web_eval.yaml` (`yq` or `dart run mcp_server_dart/tool/merge_dogfood_tracker.dart`)
 
 ## Verdicts
 

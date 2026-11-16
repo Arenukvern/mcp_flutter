@@ -52,8 +52,8 @@ require_docs_contains() {
   local -a files=(
     "$ROOT_DIR/README.md"
     "$ROOT_DIR/mcp_server_dart/README.md"
-    "$ROOT_DIR/docs/start_here/cli_quick_recipes.mdx"
-    "$ROOT_DIR/docs/core/mcp_configuration.mdx"
+    "$ROOT_DIR/docs/use-cases/ci-and-scripts.mdx"
+    "$ROOT_DIR/docs/quickstart.mdx"
   )
 
   if ! contains_token_in_files "$token" "${files[@]}"; then

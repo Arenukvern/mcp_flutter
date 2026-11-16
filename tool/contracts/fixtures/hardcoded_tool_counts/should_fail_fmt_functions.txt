@@ -1,0 +1,1 @@
+Agents call the 34 fmt_get_screenshots functions today.

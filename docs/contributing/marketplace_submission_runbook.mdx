@@ -18,7 +18,7 @@ Execute **after** merging marketplace-prep changes and cutting a release with sy
    - Call `fmt_list_client_tools_and_resources` → see your tool.
    - Call `fmt_client_tool` with your tool name.
 
-Copy for forms: [docs/ai_agents/marketplace_copy.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/ai_agents/marketplace_copy.yaml).
+Copy for forms: [plugin/assets/marketplace_copy.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/assets/marketplace_copy.yaml).
 
 ---
 
@@ -29,7 +29,7 @@ Copy for forms: [docs/ai_agents/marketplace_copy.yaml](https://github.com/Arenuk
 3. **Plugin path:** `./plugin` (marketplace: `.claude-plugin/marketplace.json`)
 4. **Short description:** paste `short_description` from `marketplace_copy.yaml`.
 5. **Long description:** paste `long_description`; emphasize:
-   - 30 built-in `fmt_*` tools
+   - Live tool list: `docs/reference/tools.mdx` (regenerated with `make docs-reference`)
    - **Dynamic registry** — `addMcpTool` / `AgentCallEntry` in the Flutter app
    - Skill `flutter-mcp-toolkit-custom-tools`
 6. **Keywords:** from `marketplace_copy.yaml`.
@@ -41,7 +41,7 @@ Copy for forms: [docs/ai_agents/marketplace_copy.yaml](https://github.com/Arenuk
    bash plugin/install.sh
    ```
 
-If review is delayed, git marketplace remains the supported install path ([distribution doc](/ai_agents/marketplace_distribution)).
+If review is delayed, git marketplace remains the supported install path ([client install](../install/clients.mdx)).
 
 ---
 
@@ -94,13 +94,13 @@ If review is delayed, git marketplace remains the supported install path ([distr
 
 ### MseeP
 
-- Listing: [mseep.ai](https://mseep.ai/app/03aa0f2d-4ef7-40ae-93de-c7b87e0ac32d)
+- Listing: [mseep.ai/app/arenukvern-mcp-flutter](https://mseep.ai/app/arenukvern-mcp-flutter)
 - Same post-release refresh as Smithery.
 
 ### Cline
 
 - No central store. Users run `flutter-mcp-toolkit init cline`.
-- Document in app README; link [AI agent overview](/ai_agents/overview).
+- Document in app README; link [docs hub](/index).
 
 ---
 

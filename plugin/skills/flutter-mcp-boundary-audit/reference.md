@@ -83,7 +83,7 @@ Re-audit host vs app paths only if coercion is added on **one** side without the
 |---------------------------------------------------------------|--------------------------------------------------------|
 | `tap_widget`, `semantic_snapshot`, `wait_for`, `enter_text`, `reveal_search`, `scroll`, `long_press`, `swipe`, `drag`, `hover`, `focus_widget`, `press_key`, `get_recent_logs`, `handle_dialog`, `navigate` | `fill_form`, `hot_reload_flutter`, `hot_restart_flutter`, `evaluate_dart_expression`, `hot_reload_and_capture` |
 
-**Host-only beyond core 20:** `get_view_details`, `inspect_widget_at_point`, `get_app_errors`, `focus_window` (inspection; part of 24-tool tier A exec). **`get_screenshots`**, **`capture_ui_snapshot`** use the same schema router (26 total) but are capture, not in the 24-tool tier A exec set.
+**Host-only beyond core 20:** `get_view_details`, `inspect_widget_at_point`, `get_app_errors`, `focus_window` (inspection; part of 24-tool tier A exec; tool-count-allow). **`get_screenshots`**, **`capture_ui_snapshot`** use the same schema router (26 total) but are capture, not in the 24-tool tier A exec set.
 
 **CLI `exec`:** commands with `interactionCatalogInputSchemaFor` entries get Tier A in `CommandCatalog.buildCommand` via `validationFailureForInteractionCatalogCommand` (not catalog-only unknown-key checks). Other catalog commands rely on `_validateUnknownKeys` + `spec.build` unless their catalog schema is strict.
 
@@ -128,7 +128,7 @@ dart test packages/server_capability_core/test/tools/interaction_input_schemas_t
 
 ### Historical P0/P1 patterns (regression watch)
 
-From `docs/superpowers/tracker/mcp-boundary-hardening.yaml` — re-audit if touching these areas:
+From `maintainers/superpowers/tracker/mcp-boundary-hardening.yaml` — re-audit if touching these areas:
 
 | Pattern | Risk |
 |---------|------|
@@ -156,12 +156,12 @@ See this skill reference and `showcase/flutter_test_app/INTENTCALL_PLATFORM.md`.
 ### ADRs / evals (mcp_flutter)
 
 - `decisions/0008_web_agent_invoke_js_only.mdx` — JS `/agent/invoke` 404; Dart `invokeDirect` in-process
-- `docs/superpowers/evals/2026-05-26-webmcp-verification.md`
-- `docs/superpowers/evals/2026-05-26-deconstruct-verification.md`
+- `maintainers/superpowers/evals/2026-05-26-webmcp-verification.md`
+- `maintainers/superpowers/evals/2026-05-26-deconstruct-verification.md`
 
 ### Tracker (mcp_flutter)
 
-Completed hardening: `docs/superpowers/tracker/mcp-boundary-hardening.yaml`
+Completed hardening: `maintainers/superpowers/tracker/mcp-boundary-hardening.yaml`
 
 ---
 

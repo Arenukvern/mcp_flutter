@@ -44,7 +44,7 @@ owner. Absence of the file is the liveness signal.
 | Need | Surface | Skill / doc |
 |---|---|---|
 | Chat-driven debugging ("tap X, what changed?") | MCP `fmt_*` tools | `flutter-mcp` |
-| Script/CI one-shot commands (snapshot, exec, batch) | CLI (`flutter-mcp-toolkit` / `fmtk`) | [CLI vs MCP](/start_here/cli_vs_mcp) |
+| Script/CI one-shot commands (snapshot, exec, batch) | CLI (`flutter-mcp-toolkit` / `fmtk`) | [CLI vs MCP](/concepts/cli-vs-mcp) |
 | Repeatable scenario as checked-in Dart, CI exit codes | `flutter_mcp_harness` | `flutter-mcp-e2e-harness` |
 | Build + install + launch + process lifecycle (Android/iOS devices) | **oka** (separate repo) | this skill, oka section below |
 | Browser tier (web demos, WebMCP dogfood) | `CdpDriver` over CDP | `flutter-mcp-toolkit-maintain-web` |
@@ -144,9 +144,9 @@ See `packages/harness/lib/src/intent_driver_router.dart` and
 
 - `flutter-mcp` — the interactive MCP loop
 - `flutter-mcp-e2e-harness` — scenario authoring, launch-path table, showcase launcher
-- [The Automation Chain](/start_here/automation_chain) — first-time guide
-- [Dev-session delegation roadmap](/guides/dev-session-delegation-roadmap) — spec v2 contract in full
-- [E2E Scenarios](/guides/e2e_scenarios) · [CLI vs MCP](/start_here/cli_vs_mcp)
+- [The Automation Chain](/concepts/automation-chain) — first-time guide
+- [ADR 0014 — external dev sessions](/decisions/0014_external_dev_sessions_runner_delegation) — runner delegation contract
+- [E2E Scenarios](/use-cases/e2e-scenarios) · [CLI vs MCP](/concepts/cli-vs-mcp)
 
 ## Sources
 
@@ -154,7 +154,6 @@ See `packages/harness/lib/src/intent_driver_router.dart` and
 - `decisions/0015_flutter_mcp_harness_extraction.mdx` — harness extraction and boundaries
 - `decisions/0012_fmtk_cli_alias_and_harness_boundary.mdx` — CLI/harness boundary
 - oka repo ([github.com/Arenukvern/oka](https://github.com/Arenukvern/oka)):
-  `packages/oka_harness/` (targets, `driverForLiveSession`),
-  `docs/decisions/0027-oka-harness-device-targets.mdx` (hosted
-  `flutter_mcp_harness` consumption), `docs/decisions/0024-declarative-test-workflows-and-agent-adapters.mdx`
-  (oracle/adapter layering)
+  `packages/oka_harness/` (targets, `driverForLiveSession`); hosted harness ADR
+  [Oka harness ADR](https://github.com/Arenukvern/oka/blob/main/docs/decisions/0026-oka-harness-device-targets.mdx).
+  In-repo boundary: [0015](/decisions/0015_flutter_mcp_harness_extraction).

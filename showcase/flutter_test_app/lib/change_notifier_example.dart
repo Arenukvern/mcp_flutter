@@ -20,7 +20,7 @@ class CustomNotifier with ChangeNotifier {
     // https://github.com/Arenukvern/mcp_flutter/blob/main/.cursor/rules/mcp_dynamic_tools.mdc
     //
     // See more about MCP dynamic tools:
-    // https://github.com/Arenukvern/mcp_flutter/blob/main/QUICK_START.md#dynamic-tools-registration
+    // https://github.com/Arenukvern/mcp_flutter/blob/main/docs/use-cases/custom-tools.mdx
     final yourTool = mcpToolkitTool(
       namespace: 'app',
       handler: (request) {

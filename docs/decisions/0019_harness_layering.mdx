@@ -1,0 +1,78 @@
+# ADR 0019 — `flutter_mcp_harness` layering: targets, session, driver, scenario
+
+## Status
+
+Accepted (2026-10-03)
+
+## Context
+
+The live drives (`showcase/drivers/bin/drive_flutter.dart`,
+`drive_web.dart`) lived under `showcase/` for a correct reason: ADR-0015
+and ADR-0016 keep *pipeline policy* (screencast composition, what gets
+recorded and where) in consumer code, so the harness package stays
+pipeline-free. But the drives dragged a second kind of code along with
+the pipeline glue: the *drive plumbing* — launch a target, attach a
+driver, retry until a label renders, tear down with an honest exit code.
+Every consumer re-derived that plumbing, and each derivation drifted
+(different retry counts, different miss reporting).
+
+Meanwhile the package carried three internal debts:
+
+- **WidgetDriver** — the pre-family driver: same `ext.mcp.toolkit.*`
+  verbs as `ToolkitDriver`, its own string-based API, its own retry
+  policy, and one consumer (its own test plus an example). Two drivers
+  over one wire meant fixes landed in one and not the other.
+- **Scenario/Check** — the named-step model with only its own test as a
+  consumer, while `ARCHITECTURE.md` claimed it as the way to write E2E
+  scenarios.
+- **`HarnessContext.take<T>`** — failed as a raw `TypeError` instead of
+  a named error.
+
+## Decision
+
+`flutter_mcp_harness` owns four layers, in dependency order:
+
+1. **Targets** — build/launch/attach (`FlutterRunTarget`,
+   `MacosAppTarget`, `ChromeAppTarget`, `WebAppTarget` → `LaunchedApp`).
+   They own the process and its VM service.
+2. **Session** — `attachDriver(LaunchedApp)` and the observe helpers
+   (`labelContaining` / `expectLabel`), promoted from the showcase
+   drives. This is the launch/attach/drive glue that was previously
+   re-derived per consumer.
+3. **Driver** — `ToolkitDriver`, the one instrumented driver, plus
+   `IntentDriverRouter`. **WidgetDriver is removed** (breaking).
+4. **Scenario** — `Scenario` / `Check` / `HarnessContext`; named steps,
+   accumulated results, cleanup-friendly failures.
+
+The **pipeline stays out** (ADR-0038's capture split, ADR-0016's
+composition ownership): `showcase/drivers` keeps only what is genuinely
+showcase-specific — which pipeline records what, and the demo's own
+assertions — and shrinks to scenario definitions over the promoted
+helpers.
+
+`flutter_mcp_harness` re-exports `universal_automation_interface`, so a
+consumer imports one package to drive (actions, snapshots, drivers).
+
+## Consequences
+
+- **Breaking**: `WidgetDriver` is gone; migrate to
+  `attachDriver` + `ToolkitDriver.perform(ClickAction(...))` (the
+  example shows the full mapping). `flutter_mcp_harness` 6.0.0 is the
+  first train-versioned release, so the break ships with the version
+  consumers must move to anyway.
+- The showcase drives are now thin enough that a new app's drive is
+  *only* its scenario definition.
+- `Scenario` is promoted by adoption: the example uses it, and the
+  drive helper it needed (`expectLabel`) lives next to it.
+- A future declarative (YAML) scenario layer, if built, compiles down
+  to this same `Scenario` vocabulary — it is the landing pad ADR-0017
+  pointed at.
+
+## Alternatives considered
+
+- **Keep WidgetDriver as a deprecated alias** — rejected: two drivers
+  over one wire is the drift this ADR exists to end, and a deprecated
+  shim would still carry its own retry policy.
+- **Move the drives into the harness package** — rejected: their
+  assertions are showcase-specific and their screencast glue is
+  composition policy (ADR-0016). Only the *plumbing* belonged here.

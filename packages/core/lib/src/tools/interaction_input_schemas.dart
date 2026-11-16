@@ -685,7 +685,7 @@ const coreInteractionCatalogCommandNames = <String>[
   'hot_reload_and_capture',
 ];
 
-/// Host inspection tools beyond the core 20 (Tier A `exec` / `fmt_*`).
+/// Host inspection tools beyond the core 20 (Tier A `exec` / `fmt_*`). tool-count-allow
 const inspectionTierAExecCommandNames = <String>[
   'get_view_details',
   'inspect_widget_at_point',
@@ -699,7 +699,7 @@ const captureTierAExecCommandNames = <String>[
   'capture_ui_snapshot',
 ];
 
-/// Tier A exec catalog: core 20 + 4 inspection (24 tools).
+/// Tier A exec catalog: core 20 + 4 inspection (24 tools). tool-count-allow
 const tierAExecCatalogCommandNames = <String>[
   ...coreInteractionCatalogCommandNames,
   ...inspectionTierAExecCommandNames,
