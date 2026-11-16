@@ -195,6 +195,11 @@ Examples:
   flutter-mcp-toolkit doctor
   flutter-mcp-toolkit doctor --json --target ws://127.0.0.1:8181/<token>/ws --timeout-ms 4000
 
+Output:
+  - TTY (interactive terminal): human-readable check table by default.
+  - Non-TTY (pipes, CI, agents): compact JSON envelope (same as before).
+  - --json: always emit the JSON envelope (machine-readable).
+
 Doctor checks include:
   - VM reachability
   - required mcp_toolkit extensions for app inspection

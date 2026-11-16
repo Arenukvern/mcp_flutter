@@ -208,13 +208,7 @@ Future<void> main(List<String> args) async {
     result: result,
     outputDir: outputDir,
   );
-  final prettyPrintEnvelope = command.name == 'exec' && command.flag('pretty');
-  final envelopeJson = result.toEnvelopeJson();
-  io.stdout.writeln(
-    prettyPrintEnvelope
-        ? const JsonEncoder.withIndent('  ').convert(envelopeJson)
-        : jsonEncode(envelopeJson),
-  );
+  await _writeDoctorOrEnvelopeStdout(topLevel: command, result: result);
   await connectionContext.disconnect();
   io.exit(_resolveExitCode(topLevel: command, result: result));
 }
@@ -1445,6 +1439,36 @@ Future<void> _writeResultArtifactIfNeeded({
   );
 }
 
+Future<void> _writeDoctorOrEnvelopeStdout({
+  required ArgResults topLevel,
+  required CoreResult result,
+}) async {
+  final envelopeJson = result.toEnvelopeJson();
+  if (topLevel.name == 'doctor') {
+    final format = resolveDoctorStdoutFormat(jsonFlag: topLevel.flag('json'));
+    if (format == DoctorStdoutFormat.human) {
+      final data = result.data;
+      if (data is Map<String, Object?>) {
+        io.stdout.writeln(formatDoctorHuman(data));
+        return;
+      }
+      if (data is Map) {
+        io.stdout.writeln(
+          formatDoctorHuman(data.map((key, value) => MapEntry('$key', value))),
+        );
+        return;
+      }
+    }
+  }
+
+  final prettyPrintEnvelope = topLevel.name == 'exec' && topLevel.flag('pretty');
+  io.stdout.writeln(
+    prettyPrintEnvelope
+        ? const JsonEncoder.withIndent('  ').convert(envelopeJson)
+        : jsonEncode(envelopeJson),
+  );
+}
+
 void _printInteractiveNarrativeIfNeeded({
   required ArgResults topLevel,
   required CoreResult result,
@@ -2097,7 +2121,12 @@ final _argParser = ArgParser(allowTrailingOptions: false)
   ..addCommand(
     'doctor',
     _commandParser()
-      ..addFlag('json', help: 'Emit machine-readable JSON')
+      ..addFlag(
+        'json',
+        help:
+            'Emit the JSON response envelope (default on non-TTY; '
+            'use on TTY for scripts).',
+      )
       ..addOption(
         'target',
         help:
@@ -2482,6 +2511,11 @@ Usage: flutter-mcp-toolkit doctor [--json] [--target <ws_uri>] [--timeout-ms <n>
 Examples:
   flutter-mcp-toolkit doctor
   flutter-mcp-toolkit doctor --json --target ws://127.0.0.1:8181/<token>/ws --timeout-ms 4000
+
+Output:
+  - TTY (interactive terminal): human-readable check table by default.
+  - Non-TTY (pipes, CI, agents): compact JSON envelope (same as before).
+  - --json: always emit the JSON envelope (machine-readable).
 
 Doctor checks include:
   - VM reachability

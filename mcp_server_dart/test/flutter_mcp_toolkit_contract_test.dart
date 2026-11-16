@@ -215,6 +215,78 @@ void main() {
     );
 
     test(
+      'doctor without --json on non-TTY emits compact JSON envelope',
+      () async {
+        final result = await _runCli(
+          statePath,
+          [
+            'doctor',
+            '--target',
+            'ws://127.0.0.1:1/unreachable/ws',
+            '--timeout-ms',
+            '50',
+          ],
+          environment: {'FLUTTER_MCP_TOOLKIT_DOCTOR_STDOUT_IS_TTY': '0'},
+        );
+
+        final stdout = (result.stdout as String).trim();
+        final envelope = jsonDecode(stdout) as Map<String, dynamic>;
+        expect(envelope['ok'], isTrue);
+        expect(envelope.containsKey('data'), isTrue);
+        expect(envelope.containsKey('meta'), isTrue);
+      },
+    );
+
+    test(
+      'doctor on TTY without --json emits human-readable output',
+      () async {
+        final result = await _runCli(
+          statePath,
+          [
+            'doctor',
+            '--target',
+            'ws://127.0.0.1:1/unreachable/ws',
+            '--timeout-ms',
+            '50',
+          ],
+          environment: {'FLUTTER_MCP_TOOLKIT_DOCTOR_STDOUT_IS_TTY': '1'},
+        );
+
+        final stdout = result.stdout as String;
+        expect(() => jsonDecode(stdout.trim()), throwsFormatException);
+        expect(stdout, contains('vm_target_reachable (critical)'));
+        expect(stdout, contains('fail —'));
+        expect(stdout, contains('pass,'));
+      },
+    );
+
+    test(
+      'doctor --json on TTY emits compact JSON envelope',
+      () async {
+        final result = await _runCli(
+          statePath,
+          [
+            'doctor',
+            '--json',
+            '--target',
+            'ws://127.0.0.1:1/unreachable/ws',
+            '--timeout-ms',
+            '50',
+          ],
+          environment: {'FLUTTER_MCP_TOOLKIT_DOCTOR_STDOUT_IS_TTY': '1'},
+        );
+
+        final stdout = (result.stdout as String).trim();
+        expect(stdout.startsWith('{'), isTrue);
+        final envelope = jsonDecode(stdout) as Map<String, dynamic>;
+        expect(envelope['ok'], isTrue);
+        final data = envelope['data'] as Map<String, dynamic>;
+        expect(data['checks'], isA<List>());
+        expect(data['summary'], isA<Map>());
+      },
+    );
+
+    test(
       'doctor emits required checks and critical-fail exit semantics',
       () async {
         final result = await _runCli(statePath, [
@@ -388,7 +460,11 @@ void main() {
   });
 }
 
-Future<ProcessResult> _runCli(String statePath, List<String> args) {
+Future<ProcessResult> _runCli(
+  String statePath,
+  List<String> args, {
+  Map<String, String>? environment,
+}) {
   final fullArgs = <String>[
     'run',
     'bin/flutter_mcp_toolkit.dart',
@@ -400,5 +476,8 @@ Future<ProcessResult> _runCli(String statePath, List<String> args) {
     'dart',
     fullArgs,
     workingDirectory: Directory.current.path,
+    environment: environment == null
+        ? null
+        : {...Platform.environment, ...environment},
   );
 }
