@@ -2541,7 +2541,7 @@ Optional skill installation copies mcp_server_dart/skills/$_runtimeValidationSki
 
 String _usageInit() => '''
 Usage:
-  flutter-mcp-toolkit init <claude-code|cursor|codex|cline|agents-skills|all> [--mode mcp|cli|auto] [--scope project|user]
+  flutter-mcp-toolkit init <claude-code|cursor|codex|cline|zcode|agents-skills|all> [--mode mcp|cli|auto] [--scope project|user]
   flutter-mcp-toolkit init intentcall-platform [--project-dir <path>] [--check]
 
 Examples:
@@ -2565,7 +2565,7 @@ Adds mcp_toolkit to a Flutter app and emits boilerplate for main.dart.
 Future<int> _runInitSubcommand(ArgResults command) async {
   if (command.rest.isEmpty) {
     io.stderr.writeln(
-      'Usage: flutter-mcp-toolkit init <claude-code|cursor|codex|cline|agents-skills|all|intentcall-platform>',
+      'Usage: flutter-mcp-toolkit init <claude-code|cursor|codex|cline|zcode|agents-skills|all|intentcall-platform>',
     );
     return 64;
   }

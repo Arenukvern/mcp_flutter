@@ -9,6 +9,6 @@ InitMode detectMode({
   if (binaryOnPath) return InitMode.cli;
   throw StateError(
     'Neither MCP server nor CLI binary detected. '
-    'Install with: curl -fsSL https://raw.githubusercontent.com/Arenukvern/flutter-mcp-toolkit/main/install.sh | bash',
+    'Install with: curl -fsSL https://raw.githubusercontent.com/Arenukvern/mcp_flutter/main/install.sh | bash',
   );
 }

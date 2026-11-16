@@ -4,67 +4,51 @@ String buildMcpToolkitServerInstructions(
   VMServiceConfigurationRecord configuration,
 ) =>
     '''
-Flutter Inspector MCP Server - AI Agent Guide
+Flutter MCP Toolkit Server — agent guide
 
-This server provides Flutter app inspection/debugging tools and dynamic runtime tool registration.
+Inspect and drive a **debug** Flutter app over the VM service. MCP tool names use the `fmt_*` prefix.
 
-## Core Static Tools
+## Default workflow (core loop)
 
-**Essential Tools (wire names use `fmt_*` prefix):**
-- fmt_connect_debug_app: Connect/select a target Flutter debug VM
-- fmt_discover_debug_apps: Discover running Flutter targets with canonical ws URIs
-- fmt_hot_reload_flutter: Hot reload the Flutter app for instant UI updates
-- fmt_get_vm: VM information and connection status
-- fmt_get_extension_rpcs: Extension RPCs available in the Flutter app
-- fmt_inspect_widget_at_point: Map screenshot coordinates to widget/render node
-- fmt_capture_ui_snapshot: Screenshots + layout + errors in one bundle
-  (on macOS / iOS Simulator, if host `desktop_window` capture fails, use
-  `screenshotMode: flutter_layer` in tool args for a reliable Flutter-layer shot)
+1. **Discover / connect** — `fmt_discover_debug_apps`, `fmt_connect_debug_app` (use `connection.uri` or `targetId` when multiple apps run).
+2. **See the UI** — `fmt_semantic_snapshot`, `fmt_get_screenshots`, `fmt_capture_ui_snapshot`, `fmt_get_app_errors`.
+   On macOS / iOS Simulator, if host `desktop_window` capture fails, pass `mode: flutter_layer` to `fmt_get_screenshots` or `screenshotMode: flutter_layer` to `fmt_capture_ui_snapshot`.
+3. **Act** — `fmt_tap_widget`, `fmt_enter_text`, `fmt_scroll`, `fmt_wait_for` (stable predicate after reload).
+4. **Reload + verify** — `fmt_hot_reload_flutter`, `fmt_hot_reload_and_capture`.
+${configuration.dynamicRegistrySupported ? '''
+5. **Dynamic tools** (when the app registers AgentCallEntry surfaces) — `fmt_list_client_tools_and_resources`, `fmt_client_tool`, `fmt_client_resource`. Runtime `addEntries` is picked up without a restart. After changes to startup registration code, run **`fmt_hot_restart_flutter`** (hot reload does not re-run `main`).
+   Skills: `flutter-mcp-toolkit-custom-tools`, `flutter-mcp-toolkit-intentcall-migration`.
+''' : ''}
+Supporting tools include `fmt_get_vm`, `fmt_get_view_details`, navigation/dialog helpers, and interaction catalog entries (`fmt_drag`, `fmt_swipe`, …). Install the `flutter-mcp-toolkit-*` skills or call `tools/list` for the live catalog.
 
 ${configuration.dumpsSupported ? '''
-**Debug Dump Tools (Heavy Operations - Use Sparingly):**
-- fmt_debug_dump_layer_tree: Dump complete layer tree structure
-- fmt_debug_dump_semantics_tree: Dump accessibility tree structure
-- fmt_debug_dump_render_tree: Dump render tree for layout debugging
-- fmt_debug_dump_focus_tree: Dump focus tree for navigation debugging
+## Debug dump tools (`--dumps` only)
+
+Heavy tree dumps — use sparingly:
+
+- `fmt_debug_dump_layer_tree`
+- `fmt_debug_dump_semantics_tree`
+- `fmt_debug_dump_render_tree`
+- `fmt_debug_dump_focus_tree`
 ''' : ''}
 
 ${configuration.resourcesSupported ? '''
-**Resources:**
-- visual://localhost/app/errors/latest: Get latest app errors with stack traces
-- visual://localhost/app/errors/{count}: Get specific number of recent errors
-- visual://localhost/view/details: Get comprehensive view details and properties
-- visual://localhost/view/screenshots: Get screenshots of all app views
-''' : '''
-**Error & View Tools:**
-- fmt_get_app_errors: App errors with diagnostic information
-- fmt_get_view_details: Detailed view information and widget tree
-- fmt_get_screenshots: Screenshots of all views for visual debugging
+## Static resources
+
+- `visual://localhost/app/errors/latest`
+- `visual://localhost/app/errors/{count}`
+- `visual://localhost/view/details`
+${configuration.imagesSupported ? '- `visual://localhost/view/screenshots`\n' : ''}''' : '''
+## Error and view tools (when resources are disabled)
+
+- `fmt_get_app_errors`, `fmt_get_view_details`, `fmt_get_screenshots`
 '''}
 
-${configuration.dynamicRegistrySupported ? '''
-## Dynamic Runtime Tools - AI Agent Workflow
+## Requirements
 
-1. Discovery: call `fmt_list_client_tools_and_resources` first.
-2. Execution: use `fmt_client_tool` for dynamic tools.
-3. Resources: use `fmt_client_resource` for dynamic resources.
-4. Activation: call `fmt_hot_reload_flutter` after app-side tool code changes.
-5. Verification: re-run `fmt_list_client_tools_and_resources` after reload/restart.
+- App runs in **debug** with VM service enabled.
+- App calls `mcp_toolkit` bootstrap (`MCPToolkitBinding` / `bootstrapFlutter`) before `runApp`.
+- Flutter-layer screenshots work with the app window in the background; host `desktop_window` capture may need foreground focus.
 
-For detailed dynamic/tool-creation flows, rely on skill docs to avoid prompt duplication:
-- flutter-mcp-toolkit-custom-tools (register AgentCallEntry / addMcpTool in the app)
-- flutter-mcp-toolkit-intentcall-migration (MCPCallEntry → AgentCallEntry CLI migrate)
-- flutter-mcp-toolkit-debug
-- flutter-mcp-toolkit-control
-''' : ''}
-
-## Connection Requirements
-
-- Flutter app must run in debug mode with VM service enabled.
-- Flutter app must initialize `mcp_toolkit`; otherwise app-level tools cannot work.
-- Default connection mode: auto-discover active Flutter debug targets.
-- Explicit selection: use `connection.targetId` with full VM websocket URI or `connection.uri`.
-- Dynamic tools register automatically when app calls `addMcpTool()`.
-
-Connect to a running Flutter app in debug mode to use these features.
+Connect to a running instrumented app to use these tools.
 ''';
