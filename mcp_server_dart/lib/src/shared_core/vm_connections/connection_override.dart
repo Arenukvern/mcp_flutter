@@ -129,11 +129,11 @@ Future<CoreResult?> applyConnectionOverrideFromResourceUri({
     if (query.containsKey('targetId')) 'targetId': query['targetId'],
     if (query.containsKey('mode')) 'mode': query['mode'],
     if (query.containsKey('host')) 'host': query['host'],
-    // Query values are strings, so `port` has to be decoded like
-    // `forceReconnect` below. Passing the raw string on made the strict
-    // parser reject every port a URI could carry ('8181' is not an int),
-    // so `?port=...` could only ever answer connect_failed.
-    if (query.containsKey('port')) 'port': jsonDecodeInt(query['port']),
+    // Query values are strings, so `port` must parse strictly as an integer
+    // (rejecting fractional or non-finite values such as '8181.9' or '1e999').
+    // Passing the raw string made the strict parser reject every URI port.
+    if (query.containsKey('port'))
+      'port': int.tryParse(query['port'] ?? '') ?? 0,
     if (query.containsKey('uri')) 'uri': query['uri'],
   };
 
