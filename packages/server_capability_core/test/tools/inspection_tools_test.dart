@@ -184,6 +184,24 @@ void main() {
       expect(cmd.viewId, isNull);
     });
 
+    test('inspect_widget_at_point keeps viewId 0', () async {
+      // The engine's first FlutterView has id 0. The zero-means-absent rule
+      // exists for snapshotId; applying it here silently retargeted an
+      // explicit view request at whichever view held the point.
+      final runner = FakeCommandRunner()
+        ..nextExecuteResult = CoreResult.success(data: {});
+      final ctx = _registeredCtx(runner: runner);
+      final reg = ctx.registrationFor('inspect_widget_at_point')!;
+      final result = await reg.handler(const <String, Object?>{
+        'x': 10,
+        'y': 20,
+        'viewId': 0,
+      });
+      expect(result.ok, isTrue);
+      final cmd = runner.executedCommands.first as InspectWidgetAtPointCommand;
+      expect(cmd.viewId, 0);
+    });
+
     test('inspect_widget_at_point handler rejects missing x and y', () async {
       final runner = FakeCommandRunner();
       final ctx = _registeredCtx(runner: runner);
