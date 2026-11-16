@@ -11,11 +11,7 @@ production E2E loop (see [ADR-0015](../../decisions/0015_flutter_mcp_harness_ext
 A guided tour lives in the
 [E2E scenarios](../../docs/use-cases/e2e-scenarios.mdx).
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/Arenukvern/mcp_flutter/main/docs/assets/gifs/harness-flutter.gif" alt="make drive-flutter-chrome: ToolkitDriver on showcase/flutter_demo" width="960" />
-</p>
-
-Recorded from the repo showcase drives — see [`showcase/drivers/bin/drive_flutter.dart`](../../showcase/drivers/bin/drive_flutter.dart), [`makefile`](../../makefile) (`drive-flutter-chrome` / `drive-web`), and vhs sources under [`docs/assets/gifs/`](../../docs/assets/gifs/).
+Recorded harness drives and GIFs: [Testing / E2E scenarios](../../docs/use-cases/e2e-scenarios.mdx) (`make drive-flutter-chrome`, `make drive-web`).
 
 **macOS shot-list (not recorded in Linux CI):** `make drive-flutter` with the app window beside the terminal; two-instance pairing via `dart run example/desktop_pair.dart --skip-build`.
 

@@ -9,9 +9,9 @@ Set Width 1008
 Set Height 540
 Set Padding 24
 Set Theme "GitHub Dark"
-Set PlaybackSpeed 2.5
+Set PlaybackSpeed 2.0
 Set MarginFill "#0d1117"
 
 Type "make drive-flutter-chrome"
 Enter
-Sleep 24s
+Sleep 38s

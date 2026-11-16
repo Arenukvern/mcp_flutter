@@ -3,13 +3,29 @@ title: E2E scenarios
 description: Repeatable Dart scenarios with flutter_mcp_harness.
 ---
 
-# E2E scenarios
+# Testing / E2E scenarios
 
-When a flow should run in **CI** or on a schedule, promote it from chat to **checked-in Dart** using **`flutter_mcp_harness`**.
+When a flow should run in **CI** or on a schedule, promote it from chat to **checked-in Dart** using **`flutter_mcp_harness`**. Showcase demos live under [`showcase/`](../../showcase/README.md).
 
-![Instrumented tier: make drive-flutter-chrome (ToolkitDriver on showcase/flutter_demo)](../assets/gifs/harness-flutter.gif)
+## Browser tier (`showcase/web_demo`)
 
-![Browser tier: make drive-web (CdpDriver on showcase/web_demo)](../assets/gifs/harness-web.gif)
+![make drive-web: CdpDriver observe → act → verify](../assets/gifs/harness-web.gif)
+
+```bash
+make drive-web
+```
+
+Case: static page in headless Chrome — CDP accessibility tree, increment/type/profile, **`OK`** on stdout. Sources: [`showcase/web_demo/`](../../showcase/web_demo/), [`showcase/drivers/bin/drive_web.dart`](../../showcase/drivers/bin/drive_web.dart).
+
+## Instrumented tier (`showcase/flutter_demo`)
+
+![make drive-flutter-chrome: ToolkitDriver on the showcase Flutter app](../assets/gifs/harness-flutter.gif)
+
+```bash
+make drive-flutter-chrome
+```
+
+Case: `ToolkitDriver` over the VM service — semantic tree, **Count: 3**, screencast frames, named route, ending **`OK — one driver contract, one instrumented Flutter app.`** Sources: [`showcase/flutter_demo/`](../../showcase/flutter_demo/), [`showcase/drivers/bin/drive_flutter.dart`](../../showcase/drivers/bin/drive_flutter.dart). Requires sibling **intentcall** checkout (`tool/ci/checkout_intentcall.sh`).
 
 ## Shape
 

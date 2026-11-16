@@ -1,8 +1,11 @@
-# Regenerate: bash docs/assets/gifs/regenerate_cli_gifs.sh (injects __VM_WS_URI__).
-# Off-camera warm: headless flutter run on showcase/flutter_demo (pinned VM port).
+# Regenerate: vhs docs/assets/gifs/cli-exec.tape
+# Hide: repo showcase launcher (flutter_test_app, pinned VM port via VM_HOST_PORT).
+# Show: fmtk auto-discovery from showcase/flutter_test_app cwd (no URI injection).
+# Note: Chrome DWDS still uses per-session auth tokens — tokenless ws://127.0.0.1:8181/ws
+# applies to macOS/desktop with --disable-service-auth-codes, not this web warm path.
 Output docs/assets/gifs/cli-exec.gif
 
-Require bash
+Require make
 Set Shell "bash"
 Set FontSize 14
 Set Width 1008
@@ -12,6 +15,17 @@ Set Theme "GitHub Dark"
 Set PlaybackSpeed 1.35
 Set MarginFill "#0d1117"
 
-Type "flutter-mcp-toolkit --vm-service-uri __VM_WS_URI__ exec --name semantic_snapshot --pretty"
+Hide
+Type "make showcase-stop"
 Enter
-Sleep 10s
+Sleep 2s
+Type "WEB_HEADLESS=1 dart run packages/harness/tool/showcase.dart --web --detach"
+Enter
+Sleep 90s
+
+Show
+Type "cd showcase/flutter_test_app"
+Enter
+Type "flutter-mcp-toolkit exec --name semantic_snapshot --pretty"
+Enter
+Sleep 12s

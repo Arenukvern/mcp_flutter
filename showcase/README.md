@@ -30,9 +30,7 @@ make drive-flutter            # macOS (first build takes minutes)
 make drive-flutter-chrome     # Flutter web
 ```
 
-<p align="center">
-  <img src="../docs/assets/gifs/harness-flutter.gif" alt="make drive-flutter-chrome: semantic tree, Increment ×3, Count: 3, OK" width="960" />
-</p>
+Recording: [E2E scenarios — instrumented tier](../docs/use-cases/e2e-scenarios.mdx#instrumented-tier-showcaseflutter_demo).
 
 or directly:
 
@@ -58,9 +56,7 @@ make drive-web                # headless Chrome
 make drive-web VISIBLE=1      # watch it
 ```
 
-<p align="center">
-  <img src="../docs/assets/gifs/harness-web.gif" alt="make drive-web: CDP accessibility tree, profile greeting, OK" width="960" />
-</p>
+Recording: [E2E scenarios — browser tier](../docs/use-cases/e2e-scenarios.mdx#browser-tier-showcaseweb_demo).
 
 or directly:
 
