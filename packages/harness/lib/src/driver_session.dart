@@ -16,8 +16,11 @@ import 'toolkit_driver.dart';
 /// Connection ownership stays with [LaunchedApp]: [ToolkitDriver.close]
 /// releases the driver, not the process or its VM service (the target
 /// that launched the app keeps owning those).
-Future<ToolkitDriver> attachDriver(LaunchedApp app) async =>
-    ToolkitDriver(await app.vm());
+Future<ToolkitDriver> attachDriver(LaunchedApp app) async {
+  final client = await app.vm();
+  await client.waitForToolkitExtensions();
+  return ToolkitDriver(client);
+}
 
 /// Observe-until helpers over the driver's semantic snapshot — the
 /// retry-until-rendered loop every drive program needs (a tap lands
