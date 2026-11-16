@@ -153,7 +153,7 @@ Pass `--web-browser-debugging-port <cdp>` if CDP discovery fails.
 
 ## Related
 
-- `docs/superpowers/evals/2026-05-26-webmcp-verification.md`
+- `maintainers/superpowers/evals/2026-05-26-webmcp-verification.md`
 - `flutter-mcp-cli-runtime-validation` — validate-runtime details
 - `flutter-mcp-toolkit-dogfood-iterations` — scored iterations
 - `flutter-mcp-e2e-harness` — programmatic scenarios over this showcase (`packages/harness`, `--web --detach` variant)

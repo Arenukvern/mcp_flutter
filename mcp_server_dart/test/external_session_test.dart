@@ -3,8 +3,8 @@
 
 // Exercises [ExternalSessionRunnerControl] against a fake external-runner TCP
 // control server speaking the frozen JSON-lines dev-session contract (spec
-// v2; see docs/guides/dev-session-delegation-roadmap.mdx, "The dev session
-// contract (spec v2)").
+// v2; see docs/concepts/external-runner-contract.mdx and
+// docs/decisions/0014_external_dev_sessions_runner_delegation.mdx.
 
 import 'dart:async';
 import 'dart:convert';

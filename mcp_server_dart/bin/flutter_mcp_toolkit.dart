@@ -2731,7 +2731,7 @@ Examples:
   flutter-mcp-toolkit migrate mcp-call-entry --write --namespace my_app lib/
 
 Migrates legacy MCPCallEntry tool/resource factories to AgentCallEntry (Phase 6b hard cut shipped).
-See docs/start_here/migration_mcp_call_entry_to_agent_call_entry.md for limitations.
+See docs/migration/migration_mcp_call_entry_to_agent_call_entry.md for limitations.
 ''';
 
 Future<int> _runWebmcpSubcommand(ArgResults command) async {
@@ -2786,7 +2786,7 @@ Usage:
       [--tool-name NAME --tool-args JSON --expect-result-field FIELD --expect-result-value VALUE]
 
 Enables repeatable WebMCP E2E on Chrome without manual chrome://flags each session.
-See docs/superpowers/evals/2026-05-26-webmcp-verification.md
+See maintainers/superpowers/evals/2026-05-26-webmcp-verification.md
 ''';
 
 String _usageWebmcpChromeArgs() => '''

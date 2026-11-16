@@ -1,0 +1,64 @@
+---
+title: How it works
+description: Architecture from Flutter debug app to AI agent in plain English.
+---
+
+# How it works
+
+## Historical note
+
+This repo started as a **Flutter Inspector MCP server** when there was no official Dart MCP stack. It is now **flutter-mcp-toolkit**: a Dart MCP server plus in-app package focused on **semantic UI automation**, not only VM introspection.
+
+## The loop
+
+1. Your **Flutter app** runs in **debug** with `package:mcp_toolkit`.
+2. The app registers **VM service extensions** (`ext.mcp.toolkit.*`).
+3. **`flutter-mcp-toolkit-server`** (or the CLI) connects to the Dart VM.
+4. Your **AI agent** calls MCP tools (`fmt_*`) to snapshot, tap, type, reload, and read logs.
+5. Optional: the app registers **custom tools** at runtime; the server bridges them via the dynamic registry.
+
+```text
+ AI client ──stdio──► flutter-mcp-toolkit-server ──VM service──► Flutter app (mcp_toolkit)
+                              │
+                         fmt_* tools + resources
+```
+
+## Layers
+
+| Layer | What it is |
+| --- | --- |
+| **In-app** | `mcp_toolkit` — extensions, snapshots, gestures, dynamic entries |
+| **Server** | `mcp_server_dart` — discovery, doctor, MCP transport, CLI catalog |
+| **Agent** | Skills + `fmt_*` tools in chat, or `flutter-mcp-toolkit` / harness in CI |
+
+Deeper contributor view: [ADRs](../decisions/index.mdx) and [North Star](../NORTH_STAR.md).
+
+## Official Dart MCP vs this toolkit
+
+| | Official Dart MCP | flutter-mcp-toolkit |
+| --- | --- | --- |
+| Focus | Dart SDK / analysis / VM APIs | Flutter **UI** and app-specific automation |
+| App change | Usually none | **`mcp_toolkit` in the app** |
+| UI driving | Not the primary goal | Semantic snapshot, tap, scroll, forms, etc. |
+
+They complement each other.
+
+## Seeing the app (screenshots and evidence)
+
+Flutter captures come from the app's own render pipeline over the Dart VM service: they work while the window is in the **background** and need no screen-recording consent. macOS-native capture is the wrong tool for Flutter UI evidence.
+
+| When you need… | Use |
+| --- | --- |
+| A screenshot / UI state of the Flutter app | MCP `fmt_get_screenshots` (or CLI `get_screenshots`) |
+| No MCP server attached | `dart run packages/harness/tool/shot.dart` with VM URI |
+| Repeatable E2E scenarios | `flutter_mcp_harness` — [automation chain](./automation-chain.mdx) |
+| A web build | Browser CDP tier in the automation chain |
+| macOS-native pixels of a **non-Flutter** app | OS automation tier (needs foreground / TCC) |
+
+If host **`desktop_window`** capture fails, the CLI may retry **`flutter_layer`**; prefer Flutter-layer tools for instrumented apps.
+
+## Related
+
+- [Glossary](./glossary.mdx)
+- [Quickstart](../quickstart.mdx)
+- [Automation chain](./automation-chain.mdx)

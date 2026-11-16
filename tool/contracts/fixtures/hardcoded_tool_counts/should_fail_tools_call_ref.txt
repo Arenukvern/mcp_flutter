@@ -1,0 +1,1 @@
+Ships 34 tools; see tools/call naming in the MCP spec.

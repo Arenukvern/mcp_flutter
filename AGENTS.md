@@ -1,90 +1,64 @@
-<!-- gitnexus:start -->
-# GitNexus — Code Intelligence
+# Agent guide — editing `mcp_flutter`
 
-This project is indexed by GitNexus as **mcp_flutter** (5951 symbols, 12839 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+For **using** the toolkit on a Flutter app, read [llms.txt](./llms.txt) and [docs/quickstart.mdx](docs/quickstart.mdx). This file is for agents changing **this repository**.
 
-> Index stale? Run `node .gitnexus/run.cjs analyze` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? `npx gitnexus analyze` (npm 11 crash → `npm i -g gitnexus`; #1939).
+## Repo map
 
-## Always Do
+| Path | Purpose |
+| --- | --- |
+| `mcp_server_dart/` | MCP server + CLI (`flutter-mcp-toolkit`, `flutter-mcp-toolkit-server`) |
+| `mcp_toolkit/` | Flutter app package (pub.dev) |
+| `packages/core`, `capability_*` | Shared types and `fmt_*` capabilities |
+| `packages/harness/` | `flutter_mcp_harness` automation |
+| `plugin/skills/` | Source skills → `skill_assets.g.dart` |
+| `docs/` | docs.page site |
+| `maintainers/` | Evidence, superpowers plans (not user onboarding) |
+| `tool/contracts/` | CI contract scripts |
 
-- **MUST run impact analysis before editing any symbol.** Before modifying a function, class, or method, run `impact({target: "symbolName", direction: "upstream"})` and report the blast radius (direct callers, affected processes, risk level) to the user.
-- **MUST run `detect_changes()` before committing** to verify your changes only affect expected symbols and execution flows. For regression review, compare against the default branch: `detect_changes({scope: "compare", base_ref: "main"})`.
-- **MUST warn the user** if impact analysis returns HIGH or CRITICAL risk before proceeding with edits.
-- When exploring unfamiliar code, use `query({search_query: "concept"})` to find execution flows instead of grepping. It returns process-grouped results ranked by relevance.
-- When you need full context on a specific symbol — callers, callees, which execution flows it participates in — use `context({name: "symbolName"})`.
-- For security review, `explain({target: "fileOrSymbol"})` lists taint findings (source→sink flows; needs `analyze --pdg`).
+## Build / test / check
 
-## Never Do
+```bash
+make install          # mcp_server_dart deps
+make build            # compile server/CLI
+make check-contracts  # full gate (needs flutter + steward)
+make sync-skills      # regenerate skill_assets.g.dart
+make docs-reference   # regenerate docs/reference/*.mdx
+```
 
-- NEVER edit a function, class, or method without first running `impact` on it.
-- NEVER ignore HIGH or CRITICAL risk warnings from impact analysis.
-- NEVER rename symbols with find-and-replace — use `rename` which understands the call graph.
-- NEVER commit changes without running `detect_changes()` to check affected scope.
+Focused:
 
-## Resources
+```bash
+cd mcp_server_dart && flutter pub get && dart test
+dart analyze packages/harness && cd packages/harness && dart test
+steward probe --json --profile quick
+```
 
-| Resource | Use for |
-|----------|---------|
-| `gitnexus://repo/mcp_flutter/context` | Codebase overview, check index freshness |
-| `gitnexus://repo/mcp_flutter/clusters` | All functional areas |
-| `gitnexus://repo/mcp_flutter/processes` | All execution flows |
-| `gitnexus://repo/mcp_flutter/process/{name}` | Step-by-step execution trace |
+Never edit `pubspec_overrides.yaml`. Do not weaken test assertions.
 
-## CLI
+## Runtime evidence (Flutter UI)
 
-| Task | Read this skill file |
-|------|---------------------|
-| Understand architecture / "How does X work?" | `.claude/skills/gitnexus/gitnexus-exploring/SKILL.md` |
-| Blast radius / "What breaks if I change X?" | `.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` |
-| Trace bugs / "Why is X failing?" | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md` |
-| Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
-| Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
-| Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
+Flutter captures use the app render pipeline over the VM service — they work with the window in the **background**. Prefer `fmt_get_screenshots` / harness `shot.dart` over macOS screen recording for Flutter UI proof.
 
-<!-- gitnexus:end -->
+| Need | Use |
+| --- | --- |
+| Screenshot / UI state | MCP `fmt_get_screenshots` or `packages/harness/tool/shot.dart` |
+| Repeatable E2E | skill `flutter-mcp-e2e-harness` |
+| Web build | CDP tier in automation chain |
 
-## Seeing the app (runtime evidence — read before any UI task)
+## Docs invariants
 
-Flutter captures come from the app's own render pipeline over the Dart VM
-service: they work while the window is in the background and need no
-screen-recording consent. macOS-native capture is the wrong tool for
-Flutter UI evidence.
+- **No hard-coded MCP tool counts** in prose — only in generated `docs/reference/`.
+- Run `make docs-reference` when tools/CLI help change.
+- `check_no_hardcoded_tool_counts.sh` enforces the rule.
 
-| When you need… | Use |
-|---|---|
-| A screenshot / UI state of the Flutter app | toolkit MCP tool `get_screenshots` (mounted as `flutter-mcp-toolkit`; ZCode workspace mount in `.zcode/config.json`, recreated with `flutter-mcp-toolkit init zcode`) |
-| No MCP server attached | `packages/harness` one-shot: `dart run packages/harness/tool/shot.dart <out-dir> [<vm-service-uri>]` (or `LA_VM_URI` env) |
-| Repeatable E2E scenarios, widget driving | skill `flutter-mcp-e2e-harness` (`packages/harness`) · chain overview: skill `flutter-mcp-automation-chain` |
-| A web build | universal-automation CDP tier is fine |
-| macOS-native pixels of a non-Flutter app | universal-automation `--os` tier (last resort: needs TCC grants + focus) |
+## IntentCall boundary
 
-If a universal-automation capture/observe fails on a Flutter desktop app,
-do not retry it — switch tier to `get_screenshots` or the harness. Toolkit
-skills are vendored in `.agents/skills/` from `plugin/skills/`.
+Consumer only — architecture lives in upstream IntentCall. See `docs/intentcall/README.md` and hosted dependency gates in `make check-contracts`.
 
-## IntentCall consumer boundary
+## Skill Steward
 
-`mcp_flutter` is a production-grade consumer and proof repo for IntentCall. It does not define IntentCall architecture.
+`steward doctor --json` → `steward probe --json --profile quick` before complex automation. Inspect actions with `steward action inspect <id> --json`.
 
-| Question | Go to |
-|---|---|
-| Canonical IntentCall design / AX / DX | [IntentCall North Star](https://github.com/Arenukvern/intentcall/blob/main/docs/NORTH_STAR.mdx) |
-| Consumer integration, hosted dependencies, and proof gates | `docs/intentcall/README.md` |
-| Legacy call-entry migration | `docs/start_here/migration_mcp_call_entry_to_agent_call_entry.md` |
-| Automation chain (harness, drivers, oka) | `docs/start_here/automation_chain.mdx` · skill `flutter-mcp-automation-chain` · `packages/harness/` |
-| Non-IntentCall forward index | `docs/superpowers/WHATS_NEXT.md` |
+## GitNexus (if available)
 
-Implemented IntentCall plans/specs/tracker/closures were removed after durable extraction. Agents should validate hosted `intentcall_*` dependencies and regression gates, not re-run the initial publish/cutover.
-
-## Governance & Skill Steward
-
-This repository strictly adheres to the Cascading Agent Surface architecture governed by **Skill Steward**.
-When writing code, documentation, or planning features:
-1. Start with `steward doctor --json`, then `steward actions list --json`.
-2. If `steward` is missing or stale, install the released CLI with `curl -fsSL https://raw.githubusercontent.com/Arenukvern/skill_steward/main/install.sh | bash`. For local Skill Steward development, run from the Skill Steward checkout with `cd packages/steward_cli && dart run :steward <command>`, or activate that checkout with `dart pub global activate --source path packages/steward_cli`. Do not copy absolute SDK paths, raw `dart --packages=.../steward.dart` commands, or adopter-local runner scripts into reusable docs.
-3. Inspect any intended action before execution: `steward action inspect <id> --json`.
-4. Use `steward probe --json --profile quick` for the safe first pass.
-5. Use `steward benchmark --scenario mcp_flutter.contract-status-smoke --strict --json` for the first contract-smoke scenario. This is not WebMCP runtime proof.
-6. For the hosted IntentCall dependency gate, inspect `fmt.check.intentcall-hosted-deps` and benchmark `mcp_flutter.intentcall-hosted-cutover`; promotion evidence is in `docs/evidence/steward-h5-hosted-cutover-promotion-2026-06-10.mdx`.
-7. For the full native gate, inspect `fmt.check.contracts-full` for effects metadata, then run `make check-contracts`; keep it out of `probes.quick` because it may touch local Dart package state.
-8. If you discover new complex automations or bug fixes, capture them as observations / unknown cases first; promote only after review.
+Index: `node .gitnexus/run.cjs analyze`. Before editing symbols: `impact({target, direction: "upstream"})`. Before commit: `detect_changes()`. Skills under `.claude/skills/gitnexus/`.

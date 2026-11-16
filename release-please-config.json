@@ -80,7 +80,8 @@
           "type": "json",
           "path": "mcp_server_dart/server.json",
           "jsonpath": "$.version"
-        }
+        },
+        "docs/install/docker.mdx"
       ]
     }
   }

@@ -24,7 +24,7 @@
       },
       {
         "title": "Get started",
-        "href": "/ai_agents/execution_playbook",
+        "href": "/quickstart",
         "cta": true
       }
     ]
@@ -37,8 +37,8 @@
     },
     {
       "icon": "book-open",
-      "title": "Smithery",
-      "href": "https://smithery.ai/server/@Arenukvern/mcp_flutter"
+      "title": "MCP Registry",
+      "href": "https://registry.modelcontextprotocol.io/v0/servers/io.github.Arenukvern%2Fflutter-mcp-toolkit/versions"
     }
   ],
   "social": {
@@ -62,173 +62,69 @@
   },
   "sidebar": [
     {
-      "group": "Start Here",
+      "group": "Get started",
       "pages": [
-        {
-          "title": "Overview",
-          "href": "/"
-        },
-        {
-          "title": "Why This Repo Matters",
-          "href": "/start_here/why_this_repo_matters"
-        },
-        {
-          "title": "Feature Map",
-          "href": "/start_here/feature_map"
-        },
-        {
-          "title": "Docs Map",
-          "href": "/start_here/docs_map"
-        },
-        {
-          "title": "CLI vs MCP",
-          "href": "/start_here/cli_vs_mcp"
-        },
-        {
-          "title": "The Automation Chain",
-          "href": "/start_here/automation_chain"
-        },
-        {
-          "title": "CLI Quick Recipes",
-          "href": "/start_here/cli_quick_recipes"
-        },
-        {
-          "title": "Video Walkthroughs",
-          "href": "/start_here/video_walkthroughs"
-        }
+        { "title": "Overview", "href": "/" },
+        { "title": "Quickstart", "href": "/quickstart" },
+        { "title": "Client setup", "href": "/install/clients" },
+        { "title": "App setup", "href": "/install/app-setup" },
+        { "title": "Platforms", "href": "/install/platforms" },
+        { "title": "Docker", "href": "/install/docker" }
       ]
     },
     {
-      "group": "For Humans",
+      "group": "Use cases",
       "pages": [
-        {
-          "title": "Debugging Workflow",
-          "href": "/guides/debugging_workflow"
-        },
-        {
-          "title": "Interaction Cookbook",
-          "href": "/guides/interaction_cookbook"
-        },
-        {
-          "title": "E2E Scenarios",
-          "href": "/guides/e2e_scenarios"
-        },
-        {
-          "title": "Creating Dynamic Tools",
-          "href": "/guides/creating_dynamic_tools"
-        },
-        {
-          "title": "Common Issues",
-          "href": "/troubleshooting/common_issues"
-        }
+        { "title": "Debug a running app", "href": "/use-cases/debug-a-running-app" },
+        { "title": "See the UI", "href": "/use-cases/see-the-ui" },
+        { "title": "Drive the UI", "href": "/use-cases/drive-the-ui" },
+        { "title": "Hot reload loop", "href": "/use-cases/hot-reload-loop" },
+        { "title": "Custom tools", "href": "/use-cases/custom-tools" },
+        { "title": "CI and scripts", "href": "/use-cases/ci-and-scripts" },
+        { "title": "E2E scenarios", "href": "/use-cases/e2e-scenarios" },
+        { "title": "Multiple apps", "href": "/use-cases/multiple-apps" }
       ]
     },
     {
-      "group": "For AI Agents",
+      "group": "Concepts",
       "pages": [
-        {
-          "title": "AI Agent Overview",
-          "href": "/ai_agents/overview"
-        },
-        {
-          "title": "Execution Playbook",
-          "href": "/ai_agents/execution_playbook"
-        },
-        {
-          "title": "Steward H5 Hosted Cutover",
-          "href": "/evidence/steward-h5-hosted-cutover-promotion-2026-06-10"
-        },
-        {
-          "title": "Steward Runtime Text Input",
-          "href": "/evidence/steward-runtime-text-input-capability-2026-06-10"
-        },
-        {
-          "title": "AI Troubleshooting",
-          "href": "/ai_agents/troubleshooting"
-        }
+        { "title": "How it works", "href": "/concepts/how-it-works" },
+        { "title": "CLI vs MCP", "href": "/concepts/cli-vs-mcp" },
+        { "title": "Automation chain", "href": "/concepts/automation-chain" },
+        { "title": "Glossary", "href": "/concepts/glossary" }
       ]
     },
     {
-      "group": "Core Reference",
+      "group": "Reference",
       "pages": [
-        {
-          "title": "Architecture",
-          "href": "/core/project_architecture"
-        },
-        {
-          "title": "MCP Configuration",
-          "href": "/core/mcp_configuration"
-        },
-        {
-          "title": "Dynamic Tool Registry",
-          "href": "/core/dynamic_tools_registry"
-        }
+        { "title": "MCP tools", "href": "/reference/tools" },
+        { "title": "Resources", "href": "/reference/resources" },
+        { "title": "CLI", "href": "/reference/cli" },
+        { "title": "Server flags", "href": "/reference/server-flags" },
+        { "title": "Errors", "href": "/reference/errors" },
+        { "title": "Skills", "href": "/reference/skills" }
       ]
     },
     {
-      "group": "Decisions",
+      "group": "Help",
       "pages": [
-        {
-          "title": "Overview",
-          "href": "/decisions"
-        },
-        {
-          "title": "0001 — Capability kernel + tool prefix",
-          "href": "/decisions/0001_capability_kernel_and_tool_prefix"
-        },
-        {
-          "title": "0002 — v3.0.0 scope and consolidation deferrals",
-          "href": "/decisions/0002_v3_scope_and_consolidation_deferrals"
-        },
-        {
-          "title": "0003 — P0 wait_for design",
-          "href": "/decisions/0003_p0_wait_for_design"
-        },
-        {
-          "title": "0004 — P1 keyboard, dialog, navigate",
-          "href": "/decisions/0004_p1_keyboard_dialog_navigate"
-        },
-        {
-          "title": "0005 — P2 fill_form, hover, select_option drop",
-          "href": "/decisions/0005_p2_fill_form_hover_select_option"
-        },
-        {
-          "title": "0013 — MCP Registry publish pipeline hardening",
-          "href": "/decisions/0013_mcp_registry_publish_hardening"
-        },
-        {
-          "title": "0014 — External dev sessions & runner delegation",
-          "href": "/decisions/0014_external_dev_sessions_runner_delegation"
-        },
-        {
-          "title": "0015 — flutter_mcp_harness extraction",
-          "href": "/decisions/0015_flutter_mcp_harness_extraction"
-        }
+        { "title": "Troubleshooting", "href": "/troubleshooting" },
+        { "title": "Migration v2 → v3", "href": "/migration/migration_v2_to_v3" },
+        { "title": "Projections migration", "href": "/migration/migration_toolkit_projections" },
+        { "title": "Agent call entry migration", "href": "/migration/migration_mcp_call_entry_to_agent_call_entry" },
+        { "title": "ADR index", "href": "/decisions" },
+        { "title": "Contributing", "href": "/contributing/guide" },
+        { "title": "Contributors", "href": "/contributing/contributors" }
       ]
     },
     {
-      "group": "Contributing",
+      "group": "Maintainers",
       "pages": [
-        {
-          "title": "Contribution Guide",
-          "href": "/contributing/contribution_guide"
-        },
-        {
-          "title": "Contributors",
-          "href": "/contributing/contributors"
-        },
-        {
-          "title": "Security",
-          "href": "https://github.com/Arenukvern/mcp_flutter/blob/main/SECURITY.md"
-        },
-        {
-          "title": "Docs Maintenance",
-          "href": "/contributing/docs_maintenance"
-        },
-        {
-          "title": "MCP Registry Publish Runbook",
-          "href": "/contributing/mcp_registry_publish_runbook"
-        }
+        { "title": "Evidence archive", "href": "https://github.com/Arenukvern/mcp_flutter/tree/main/maintainers/evidence" },
+        { "title": "Superpowers / plans", "href": "https://github.com/Arenukvern/mcp_flutter/tree/main/maintainers/superpowers" },
+        { "title": "Marketplace runbook", "href": "/contributing/marketplace_submission_runbook" },
+        { "title": "Registry publish runbook", "href": "/contributing/mcp_registry_publish_runbook" },
+        { "title": "Docs maintenance", "href": "/contributing/docs_maintenance" }
       ]
     }
   ]

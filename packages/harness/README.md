@@ -9,7 +9,7 @@ transport required.
 This is the client-side counterpart of `mcp_toolkit`, extracted from a
 production E2E loop (see [ADR-0015](../../decisions/0015_flutter_mcp_harness_extraction.mdx)).
 A guided tour lives in the
-[E2E scenarios guide](../../docs/guides/e2e_scenarios.mdx).
+[E2E scenarios](../../docs/use-cases/e2e-scenarios.mdx).
 
 ## Quick start
 

@@ -1,4 +1,8 @@
-# Changelog
+# Changelog (mcp_server_dart package)
+
+Release notes for the **repository train** are in the [root CHANGELOG.md](../CHANGELOG.md). This file keeps **package-local** history (pre-consolidation and server-specific notes).
+
+
 
 ## [unreleased]
 

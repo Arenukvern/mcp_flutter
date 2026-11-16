@@ -1,0 +1,133 @@
+# ADR 0003 — P0: `wait_for` design
+
+- **Status:** Accepted
+- **Shipped:** v3.0.0 (commit `0df147e`, 2026-04-27)
+- **Sources:** `docs/superpowers/plans/2026-04-27-wait-for.md` (deleted in commit `20c2e14`; recoverable from git history)
+
+## Context
+
+Pre-`wait_for`, agent loops to wait for UI state had to alternate
+`tap_widget → sleep N → semantic_snapshot → check → repeat`. Each iteration
+cost a round-trip and a snapshot, both token-expensive, and the sleep
+durations were guesswork. Server-side polling would have multiplied the
+problem (every poll is an MCP round-trip).
+
+## Decision
+
+`wait_for` is **toolkit-side blocking await**: a new `WaitPredicateService`
+runs the polling loop *inside* the Flutter app. The MCP server forwards a
+single VM-service extension call; the server does not poll. On success, the
+response includes a fresh `snapshot_id` and condensed snapshot — saving the
+follow-up round-trip an agent would otherwise need.
+
+### Predicate language (v1)
+
+Four kinds. Single predicate per call. No combinators.
+
+| Kind | Args | Semantics |
+| --- | --- | --- |
+| `text` | `text: String` | Substring present anywhere in the semantic snapshot. |
+| `noText` | `text: String` | Substring absent from the semantic snapshot. |
+| `time` | `ms: int` | Fixed delay; resolves after `ms` milliseconds. |
+| `stable` | `stableWindowMs: int` | No semantic change for the given window. |
+
+### Polling cadence
+
+- `time` uses `Future.delayed`.
+- `text`, `noText`, `stable` loop on `WidgetsBinding.instance.endOfFrame` —
+  wakes exactly once per frame, lower latency than a wall-clock timer and no
+  busy-wait.
+
+### Timeout
+
+`timeoutMs` arg, default `5000`, max `30000`. Exceeding the max is a
+400-class arg validation error.
+
+### Snapshot interaction
+
+Internal polling uses a non-counter-bumping read on the semantic-snapshot
+service (`peekSemanticSnapshot()`). Only the *final* successful snapshot
+bumps `_snapshotCounter` — exactly one increment per `wait_for` call. This
+preserves the LLM's outstanding `snapshotId` until `wait_for` resolves with
+the new one.
+
+### Return shape
+
+Success:
+
+```json
+{
+  "matched": true,
+  "predicate": { "...": "echo of input" },
+  "elapsedMs": 142,
+  "snapshot_id": "...",
+  "nodes": [ /* condensed snapshot */ ],
+  "nodeCount": 47
+}
+```
+
+Timeout (structured error):
+
+```json
+{
+  "code": "wait_timeout",
+  "details": {
+    "elapsedMs": 5000,
+    "predicate": { "...": "echo of input" },
+    "lastSnapshotId": "..."
+  }
+}
+```
+
+Error codes added to `CoreErrorCode`: `wait_timeout`, `wait_for_failed`.
+
+## Consequences
+
+**What changed:**
+- Agents can replace `tap_widget → sleep → snapshot → check` loops with a
+  single `wait_for` call. The success payload carries the snapshot, so a
+  second `semantic_snapshot` call after `wait_for` is redundant.
+- `WaitPredicateService` is the canonical place for any future blocking
+  predicate (e.g. element-visible-in-rect, animation-complete) — the wire
+  format is `kind`-based and extensible.
+- Established the "predicate echo" pattern: the response echoes the input
+  predicate so the agent doesn't have to remember what it asked for.
+
+**What we paid:**
+- Polling lives inside the Flutter app, so a wedged isolate makes `wait_for`
+  unresponsive until the VM-service times out the extension call. There's
+  no server-side escape valve. `timeoutMs` is the only safety net.
+- Predicate kinds are stringly-typed at the wire; toolkit decodes via
+  `jsonDecodeString`/`jsonDecodeInt` per arg.
+
+## Notes
+
+**FakeAsync deadlock (test-time gotcha).** The `time` predicate must be
+tested with plain `test()`, not `testWidgets()`. `testWidgets` runs under
+FakeAsync, and awaiting `Future.delayed(...)` inside `waitFor` blocks the very
+`tester.pump(duration)` that would advance fake time, producing a deadlock.
+
+**Parallel-pump pattern (test-time gotcha).** For the frame-driven
+predicates (`text`, `noText`, `stable`), tests must kick off the future
+without awaiting, pump frames to drive `endOfFrame`, then await:
+
+```dart
+final f = WaitPredicateService.waitFor(
+  predicate: {'kind': 'text', 'text': 'Done'},
+  timeoutMs: 1000,
+);
+await tester.pump(const Duration(milliseconds: 50));
+// ... cause the text to appear ...
+await tester.pump();
+final result = await f;
+```
+
+Awaiting `waitFor` before pumping deadlocks the test.
+
+## Related work
+
+- [ADR 0004](/decisions/0004_p1_keyboard_dialog_navigate) — P1 follow-up
+  (keyboard, dialog, navigate) reused this blueprint.
+- [ADR 0005](/decisions/0005_p2_fill_form_hover_select_option) — P2 used
+  `wait_for`'s snapshot-in-payload pattern as the reason `select_option` could
+  be dropped.

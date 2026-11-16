@@ -4,14 +4,74 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 MIGRATION_SKILL="$ROOT/plugin/skills/flutter-mcp-toolkit-intentcall-migration/SKILL.md"
+SKILL_ASSETS="$ROOT/mcp_server_dart/lib/src/skill_assets.g.dart"
+
+command -v rg >/dev/null 2>&1 || {
+  echo "check_intentcall_skills_grep: rg required" >&2
+  exit 1
+}
 
 bad=0
+
+rg_list() {
+  local hits rg_status
+  set +e
+  hits="$(rg -l 'MCPCallEntry' "$@" 2>/dev/null)"
+  rg_status=$?
+  set -e
+  if ((rg_status > 1)); then
+    echo "check_intentcall_skills_grep: rg failed (exit $rg_status)" >&2
+    exit 2
+  fi
+  printf '%s' "$hits"
+}
+
+rg_match() {
+  local pattern="$1"
+  shift
+  set +e
+  rg -q "$pattern" "$@"
+  local rg_status=$?
+  set -e
+  if ((rg_status > 1)); then
+    echo "check_intentcall_skills_grep: rg failed (exit $rg_status)" >&2
+    exit 2
+  fi
+  [[ "$rg_status" -eq 0 ]]
+}
+
+rg_count() {
+  local pattern="$1"
+  shift
+  set +e
+  local count
+  count="$(rg -c "$pattern" "$@" 2>/dev/null)"
+  local rg_status=$?
+  set -e
+  if ((rg_status > 1)); then
+    echo "check_intentcall_skills_grep: rg failed (exit $rg_status)" >&2
+    exit 2
+  fi
+  if ((rg_status == 1)); then
+    count=0
+  fi
+  printf '%s' "$count"
+}
 
 check_paths() {
   local label="$1"
   shift
+  if [[ $# -eq 0 ]]; then
+    return 0
+  fi
+  for root in "$@"; do
+    [[ -e "$root" ]] || {
+      echo "check_intentcall_skills_grep: missing scan root: $root" >&2
+      exit 2
+    }
+  done
   local hits
-  hits="$(rg -l 'MCPCallEntry' "$@" 2>/dev/null || true)"
+  hits="$(rg_list "$@")"
   [[ -z "$hits" ]] && return 0
   while IFS= read -r file; do
     [[ -z "$file" ]] && continue
@@ -23,38 +83,57 @@ check_paths() {
   done <<< "$hits"
 }
 
-# Plugin skills (migration skill only)
-check_paths "plugin/skills" "$ROOT/plugin/skills" --glob 'SKILL.md'
+if [[ -d "$ROOT/plugin/skills" ]]; then
+  hits="$(rg_list "$ROOT/plugin/skills" --glob 'SKILL.md')"
+  if [[ -n "$hits" ]]; then
+    while IFS= read -r file; do
+      [[ -z "$file" ]] && continue
+      if [[ "$file" == "$MIGRATION_SKILL" ]]; then
+        continue
+      fi
+      echo "check_intentcall_skills_grep (plugin/skills): unexpected MCPCallEntry in $file" >&2
+      bad=1
+    done <<< "$hits"
+  fi
+fi
 
-# User-facing docs (exclude superpowers specs/plans/closure)
-check_paths "docs/core" "$ROOT/docs/core"
-check_paths "docs/ai_agents" "$ROOT/docs/ai_agents"
-check_paths "docs/guides" "$ROOT/docs/guides"
+for docs_area in concepts install use-cases; do
+  check_paths "docs/$docs_area" "$ROOT/docs/$docs_area"
+done
+for doc_file in quickstart.mdx troubleshooting.mdx; do
+  check_paths "docs" "$ROOT/docs/$doc_file"
+done
 check_paths "docs/contributing" "$ROOT/docs/contributing"
 
-# Plugin surfaces
+check_paths "readme" "$ROOT/README.md" "$ROOT/llms.txt"
+
 for f in \
   "$ROOT/plugin/README.md" \
   "$ROOT/plugin/agents/flutter-mcp-toolkit-runtime.md" \
   "$ROOT/plugin/.codex-plugin/plugin.json" \
-  "$ROOT/ARCHITECTURE.md"; do
-  if [[ -f "$f" ]] && rg -q 'MCPCallEntry' "$f" 2>/dev/null; then
-    echo "check_intentcall_skills_grep (plugin): unexpected MCPCallEntry in $f" >&2
-    bad=1
+  "$ROOT/docs/concepts/how-it-works.mdx"; do
+  if [[ -f "$f" ]]; then
+    if rg_match 'MCPCallEntry' "$f"; then
+      echo "check_intentcall_skills_grep (plugin): unexpected MCPCallEntry in $f" >&2
+      bad=1
+    fi
   fi
 done
 
-# Generated skill bundle — migration skill only
-if rg -q 'MCPCallEntry' "$ROOT/mcp_server_dart/lib/src/skill_assets.g.dart" 2>/dev/null; then
-  if ! rg 'flutter-mcp-toolkit-intentcall-migration' "$ROOT/mcp_server_dart/lib/src/skill_assets.g.dart" >/dev/null; then
-    echo "check_intentcall_skills_grep: MCPCallEntry in skill_assets.g.dart without migration skill" >&2
-    bad=1
-  fi
-  count="$(rg -c 'MCPCallEntry' "$ROOT/mcp_server_dart/lib/src/skill_assets.g.dart" || echo 0)"
-  if [[ "$count" -gt 20 ]]; then
-    echo "check_intentcall_skills_grep: too many MCPCallEntry hits ($count) in skill_assets.g.dart" >&2
-    bad=1
-  fi
+if [[ ! -f "$SKILL_ASSETS" ]]; then
+  echo "check_intentcall_skills_grep: missing required file: $SKILL_ASSETS" >&2
+  exit 2
 fi
+if rg_match 'MCPCallEntry' "$SKILL_ASSETS"; then
+    if ! rg_match 'flutter-mcp-toolkit-intentcall-migration' "$SKILL_ASSETS"; then
+      echo "check_intentcall_skills_grep: MCPCallEntry in skill_assets.g.dart without migration skill" >&2
+      bad=1
+    fi
+    count="$(rg_count 'MCPCallEntry' "$SKILL_ASSETS")"
+    if [[ "$count" -gt 20 ]]; then
+      echo "check_intentcall_skills_grep: too many MCPCallEntry hits ($count) in skill_assets.g.dart" >&2
+      bad=1
+    fi
+  fi
 
 exit "$bad"

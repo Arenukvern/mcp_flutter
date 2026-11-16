@@ -1,0 +1,16 @@
+---
+title: Structured errors
+---
+
+Toolkit MCP tools return JSON envelopes with `ok`, `errorCode`, and retry hints.
+Common codes:
+
+| Code | Typical cause | Fix |
+| --- | --- | --- |
+| `connection_selection_required` | Multiple debug targets | Pass `connection.uri` or `connection.targetId` from `discover_debug_apps` |
+| `target_not_found` | Stale VM URI | Re-run app; paste fresh `ws://…/ws` from Flutter machine output |
+| `connect_failed` | App not in debug / wrong port | `flutter run --debug`; confirm `mcp_toolkit` bootstrap in `main()` |
+| `invalid_command` | Bad CLI args | `flutter-mcp-toolkit <cmd> --help` |
+| `missing_extension` | App missing `mcp_toolkit` init | Run `codegen-init`, paste snippet, hot **restart** |
+
+Full catalogs live in installed skills (`flutter-mcp-toolkit-debug`, `flutter-mcp-toolkit-control`) and in server responses.

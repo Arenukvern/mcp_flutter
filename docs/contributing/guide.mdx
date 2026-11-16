@@ -1,0 +1,74 @@
+---
+title: Contributing
+description: Essentials for hacking on flutter-mcp-toolkit.
+---
+
+# Contributing
+
+We welcome issues and PRs on [GitHub](https://github.com/Arenukvern/mcp_flutter).
+
+## Development setup
+
+1. Clone the repo.
+2. Inspect maintainer contracts:
+
+   ```bash
+   steward doctor --json
+   steward actions list --json
+   steward probe --json --profile quick
+   ```
+
+3. Install package deps:
+
+   ```bash
+   cd mcp_toolkit && dart pub get
+   cd ../mcp_server_dart && dart pub get
+   cd ../showcase/flutter_test_app && dart pub get
+   ```
+
+4. Before a PR:
+
+   ```bash
+   steward probe --json --profile quick
+   make check-contracts
+   ```
+
+## Editing skills
+
+Canonical skill bodies live in `plugin/skills/<id>/SKILL.md`. After edits:
+
+```bash
+make sync-skills
+```
+
+Commit both `SKILL.md` and regenerated `mcp_server_dart/lib/src/skill_assets.g.dart`.
+
+## Commit messages
+
+Use [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, …) for release-please.
+
+## Releases and binaries
+
+- Automated on `main` via **release-please** → GitHub Release tarballs (`darwin-arm64`, `linux-x64`) and `checksums.txt`.
+- Consumer install: [`install.sh`](../../install.sh) verifies SHA-256 against the release.
+- MCP Registry OCI image: [runbook](../contributing/mcp_registry_publish_runbook.mdx), [ADR 0013](../decisions/0013_mcp_registry_publish_hardening.mdx).
+
+**Skill Steward release contract:** cross-repo binary/changelog norms live in Skill Steward’s `release-changelog-harness` skill; **this repo** is the reference implementation for installable MCP/CLI binaries (see repo [CONTRIBUTING.md](https://github.com/Arenukvern/mcp_flutter/blob/main/CONTRIBUTING.md)).
+
+## Pull request checklist
+
+- Tests pass for touched packages.
+- Docs updated when behavior changes.
+- Security-impacting changes link [SECURITY.md](https://github.com/Arenukvern/mcp_flutter/blob/main/SECURITY.md).
+
+## Maintainer skill
+
+Use **`flutter-mcp-toolkit-repo-maintainer`** for releases, version pins, and contract gates.
+
+## More detail
+
+See also [release binary recovery](./release_binary_recovery.mdx) and [docs maintenance](./docs_maintenance.mdx).
+
+## Contributor credit
+
+[`all-contributors`](https://all-contributors.org/) — update [`.all-contributorsrc`](https://github.com/Arenukvern/mcp_flutter/blob/main/.all-contributorsrc) and README when appropriate.

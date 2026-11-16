@@ -1,0 +1,66 @@
+---
+title: Docker and MCP Registry
+description: Run flutter-mcp-toolkit-server from the official OCI image (secondary to native binaries).
+---
+
+# Docker and MCP Registry
+
+Most users should install the **release binary** via [install.sh](../../install.sh) or a client marketplace. Docker is useful when your MCP host prefers containerized servers.
+
+## Official registry entry
+
+Published on the [MCP Registry](https://registry.modelcontextprotocol.io) as **`io.github.Arenukvern/flutter-mcp-toolkit`**.
+
+Image coordinates (tag matches repo `VERSION`, currently **7.1.1**{/* x-release-please-version */} — always pin the tag you validated):
+
+```text
+ghcr.io/arenukvern/flutter-mcp-toolkit:<VERSION>
+```
+
+Example:
+
+```bash
+docker pull ghcr.io/arenukvern/flutter-mcp-toolkit:7.1.1 # x-release-please-version
+```
+
+See [`mcp_server_dart/server.json`](../../mcp_server_dart/server.json) for the exact identifier on your train.
+
+## MCP host config
+
+```json
+{
+  "mcpServers": {
+    "flutter-mcp-toolkit": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "--network=host",
+        "ghcr.io/arenukvern/flutter-mcp-toolkit:7.1.1" // x-release-please-version
+      ]
+    }
+  }
+}
+```
+
+Replace `7.1.1` with your release version.
+
+`--network=host` lets the container reach the **Dart VM service** of a Flutter app running on the host (macOS/Linux). Your Flutter app still runs **outside** the container in debug mode with `mcp_toolkit` initialized.
+
+## Build locally
+
+Maintainers and contributors:
+
+```bash
+docker build --platform linux/amd64 \
+  -f mcp_server_dart/Dockerfile.registry \
+  -t flutter-mcp-toolkit-local .
+```
+
+More detail: [MCP Registry publish runbook](../contributing/mcp_registry_publish_runbook.mdx) and [`mcp_server_dart/DOCKER.md`](../../mcp_server_dart/DOCKER.md).
+
+## Related
+
+- [Client setup](./clients.mdx)
+- [Platforms](./platforms.mdx) — host OS vs app targets

@@ -23,234 +23,91 @@ _Inspect and drive a running Flutter app from your AI assistant._
 
 </div>
 
-- 📖 **Docs:** [docs.page/arenukvern/mcp_flutter](https://docs.page/arenukvern/mcp_flutter/)
-- 🤝 **Contribute:** [guide](docs/contributing/contribution_guide.mdx) · [contributors](docs/contributing/contributors.mdx) · [code of conduct](CODE_OF_CONDUCT.md) · [security](SECURITY.md)
+Docs: [docs.page/arenukvern/mcp_flutter](https://docs.page/arenukvern/mcp_flutter/) · [llms.txt](./llms.txt) · Contribute: [guide](docs/contributing/guide.mdx)
 
-`flutter-mcp-toolkit` is a Dart MCP server + Flutter package for AI agents (Codex, Zed, Cursor, Intent, Claude Code, Cline, and more). Agents can inspect a running Flutter app, take semantic snapshots, tap widgets, type into forms, hot-reload, and read logs. Apps can also register their own MCP tools and resources at runtime via MCP Toolkit — all without leaving the conversation. The result is a closed feedback loop between agent and app.
+**flutter-mcp-toolkit** is a Dart MCP server plus the `mcp_toolkit` Flutter package. An agent can discover your debug app, read semantic UI snapshots, tap and type, hot-reload, and call **custom tools your app registers at runtime** — a closed loop with runtime proof instead of guessing.
 
-And one step further: the toolkit is becoming a **chain of declarative automation APIs** — the same observe/act/verify vocabulary runs through interactive MCP (`fmt_*`), the CLI, programmatic Dart scenarios (`flutter_mcp_harness`), and declarative build+lifecycle runners like [oka](https://github.com/Arenukvern/oka), all over the universal `AutomationDriver` contract. See [The Automation Chain](docs/start_here/automation_chain.mdx). (OpenAI describes this pattern as [harness engineering](https://openai.com/index/harness-engineering/).)
+## Evaluate in 30 seconds
 
-![Watercolor comic infographic explaining flutter-mcp-toolkit: install fmtk, add it to a Flutter app, connect an AI agent, then inspect, tap, reload, and prove changes in a close feedback loop.](docs/assets/flutter-mcp-toolkit-infographic.png)
+| Question | Answer |
+| --- | --- |
+| What is it? | MCP server (`flutter-mcp-toolkit-server`) + in-app `mcp_toolkit` bootstrap over the VM service. |
+| What can an agent do? | Inspect UI/errors, drive widgets, reload, screenshots (Flutter render pipeline), dynamic app tools. |
+| When to use this vs [Dart MCP](https://github.com/dart-lang/ai/tree/main/pkgs/dart_mcp_server)? | **Dart MCP:** Dart/Flutter *tooling* (analyzer, tests). **This toolkit:** a *running debug app* (UI + your app-defined tools). |
+| When not to use it? | Release builds, no debug VM, or you only need static analysis — use Dart MCP or CI instead. |
+| Supported install targets | Release binaries: **macOS Apple Silicon** and **Linux x64** ([details](docs/install/platforms.mdx)). Intel macOS is deprecated. |
+| Fastest proof | [Quickstart](docs/quickstart.mdx) → `doctor` → agent calls `fmt_discover_debug_apps` + `fmt_semantic_snapshot`. |
+| Tool list | Generated: [docs/reference/tools.mdx](docs/reference/tools.mdx) (regenerate with `make docs-reference`). |
 
-The picture's story: the toolkit gives an AI assistant a shared window and control loop into a running Flutter app, so it can inspect state, act like a user, hot reload, read proof, and use custom tools from your app instead of guessing.
+## Five-minute quickstart
 
-![View Screenshots](docs/view_screenshots.gif)
+**1. Marketplace (recommended)** — see [client setup](docs/install/clients.mdx):
 
-## Get started in 4 steps
+```text
+Claude Code: /plugin marketplace add Arenukvern/mcp_flutter
+             /plugin install flutter-mcp-toolkit@flutter-mcp-toolkit
+Cursor:      flutter-mcp-toolkit init cursor   # needs CLI on PATH — install script first
+Codex:       codex plugin marketplace add Arenukvern/mcp_flutter
+```
+
+**2. Install script (recommended for server + CLI on PATH)** — curl:
+
+`curl -fsSL https://raw.githubusercontent.com/Arenukvern/mcp_flutter/main/install.sh | bash`
+
+**3. Instrument the app** — `cd my_flutter_app && flutter-mcp-toolkit codegen-init` (paste `main()` snippet before `runApp`).
+
+**4. Run and verify** — `flutter run --debug` then `flutter-mcp-toolkit doctor`.
+
+Connect the MCP server in your host (`flutter-mcp-toolkit-server` on stdio). Example for Claude Code:
 
 ```bash
-# 1. Install the binary
-curl -fsSL https://raw.githubusercontent.com/Arenukvern/mcp_flutter/main/install.sh | bash
-# Installs flutter-mcp-toolkit plus the short fmtk alias for repeated CLI loops.
-
-# 2. Add the toolkit to your Flutter app
-cd my-flutter-app
-flutter-mcp-toolkit codegen-init   # adds mcp_toolkit + emits main.dart snippet
-
-# 3. Install skills for your AI agent
-flutter-mcp-toolkit init claude-code   # or: cursor | codex | cline | agents-skills | all
-# Alternative (skills only): npx skills add Arenukvern/mcp_flutter -a cursor -y
-
-# 4. Run
-flutter run --debug
+claude mcp add flutter-mcp-toolkit -- flutter-mcp-toolkit-server
 ```
 
-That's it. Your AI agent can now inspect and drive the running app — and your app can expose **custom MCP tools at runtime** (see [Dynamic Tools Registration](#dynamic-tools-registration) below).
+First agent prompt: *“Discover debug Flutter apps, connect, and return a semantic snapshot.”*
 
-## 📰 News
+Full steps: [docs/quickstart.mdx](docs/quickstart.mdx).
 
-- **2026-10-02** — 6.0.0 released: the **invoke tier** (ADR-0017) — the app's intent registry is the single action source; the harness driver lists (`driver.actions()`) and invokes it (`InvokeAction`) with schema-validated args, `IntentAutomationAction.custom` routes hints, and any web surface (Jaspr, plain JS) composes via `window.__mcpActions`. `flutter_mcp_harness` 0.2.x on pub.dev; server 6.0.0 on the MCP registry.
-- **2026-10-01** — The toolkit is becoming a chain of declarative automation APIs: universal `AutomationDriver` contracts (`universal_automation_*`), the programmatic [`flutter_mcp_harness`](https://pub.dev/packages/flutter_mcp_harness) package, and [oka](https://github.com/Arenukvern/oka) as the build+lifecycle runner. New: [The Automation Chain](docs/start_here/automation_chain.mdx) guide + `flutter-mcp-automation-chain` skill.
+## What do you want to do?
 
-- **2026-07-11** - v4 new Live Demos records: [v4 semantic snapshot etc.. with Grok Build CLI](https://youtu.be/P0ObCyt0k3M), [v4 with IntentCall power - WebMCP projection](https://www.youtube.com/watch?v=mX4xxVeImq0)
+| Goal | Start here |
+| --- | --- |
+| See what is on screen | [See the UI](docs/use-cases/see-the-ui.mdx) |
+| Tap, type, scroll | [Drive the UI](docs/use-cases/drive-the-ui.mdx) |
+| Debug errors + reload loop | [Debug a running app](docs/use-cases/debug-a-running-app.mdx) |
+| Custom MCP tools in your app | [Custom tools](docs/use-cases/custom-tools.mdx) |
+| Scripts / CI one-shots | [CI and scripts](docs/use-cases/ci-and-scripts.mdx) |
+| Checked-in E2E | [E2E scenarios](docs/use-cases/e2e-scenarios.mdx) |
+| Several apps at once | [Multiple apps](docs/use-cases/multiple-apps.mdx) |
 
-- **2026-05-26** — v3.1.0: Platform-view capture routing, macOS/iOS Simulator host screenshots, web CDP tab capture (SCK → CDP → flutter_layer), and cross-platform showcase platform views.
+## Packages
 
-<!-- TODO(arenukvern): add tool to write news automatically -->
+| Package | Role |
+| --- | --- |
+| [`mcp_toolkit`](https://pub.dev/packages/mcp_toolkit) | Flutter app bootstrap, VM extensions, dynamic tools |
+| `flutter_mcp_toolkit_core` / `capability_*` | Shared contracts and `fmt_*` server capabilities |
+| `flutter_mcp_harness` | Programmatic automation ([packages/harness](packages/harness/README.md)) |
 
-## Install from marketplaces
+Server binary: GitHub Releases (`flutter-mcp-toolkit`, `fmtk`, `flutter-mcp-toolkit-server`) — not on pub.dev. See [mcp_server_dart/README.md](mcp_server_dart/README.md).
 
-| Platform                      | Command / link                                                                                                                                                                                                                                                                                                  |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Any agent (recommended)**   | `flutter-mcp-toolkit init <agent>` — see [AI agent setup](docs/ai_agents/overview.mdx)                                                                                                                                                                                                                          |
-| **Claude Code (git catalog)** | `/plugin marketplace add Arenukvern/mcp_flutter` then install `flutter-mcp-toolkit`                                                                                                                                                                                                                             |
-| **Codex (git catalog)**       | `codex plugin marketplace add Arenukvern/mcp_flutter`                                                                                                                                                                                                                                                           |
-| **Cursor (local plugin)**     | `flutter-mcp-toolkit init cursor`                                                                                                                                                                                                                                                                               |
-| **Skills only**               | `npx skills add Arenukvern/mcp_flutter -a <agent> -y` (add MCP via `init` or manual JSON)                                                                                                                                                                                                                       |
-| **MCP registries**            | [Official MCP Registry](https://registry.modelcontextprotocol.io) — server `io.github.Arenukvern/flutter-mcp-toolkit` (OCI image: `ghcr.io/arenukvern/flutter-mcp-toolkit`), [Smithery](https://smithery.ai/server/@Arenukvern/mcp_flutter), [MseeP](https://mseep.ai/app/03aa0f2d-4ef7-40ae-93de-c7b87e0ac32d) |
+## News (recent)
 
-### Docker / MCP Registry install
+- **2026-11** — Docs-first refresh, generated tool reference, registry publish hardening.
+- **2026-10-02** — 6.0.0 invoke tier / harness composition ([automation chain](docs/concepts/automation-chain.mdx)).
 
-The official registry serves an OCI image from GHCR. Point any MCP client at it:
+Older releases: [CHANGELOG.md](CHANGELOG.md).
 
-```json
-{
-  "mcpServers": {
-    "flutter-mcp-toolkit": {
-      "command": "docker",
-      "args": [
-        "run",
-        "-i",
-        "--rm",
-        "--network=host",
-        "ghcr.io/arenukvern/flutter-mcp-toolkit:6.0.0"
-      ]
-    }
-  }
-}
-```
+## Security & trust
 
-See [Docker guide](mcp_server_dart/DOCKER.md) for flags, version pinning, and networking notes.
-
-Maintainers submitting to official stores: [marketplace submission runbook](docs/contributing/marketplace_submission_runbook.mdx). Full matrix: [marketplace distribution](docs/ai_agents/marketplace_distribution.mdx).
-
-## Documentation
-
-- **[Docs for AI Agent and Human](https://docs.page/arenukvern/mcp_flutter)** - wiki + llms.txt
-- **[Migrating v2 → v3](docs/start_here/migration_v2_to_v3.mdx)** — `fmt_*` MCP tools, binaries, client config keys, `validate-runtime`.
-- **[Migrating to projections & composition](docs/start_here/migration_toolkit_projections.mdx)** — WebMCP auto-registration removal, `bootstrapFlutter` parameter removal, intentcall renames.
-- **[MCPCallEntry to AgentCallEntry migration](docs/start_here/migration_mcp_call_entry_to_agent_call_entry.md)** — `MCPCallEntry` removal, `AgentCallEntry`, platform `codegen sync`, `fmt_migrate_agent_entries`.
-- **[IntentCall consumer guide](docs/intentcall/README.md)** — hosted `intentcall_*` dependency policy, consumer proof gates, and the boundary between `mcp_flutter` and upstream IntentCall architecture.
-- **[Why this repo matters](docs/start_here/why_this_repo_matters.mdx)** — what it is, why it exists.
-- **[CLI vs MCP](docs/start_here/cli_vs_mcp.mdx)** — pick the right mode.
-- **[The Automation Chain](docs/start_here/automation_chain.mdx)** — why the chain exists; MCP/CLI/harness/oka tier picker and first loops.
-- **[Feature map](docs/start_here/feature_map.mdx)** — the 31 tools.
-- **[AI agent setup](docs/ai_agents/overview.mdx)** - for AI Agents.
-- **[Marketplace distribution](docs/ai_agents/marketplace_distribution.mdx)** — Claude, Cursor, Codex, skills.sh.
-- **[Architecture](ARCHITECTURE.md)** — for contributors.
-- **[Quick Start](QUICK_START.md)**, **[Configuration](CONFIGURATION.md)**, **[MCP RPC description](MCP_RPC_DESCRIPTION.md)**
-
-## Published packages
-
-| Package                                 | Pub.dev                                                                                                                                                                                                                                                                                                                                         | Role                                                                       |
-| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| `mcp_toolkit`                           | [![pub package](https://img.shields.io/pub/v/mcp_toolkit.svg?include_prereleases)](https://pub.dev/packages/mcp_toolkit) [![pub points](https://img.shields.io/pub/points/mcp_toolkit.svg)](https://pub.dev/packages/mcp_toolkit/score)                                                                                                         | Flutter app package for runtime MCP tools/resources and toolkit bootstrap. |
-| `flutter_mcp_toolkit_core`              | [![pub package](https://img.shields.io/pub/v/flutter_mcp_toolkit_core.svg?include_prereleases)](https://pub.dev/packages/flutter_mcp_toolkit_core) [![pub points](https://img.shields.io/pub/points/flutter_mcp_toolkit_core.svg)](https://pub.dev/packages/flutter_mcp_toolkit_core/score)                                                     | Pure-Dart shared command/result/capability types.                          |
-| `flutter_mcp_toolkit_capability_kernel` | [![pub package](https://img.shields.io/pub/v/flutter_mcp_toolkit_capability_kernel.svg?include_prereleases)](https://pub.dev/packages/flutter_mcp_toolkit_capability_kernel) [![pub points](https://img.shields.io/pub/points/flutter_mcp_toolkit_capability_kernel.svg)](https://pub.dev/packages/flutter_mcp_toolkit_capability_kernel/score) | Capability kernel contracts for composable MCP units.                      |
-| `flutter_mcp_toolkit_capability_core`   | [![pub package](https://img.shields.io/pub/v/flutter_mcp_toolkit_capability_core.svg?include_prereleases)](https://pub.dev/packages/flutter_mcp_toolkit_capability_core) [![pub points](https://img.shields.io/pub/points/flutter_mcp_toolkit_capability_core.svg)](https://pub.dev/packages/flutter_mcp_toolkit_capability_core/score)         | Server-side `fmt_*` capability implementation.                             |
-
-The server binary lives in `mcp_server_dart` and is shipped through GitHub
-Release artifacts as `flutter-mcp-toolkit`, `fmtk`, and
-`flutter-mcp-toolkit-server`; it is not a pub.dev package.
-
-## The automation chain
-
-Different surfaces own different parts of the lifecycle, and all of them
-drive the same `ext.mcp.toolkit.*` extensions through the universal
-[`AutomationDriver`](https://github.com/xsoulspace/dart_flutter_packages)
-contract (`universal_automation_*` family):
-
-| Tier | Surface | Best for |
-| --- | --- | --- |
-| Interactive MCP | `fmt_*` tools | chat-driven debugging and verification |
-| CLI | `flutter-mcp-toolkit` / `fmtk` | one-shot commands in scripts and CI |
-| Programmatic Dart | [`packages/harness`](packages/harness/README.md) — `flutter_mcp_harness` on pub.dev | repeatable scenarios as checked-in code |
-| Build + lifecycle | [oka](https://github.com/Arenukvern/oka) | declarative device builds, owned dev sessions |
-
-Guide: [The Automation Chain](docs/start_here/automation_chain.mdx) ·
-skill: `flutter-mcp-automation-chain`.
-
-The [`showcase/`](showcase/) folder holds examples that test the whole
-stack end-to-end — a minimal instrumented Flutter app
-([`showcase/flutter_demo`](showcase/flutter_demo/)) and a static web page
-([`showcase/web_demo`](showcase/web_demo/)) — each driven live by a
-checked-in composition root:
-
-```sh
-make drive-flutter   # instrumented tier: ToolkitDriver over the VM service
-make drive-web       # browser tier: CdpDriver over CDP (headless Chrome)
-```
-
-`packages/harness` implements the shared contract for the Flutter tier
-([`ToolkitDriver`](packages/harness/README.md#automation-drivers-universal_automation_-family)),
-so one observe/act/verify vocabulary covers Flutter apps, browsers, and
-OS-native targets — the same pipeline composition style oka uses.
-
-## Development support
-
-| Need                           | Start here                                                                                                                                               |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Contribute code or docs        | [CONTRIBUTING.md](CONTRIBUTING.md) · [Contribution guide](docs/contributing/contribution_guide.mdx)                                                      |
-| Add or credit contributors     | [Contributors guide](docs/contributing/contributors.mdx) · [`.all-contributorsrc`](.all-contributorsrc)                                                  |
-| Report vulnerabilities         | [SECURITY.md](SECURITY.md)                                                                                                                               |
-| Validate local changes         | `steward probe --json --profile quick` · `make check-contracts`                                                                                          |
-| Maintain releases              | [Release train notes](CONTRIBUTING.md#maintainers) · [`flutter-mcp-toolkit-repo-maintainer`](plugin/skills/flutter-mcp-toolkit-repo-maintainer/SKILL.md) |
-| Install or update agent skills | [AI agent setup](docs/ai_agents/overview.mdx) · [Marketplace distribution](docs/ai_agents/marketplace_distribution.mdx)                                  |
-
-## What it does
-
-The default toolkit surface exposes 31 MCP tools under the `fmt_*` capability prefix across four categories (35 with the `--dumps` debug tools enabled):
-
-- **Inspection** — semantic snapshot, view details, errors, screenshots, VM info
-- **Interaction** — tap, scroll, type, fill forms, hot-reload, navigate, wait_for
-- **Debug** — recent logs, evaluate Dart expressions
-- **Lifecycle** — discover apps, hot-reload, hot-restart
-
-See the `flutter-mcp-toolkit-{guide,inspect,control,debug}` skills for the full
-reference (installed by `flutter-mcp-toolkit init` or `npx skills add Arenukvern/mcp_flutter`).
-Install options: [AI agent setup](docs/ai_agents/overview.mdx).
-
-### Dynamic Tools Registration
-
-Flutter apps can register custom tools and resources at runtime. See how it
-works in this [short YouTube video](https://www.youtube.com/watch?v=Qog3x2VcO98).
-The same `arguments.connection` targeting is supported by the CLI's `exec`,
-`batch`, daemon `command/execute`, daemon `watch/start`, and snapshot step args.
-
-> [!NOTE]
-> There is official [MCP Server for Flutter from Flutter team](https://github.com/dart-lang/ai/tree/main/pkgs/dart_mcp_server) which exposes Dart tooling.
-> The **main goal of this project** is to bring power of MCP server tools by creating them in Flutter app, using **dynamic MCP tools registration** and close feedback loop for AI Agent. See how it works in [short YouTube video](https://www.youtube.com/watch?v=Qog3x2VcO98). See [Quick Start](https://docs.page/arenukvern/mcp_flutter) for more details. See [original motivation](https://github.com/Arenukvern/mcp_flutter/blob/main/CHANGELOG.md#210) behind the idea.
-
-## ⚠️ Note on Dump RPCs
-
-Dump RPC methods (like `dump_render_tree`) can produce huge token output and
-are disabled by default. Enable with `--dumps`. See
-[mcp_server_dart README](mcp_server_dart/README.md) for the full flag surface.
-
-## 🔒 Security
-
-Generally, since you use MCP server to connect to Flutter app in Debug Mode, it should be safe to use. However, I still recommend to review how it works in [ARCHITECTURE.md](ARCHITECTURE.md), how it can be modified to improve security if needed.
-
-This MCP server is verified by [MseeP.ai](https://mseep.ai).
+Debug-mode only by design. Overview: [how it works](docs/concepts/how-it-works.mdx). Assessed by [MseeP.ai](https://mseep.ai/app/arenukvern-mcp-flutter).
 
 [![MseeP.ai Security Assessment Badge](https://mseep.net/pr/arenukvern-mcp-flutter-badge.png)](https://mseep.ai/app/arenukvern-mcp-flutter)
 
-## 🔧 Troubleshooting
+Smithery listing is currently unavailable (404 as of 2026-11); use the [official MCP Registry](https://registry.modelcontextprotocol.io) or marketplace install. Relisting requires owner action on Smithery.
 
-1. **Connection Issues**
-   - Ensure your Flutter app is running in debug mode
-   - Verify the port matches in both Flutter app and MCP server
-   - Check if the port is not being used by another process
-   - Safest explicit targeting: use `arguments.connection.uri` and paste exact Flutter machine `app.debugPort.wsUri`
-   - If response includes `connection_selection_required`, retry with `arguments.connection.targetId` using one URI from `availableTargets` (or set `arguments.connection.uri` directly)
+## Contributing
 
-2. **AI Tool Not Detecting Inspector**
-   - Restart the AI tool after configuration changes
-   - Verify the configuration JSON syntax
-   - Check the tool's logs for connection errors
-
-3. **Dynamic Tools Not Appearing**
-   - Ensure `mcp_toolkit` package is properly initialized in your Flutter app
-   - Check that tools are registered using `MCPToolkitBinding.instance.addEntries()`
-   - Use `fmt_list_client_tools_and_resources` to verify registration
-   - Hot reload your Flutter app after adding new tools
-
-The Flutter MCP Server is registered with Smithery's registry, making it discoverable and usable by other AI tools through a standardized interface.
-
-### Integration Architecture
-
-```
-┌─────────────────┐     ┌───────────────────────┐     ┌─────────────────┐
-│                 │     │  Flutter App with     │     │                 │
-│  Flutter App    │<--->│  mcp_toolkit          │<--->│ flutter-mcp-    │
-│  (Debug Mode)   │     │  (VM Svc. Extensions  │     │ toolkit-server  │
-│                 │     │  + Dynamic Tools)     │     │                 │
-└─────────────────┘     └───────────────────────┘     └─────────────────┘
-```
-
-## 🤝 Contributing
-
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) (maintainer releases, binary checksums) and the [contribution guide](docs/contributing/contribution_guide.mdx). Pull requests and issues: [GitHub](https://github.com/Arenukvern/mcp_flutter).
+[CONTRIBUTING.md](CONTRIBUTING.md) · [contribution guide](docs/contributing/guide.mdx) · `make check-contracts` before PRs.
 
 ## ✨ Contributors
 

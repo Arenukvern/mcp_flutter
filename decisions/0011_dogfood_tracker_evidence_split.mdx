@@ -16,7 +16,7 @@ skipped with a warning, and doc links pointed at a path that does not exist in
 version control.
 
 Meanwhile, steward promotion evidence and other durable proofs already live under
-`docs/evidence/` (e.g. `docs/evidence/generated/*.json`).
+`maintainers/evidence/` (e.g. `maintainers/evidence/generated/*.json`).
 
 ## Decision
 
@@ -24,7 +24,7 @@ Meanwhile, steward promotion evidence and other durable proofs already live unde
 
 | Artifact | Location | Versioned |
 |----------|----------|-----------|
-| Cumulative dogfood tracker (`dogfood_web_eval.yaml`) | `docs/evidence/dogfood/` | Yes |
+| Cumulative dogfood tracker (`dogfood_web_eval.yaml`) | `maintainers/evidence/dogfood/` | Yes |
 | Cold-start tracker template | `tool/evals/dogfood_web_eval.seed.yaml` | Yes |
 | Logs, PIDs, per-run YAML/JSON, screenshots | `.showcase/` | No |
 
@@ -43,7 +43,7 @@ reference those paths as historical pointers to local evidence.
 - `--merge` on a clean tree no longer silently skips (seed bootstrap).
 - Tracker YAML may reference `.showcase/...` artifact paths from past runs;
   those files exist only on machines that ran the battery locally.
-- Skills and eval docs must point at `docs/evidence/dogfood/dogfood_web_eval.yaml`.
+- Skills and eval docs must point at `maintainers/evidence/dogfood/dogfood_web_eval.yaml`.
 
 ## Notes
 

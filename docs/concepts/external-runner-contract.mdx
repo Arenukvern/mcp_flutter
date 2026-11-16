@@ -1,0 +1,70 @@
+---
+title: External runner contract (spec v2)
+description: Checklist for conforming dev-session runners (ADR 0014).
+---
+
+# Writing a conforming runner
+
+A runner (for example [oka](https://github.com/Arenukvern/oka) `dev`) is conforming when it:
+
+- [ ] Writes the discovery file (default `<project>/.flutter_mcp/runner-session.json`, schema 1) at session start, containing `vm_service_uri`, `control_port`, `device_id`, `pid`, `started_at`, and optionally its `runner` display name.
+- [ ] Deletes the discovery file at session exit — including attach-relaunch, where the **old** session file must not outlive the old session.
+- [ ] Serves the frozen TCP JSON-lines protocol on `127.0.0.1:<control_port>` (request `{id, method}`; response `{id, ok, result}` / `{id, ok:false, error}`) for `reload`, `restart`, `stop`, `status`.
+- [ ] Reports the **actual** daemon outcome for reload/restart; sets `result.fallback: true` when the attach-mode relaunch fallback fired.
+- [ ] Treats the toolkit as a client that may disconnect at any moment; on restart relaunch the runner may close the control connection — the toolkit interprets EOF mid-restart as session end, re-reads the discovery file once, and reconnects to the new `vm_service_uri`.
+- [ ] Binds to `127.0.0.1` only, with no auth (localhost-only dev tool).
+- [ ] Never spawns (or tolerates) a second attach session for the same app while alive.
+- [ ] Keeps `schema: 1` until a negotiated contract bump.
+
+## Worked example
+
+```bash
+oka dev -d <device>
+cat .flutter_mcp/runner-session.json
+flutter-mcp-toolkit exec --name hot_reload_flutter --args '{}'
+```
+
+Results carry `delegated: true`, the file's `runner` display name, and the daemon's raw outcome.
+
+## Why not merge into `state.json`?
+
+`.flutter_mcp/state.json` is toolkit-owned persistence (`activeSession`, sticky endpoints). `runner-session.json` is different on three axes:
+
+1. **Writer** — toolkit writes `state.json`; the runner writes the session file (toolkit only reads it).
+2. **Lifecycle** — `state.json` survives across sessions; the session file is a **liveness signal** deleted when the runner exits.
+3. **Trust** — merging would let stale toolkit state masquerade as a live compile-capable session.
+
+## Connection-selection precedence (auto mode)
+
+From `ConnectionContext` — top wins:
+
+1. Explicit per-request `connection` override (`uri`, `targetId`, host/port).
+2. Reuse an active healthy VM connection.
+3. **Live runner-session** `vm_service_uri` (before discovery — owning session is compile-capable).
+4. Discovery (sticky endpoint, labels, sole instance).
+5. `defaultHost`/`defaultPort` only for explicit host/port mode (never auto-guess).
+
+While a runner session is alive, machine discovery is suppressed so the toolkit does not spawn a second attach. When the file is gone, legacy sticky + discovery behavior returns.
+
+## Root cause (late attach)
+
+Flutter's reload/restart VM service methods register at **session start** and are **not replayed** on late `streamListen(Service)`. A toolkit that attaches afterward can get `ReloadReport {success: true}` with **zero sources** — honest reporting now sets `changed: false` with an actionable reason unless delegation or early registration applies. See ADR 0014 and `honest_reload_reporting_test.dart`.
+
+## Do / don't / later
+
+**Do**
+
+- Delegate reload/restart to `RunnerControl` when the discovery file is live.
+- Treat `changed: false` on fallback as “no compile-capable session”, not success.
+- Re-read `runner-session.json` once after EOF on restart relaunch.
+
+**Don't**
+
+- Spawn a second `flutter attach` while an owning runner session exists.
+- Assume `report.success` alone means code applied — check `changed`.
+
+**Later**
+
+- Negotiated `schema: 2+` only with coordinated runner + toolkit bumps.
+
+Full rationale: [ADR 0014](../decisions/0014_external_dev_sessions_runner_delegation.mdx).

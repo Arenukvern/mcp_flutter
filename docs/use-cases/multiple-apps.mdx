@@ -1,0 +1,32 @@
+---
+title: Multiple apps
+description: Pick the right debug target when more than one Flutter app runs.
+---
+
+# Multiple apps
+
+Several `flutter run` sessions mean several VM WebSocket URIs. The server will return **`connection_selection_required`** until you pin one.
+
+## Fixes
+
+1. Call **`fmt_discover_debug_apps`** and read `availableTargets`.
+2. Pass **`arguments.connection.uri`** or **`targetId`** on every VM-dependent tool.
+3. Optional server flag **`--prefer-target-label`** if you set `MCPToolkitBinding.setAppIdentity` in each app.
+
+## Identity in the app
+
+Give each app a distinct label so auto-attach and humans can tell them apart:
+
+```dart
+MCPToolkitBinding.instance.setAppIdentity(label: 'admin-panel');
+```
+
+## Skills
+
+- `flutter-mcp-toolkit-debug`
+- `flutter-mcp-boundary-audit` (for integrators)
+
+## See also
+
+- [Troubleshooting — connection_selection_required](../troubleshooting.mdx)
+- [Server flags](../reference/server-flags.mdx)

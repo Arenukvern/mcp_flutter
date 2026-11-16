@@ -10,7 +10,7 @@ Master art: `original_logo.png` (1:1, Gemini render). All derivatives are `sips 
 
 The Sociable Weaver builds nests cell-by-cell with the colony. Each new chamber is plugged into the existing structure; no monolithic build, no central architect — just a flock of modular tools that fit together.
 
-That is the toolkit. The **agent** is the Weaver. **Your app** is the nest. The **27 built-in tools** are the cells already in place. **Your own tools** are new chambers you weave in.
+That is the toolkit. The **agent** is the Weaver. **Your app** is the nest. The **bundled fmt_* cells** are already in place. **Your own tools** are new chambers you weave in.
 
 The brand expresses this with two textures stacked on every surface:
 
@@ -187,7 +187,7 @@ Each beat is a labeled text bubble on the left, showing the agent's *role* and t
 
 | Class | Stands for | When |
 |-------|------------|------|
-| `.agent-bubble` (+ kicker like `CONCEPT`/`TOOL`/`AGENT`) | One narrative beat — what the agent is doing right now | Every vignette: ¶2 vm-vs-app, ¶3 tools-grid, ¶4 cart, ¶5 game, ¶6 flags |
+| `.agent-bubble` (+ kicker like `CONCEPT`/`TOOL`/`AGENT`) | One narrative beat — what the agent is doing right now | Every vignette: ¶2 vm-vs-app, ¶3 cells-grid, ¶4 cart, ¶5 game, ¶6 flags |
 | `.tool-name` (inside bubble) | The literal `fmt_*` name in code font | When the bubble is a `TOOL` step |
 | `.phone-toy` (+ `.phone-hero`) | The thing the user sees | Every vignette payoff |
 | `.semantic-panel` / `.snapshot-recap-mini` / `.dart-panel` | Concept diagrams that aren't bubbles | When the beat IS the concept (semantic map, registration code, snapshot recap) |
