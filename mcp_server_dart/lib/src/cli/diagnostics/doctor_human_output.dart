@@ -11,6 +11,9 @@ bool? doctorStdoutIsTerminalOverride;
 
 enum DoctorStdoutFormat { jsonEnvelope, human }
 
+const _detailIndent = '      ';
+const _wrapWidth = 76;
+
 bool _envTruthy(String name) {
   final raw = io.Platform.environment[name];
   if (raw == null || raw.isEmpty) {
@@ -27,8 +30,8 @@ bool doctorStdoutHasTerminal() {
   if (doctorStdoutIsTerminalOverride != null) {
     return doctorStdoutIsTerminalOverride!;
   }
-  final forced = io.Platform.environment[
-      'FLUTTER_MCP_TOOLKIT_DOCTOR_STDOUT_IS_TTY'];
+  final forced =
+      io.Platform.environment['FLUTTER_MCP_TOOLKIT_DOCTOR_STDOUT_IS_TTY'];
   if (forced != null && forced.trim().isNotEmpty) {
     return _envTruthy('FLUTTER_MCP_TOOLKIT_DOCTOR_STDOUT_IS_TTY');
   }
@@ -52,9 +55,7 @@ bool doctorUseAnsiColor() {
   return io.stdout.supportsAnsiEscapes;
 }
 
-DoctorStdoutFormat resolveDoctorStdoutFormat({
-  required bool jsonFlag,
-}) {
+DoctorStdoutFormat resolveDoctorStdoutFormat({required bool jsonFlag}) {
   if (jsonFlag) {
     return DoctorStdoutFormat.jsonEnvelope;
   }
@@ -91,22 +92,31 @@ String formatDoctorHuman(Map<String, Object?> doctorData) {
     final id = '${entry['id'] ?? 'unknown'}';
     final status = '${entry['status'] ?? 'unknown'}';
     final criticalCheck = entry['critical'] == true;
-    final diagnostic = _shortDetail('${entry['diagnostic'] ?? ''}');
+    final rawDiagnostic = '${entry['diagnostic'] ?? ''}';
 
     final statusLabel = _statusLabel(status, useColor: useColor);
     final idLabel = criticalCheck ? '$id (critical)' : id;
-    buffer.writeln('$statusLabel  $idLabel  $diagnostic');
+    if (status == 'pass') {
+      final diagnostic = _shortPassDetail(rawDiagnostic);
+      buffer.writeln('$statusLabel  $idLabel  $diagnostic');
+      continue;
+    }
+
+    buffer.writeln('$statusLabel  $idLabel');
+    for (final line in _wrapDiagnostic(rawDiagnostic)) {
+      buffer.writeln('$_detailIndent$line');
+    }
   }
 
-  final overall = _overallStatus(critical: critical, fail: fail, warn: warn);
+  final overall = _overallHeadline(critical: critical, fail: fail, warn: warn);
   final overallLabel = _overallLabel(overall, useColor: useColor);
-  buffer.write(
-  '$overallLabel — $pass pass, $warn warn, $fail fail ($critical critical)',
+  buffer.writeln(
+    '$overallLabel — $pass pass, $warn warn, $fail fail ($critical critical)',
   );
   return buffer.toString();
 }
 
-String _shortDetail(String diagnostic) {
+String _shortPassDetail(String diagnostic) {
   final collapsed = diagnostic.replaceAll(RegExp(r'\s+'), ' ').trim();
   if (collapsed.length <= 88) {
     return collapsed;
@@ -114,7 +124,31 @@ String _shortDetail(String diagnostic) {
   return '${collapsed.substring(0, 85)}...';
 }
 
-String _overallStatus({
+List<String> _wrapDiagnostic(String diagnostic) {
+  final collapsed = diagnostic.replaceAll(RegExp(r'\s+'), ' ').trim();
+  if (collapsed.isEmpty) {
+    return const ['(no detail)'];
+  }
+  final words = collapsed.split(' ');
+  final lines = <String>[];
+  var current = StringBuffer();
+  for (final word in words) {
+    final candidate = current.isEmpty ? word : '$current $word';
+    if (candidate.length > _wrapWidth && current.isNotEmpty) {
+      lines.add(current.toString());
+      current = StringBuffer(word);
+    } else {
+      current.clear();
+      current.write(candidate);
+    }
+  }
+  if (current.isNotEmpty) {
+    lines.add(current.toString());
+  }
+  return lines;
+}
+
+String _overallHeadline({
   required int critical,
   required int fail,
   required int warn,
@@ -123,10 +157,12 @@ String _overallStatus({
     return 'fail';
   }
   if (fail > 0) {
-    return 'warn';
+    final noun = fail == 1 ? 'failure' : 'failures';
+    return 'degraded ($fail non-critical $noun)';
   }
   if (warn > 0) {
-    return 'ok';
+    final noun = warn == 1 ? 'warning' : 'warnings';
+    return 'ok ($warn $noun)';
   }
   return 'ok';
 }
@@ -148,12 +184,16 @@ String _overallLabel(String overall, {required bool useColor}) {
   if (!useColor) {
     return overall;
   }
-  return switch (overall) {
-    'ok' => '\x1B[32m$overall\x1B[0m',
-    'warn' => '\x1B[33m$overall\x1B[0m',
-    'fail' => '\x1B[31m$overall\x1B[0m',
-    _ => overall,
-  };
+  if (overall == 'fail' || overall.startsWith('degraded')) {
+    return '\x1B[31m$overall\x1B[0m';
+  }
+  if (overall.startsWith('ok (')) {
+    return '\x1B[33m$overall\x1B[0m';
+  }
+  if (overall == 'ok') {
+    return '\x1B[32m$overall\x1B[0m';
+  }
+  return overall;
 }
 
 Map<String, Object?>? _asMap(Object? value) {

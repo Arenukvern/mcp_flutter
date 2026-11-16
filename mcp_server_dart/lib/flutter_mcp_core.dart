@@ -22,7 +22,6 @@ export 'src/capabilities/visual_capture/visual_capture.dart';
 export 'src/cli/cli_daemon_server.dart';
 export 'src/cli/diagnostics/bundle_builder.dart';
 export 'src/cli/diagnostics/command_snapshot_service.dart';
-export 'src/cli/diagnostics/doctor_human_output.dart';
 export 'src/cli/diagnostics/doctor_runner.dart';
 export 'src/runtime_version.dart';
 export 'src/shared_core/shared_core.dart';

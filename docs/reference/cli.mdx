@@ -199,6 +199,8 @@ Output:
   - TTY (interactive terminal): human-readable check table by default.
   - Non-TTY (pipes, CI, agents): compact JSON envelope (same as before).
   - --json: always emit the JSON envelope (machine-readable).
+  - Internal test override (not for production): set
+    FLUTTER_MCP_TOOLKIT_DOCTOR_STDOUT_IS_TTY=1|0 to force TTY behavior in CI.
 
 Doctor checks include:
   - VM reachability
