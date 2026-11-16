@@ -11,6 +11,12 @@ production E2E loop (see [ADR-0015](../../decisions/0015_flutter_mcp_harness_ext
 A guided tour lives in the
 [E2E scenarios](../../docs/use-cases/e2e-scenarios.mdx).
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Arenukvern/mcp_flutter/main/docs/assets/gifs/harness.gif" alt="Harness counter smoke scenario: launch fixture, tap increment, ALL PASS summary" width="960" />
+</p>
+
+Reproducible terminal source: [`docs/assets/gifs/harness.tape`](../../docs/assets/gifs/harness.tape) and [`docs/assets/gifs/scenarios/harness_counter_smoke.dart`](../../docs/assets/gifs/scenarios/harness_counter_smoke.dart).
+
 ## Quick start
 
 ```dart

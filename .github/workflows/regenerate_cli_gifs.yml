@@ -1,0 +1,69 @@
+name: Regenerate CLI GIFs
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  vhs-gifs:
+    name: vhs CLI/harness GIFs
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install vhs, ttyd, ffmpeg
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /tmp/vhs.deb \
+            https://github.com/charmbracelet/vhs/releases/download/v0.12.1/vhs_0.12.1_amd64.deb
+          sudo dpkg -i /tmp/vhs.deb
+          sudo apt-get install -y -qq ttyd ffmpeg gifsicle
+
+      - name: Setup Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.5'
+          cache: true
+
+      - name: Install flutter-mcp-toolkit CLI (release)
+        run: |
+          set -euo pipefail
+          ver="$(grep '^version:' mcp_server_dart/pubspec.yaml | awk '{print $2}')"
+          curl -fsSL -o /tmp/flutter_mcp.tgz \
+            "https://github.com/Arenukvern/mcp_flutter/releases/download/v${ver}/flutter_mcp_${ver}_linux-x64.tar.gz"
+          tar xzf /tmp/flutter_mcp.tgz -C /tmp
+          mkdir -p "$HOME/.local/bin"
+          cp "/tmp/flutter_mcp_${ver}_linux-x64/bin/"* "$HOME/.local/bin/"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Harness scenario deps
+        run: |
+          dart pub get
+          cd docs/assets/gifs/scenarios && dart pub get
+
+      - name: Regenerate GIFs
+        env:
+          DISPLAY: ':99'
+          HARNESS_GIF_DEVICE: chrome
+        run: |
+          set -euo pipefail
+          sudo apt-get install -y -qq xvfb google-chrome-stable libgtk-3-dev ninja-build cmake || true
+          Xvfb :99 -screen 0 1280x720x24 &
+          sleep 2
+          bash docs/assets/gifs/regenerate_cli_gifs.sh
+
+      - name: Upload GIFs and probe artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-harness-gifs
+          path: |
+            docs/assets/gifs/*.gif
+            docs/assets/gifs/frames/*
