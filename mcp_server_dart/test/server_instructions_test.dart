@@ -5,12 +5,13 @@ import 'package:test/test.dart';
 VMServiceConfigurationRecord _minimalConfig({
   bool dumpsSupported = false,
   bool resourcesSupported = true,
+  bool imagesSupported = true,
   bool dynamicRegistrySupported = true,
 }) => (
   vmHost: 'localhost',
   vmPort: 8181,
   resourcesSupported: resourcesSupported,
-  imagesSupported: true,
+  imagesSupported: imagesSupported,
   dumpsSupported: dumpsSupported,
   dynamicRegistrySupported: dynamicRegistrySupported,
   logLevel: 'warning',
@@ -74,5 +75,24 @@ void main() {
     expect(text, isNot(contains('visual://localhost/app/errors/latest')));
     expect(text, contains('fmt_get_app_errors'));
     expect(text, contains('fmt_get_view_details'));
+  });
+
+  test('screenshots resource omitted when images disabled', () {
+    final withImages = buildMcpToolkitServerInstructions(_minimalConfig());
+    final text = buildMcpToolkitServerInstructions(
+      _minimalConfig(imagesSupported: false),
+    );
+    expect(withImages, contains('visual://localhost/view/screenshots'));
+    expect(text, contains('## Static resources'));
+    expect(text, contains('visual://localhost/app/errors/latest'));
+    expect(text, isNot(contains('visual://localhost/view/screenshots')));
+  });
+
+  test('screenshot fallback names the argument for each tool', () {
+    final text = buildMcpToolkitServerInstructions(_minimalConfig());
+    expect(text, contains('mode: flutter_layer'));
+    expect(text, contains('fmt_get_screenshots'));
+    expect(text, contains('screenshotMode: flutter_layer'));
+    expect(text, contains('fmt_capture_ui_snapshot'));
   });
 }

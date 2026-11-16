@@ -12,11 +12,11 @@ Inspect and drive a **debug** Flutter app over the VM service. MCP tool names us
 
 1. **Discover / connect** — `fmt_discover_debug_apps`, `fmt_connect_debug_app` (use `connection.uri` or `targetId` when multiple apps run).
 2. **See the UI** — `fmt_semantic_snapshot`, `fmt_get_screenshots`, `fmt_capture_ui_snapshot`, `fmt_get_app_errors`.
-   On macOS / iOS Simulator, if host `desktop_window` capture fails, pass `screenshotMode: flutter_layer` in tool args for a reliable Flutter-layer shot.
+   On macOS / iOS Simulator, if host `desktop_window` capture fails, pass `mode: flutter_layer` to `fmt_get_screenshots` or `screenshotMode: flutter_layer` to `fmt_capture_ui_snapshot`.
 3. **Act** — `fmt_tap_widget`, `fmt_enter_text`, `fmt_scroll`, `fmt_wait_for` (stable predicate after reload).
 4. **Reload + verify** — `fmt_hot_reload_flutter`, `fmt_hot_reload_and_capture`.
 ${configuration.dynamicRegistrySupported ? '''
-5. **Dynamic tools** (when the app registers AgentCallEntry surfaces) — `fmt_list_client_tools_and_resources`, `fmt_client_tool`, `fmt_client_resource`; run **`fmt_hot_restart_flutter`** after registration changes (reload alone is not enough).
+5. **Dynamic tools** (when the app registers AgentCallEntry surfaces) — `fmt_list_client_tools_and_resources`, `fmt_client_tool`, `fmt_client_resource`. Runtime `addEntries` is picked up without a restart. After changes to startup registration code, run **`fmt_hot_restart_flutter`** (hot reload does not re-run `main`).
    Skills: `flutter-mcp-toolkit-custom-tools`, `flutter-mcp-toolkit-intentcall-migration`.
 ''' : ''}
 Supporting tools include `fmt_get_vm`, `fmt_get_view_details`, navigation/dialog helpers, and interaction catalog entries (`fmt_drag`, `fmt_swipe`, …). Install the `flutter-mcp-toolkit-*` skills or call `tools/list` for the live catalog.
@@ -38,8 +38,7 @@ ${configuration.resourcesSupported ? '''
 - `visual://localhost/app/errors/latest`
 - `visual://localhost/app/errors/{count}`
 - `visual://localhost/view/details`
-- `visual://localhost/view/screenshots`
-''' : '''
+${configuration.imagesSupported ? '- `visual://localhost/view/screenshots`\n' : ''}''' : '''
 ## Error and view tools (when resources are disabled)
 
 - `fmt_get_app_errors`, `fmt_get_view_details`, `fmt_get_screenshots`
