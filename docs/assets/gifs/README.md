@@ -25,9 +25,9 @@ Set `HARNESS_GIF_DEVICE=linux` to attempt a GTK desktop run of `showcase/native_
 | Asset | Target | Hard cap |
 | --- | --- | --- |
 | Duration | 8–15s playback | — |
-| Width | 800–1000px (tapes use 960px) | — |
+| Width | 800–1000px (tapes use **1008px**) | — |
 | File size | ≤2MB | **5MB** (`regenerate_cli_gifs.sh` fails above cap) |
-| Theme | GitHub Dark, font 15–16px | — |
+| Theme | GitHub Dark, font **14px** | — |
 
 After recording, `regenerate_cli_gifs.sh` writes probe PNG/text under `frames/` (gitignored locally; CI workflow uploads GIFs only).
 
@@ -35,8 +35,8 @@ After recording, `regenerate_cli_gifs.sh` writes probe PNG/text under `frames/` 
 
 | Tape | GIF | Content |
 | --- | --- | --- |
-| `cli-doctor.tape` | `cli-doctor.gif` | `flutter-mcp-toolkit --help` → `doctor` |
-| `cli-exec.tape` | `cli-exec.gif` | `scenarios/exec_demo.sh`: live debug app + `exec --name get_extension_rpcs` JSON |
+| `cli-doctor.tape` | `cli-doctor.gif` | `warm_fixture` (hide) → `doctor --help` → `doctor_demo_display` (`criticalFailures=0`) |
+| `cli-exec.tape` | `cli-exec.gif` | `warm_fixture` (hide) → `exec_demo_display` + `get_extension_rpcs` JSON preview |
 | `harness.tape` | `harness.gif` | `scenarios/harness_counter_smoke.dart` scenario, passes, summary |
 
 Supporting scripts live under `scenarios/` (not committed lockfile noise: run `dart pub get` there before harness recording).
