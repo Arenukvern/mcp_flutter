@@ -49,7 +49,7 @@
     "noindex": false
   },
   "variables": {
-    "version": "7.1.1",
+    "version": "7.2.0",
     "repo": "https://github.com/Arenukvern/mcp_flutter",
     "docs": "https://docs.page/arenukvern/mcp_flutter"
   },
@@ -64,68 +64,179 @@
     {
       "group": "Get started",
       "pages": [
-        { "title": "Overview", "href": "/" },
-        { "title": "Quickstart", "href": "/quickstart" },
-        { "title": "Client setup", "href": "/install/clients" },
-        { "title": "App setup", "href": "/install/app-setup" },
-        { "title": "Platforms", "href": "/install/platforms" },
-        { "title": "Docker", "href": "/install/docker" }
+        {
+          "title": "Overview",
+          "href": "/"
+        },
+        {
+          "title": "Quickstart",
+          "href": "/quickstart"
+        },
+        {
+          "title": "Client setup",
+          "href": "/install/clients"
+        },
+        {
+          "title": "App setup",
+          "href": "/install/app-setup"
+        },
+        {
+          "title": "Platforms",
+          "href": "/install/platforms"
+        },
+        {
+          "title": "Docker",
+          "href": "/install/docker"
+        }
       ]
     },
     {
       "group": "Use cases",
       "pages": [
-        { "title": "Debug a running app", "href": "/use-cases/debug-a-running-app" },
-        { "title": "See the UI", "href": "/use-cases/see-the-ui" },
-        { "title": "Drive the UI", "href": "/use-cases/drive-the-ui" },
-        { "title": "Hot reload loop", "href": "/use-cases/hot-reload-loop" },
-        { "title": "Custom tools", "href": "/use-cases/custom-tools" },
-        { "title": "CI and scripts", "href": "/use-cases/ci-and-scripts" },
-        { "title": "E2E scenarios", "href": "/use-cases/e2e-scenarios" },
-        { "title": "Multiple apps", "href": "/use-cases/multiple-apps" }
+        {
+          "title": "Debug a running app",
+          "href": "/use-cases/debug-a-running-app"
+        },
+        {
+          "title": "See the UI",
+          "href": "/use-cases/see-the-ui"
+        },
+        {
+          "title": "Drive the UI",
+          "href": "/use-cases/drive-the-ui"
+        },
+        {
+          "title": "Hot reload loop",
+          "href": "/use-cases/hot-reload-loop"
+        },
+        {
+          "title": "Custom tools",
+          "href": "/use-cases/custom-tools"
+        },
+        {
+          "title": "CI and scripts",
+          "href": "/use-cases/ci-and-scripts"
+        },
+        {
+          "title": "E2E scenarios",
+          "href": "/use-cases/e2e-scenarios"
+        },
+        {
+          "title": "Multiple apps",
+          "href": "/use-cases/multiple-apps"
+        }
       ]
     },
     {
       "group": "Concepts",
       "pages": [
-        { "title": "How it works", "href": "/concepts/how-it-works" },
-        { "title": "Video walkthroughs", "href": "/concepts/video-walkthroughs" },
-        { "title": "CLI vs MCP", "href": "/concepts/cli-vs-mcp" },
-        { "title": "Automation chain", "href": "/concepts/automation-chain" },
-        { "title": "Glossary", "href": "/concepts/glossary" }
+        {
+          "title": "How it works",
+          "href": "/concepts/how-it-works"
+        },
+        {
+          "title": "Video walkthroughs",
+          "href": "/concepts/video-walkthroughs"
+        },
+        {
+          "title": "CLI vs MCP",
+          "href": "/concepts/cli-vs-mcp"
+        },
+        {
+          "title": "Automation chain",
+          "href": "/concepts/automation-chain"
+        },
+        {
+          "title": "Glossary",
+          "href": "/concepts/glossary"
+        }
       ]
     },
     {
       "group": "Reference",
       "pages": [
-        { "title": "MCP tools", "href": "/reference/tools" },
-        { "title": "Resources", "href": "/reference/resources" },
-        { "title": "CLI", "href": "/reference/cli" },
-        { "title": "Server flags", "href": "/reference/server-flags" },
-        { "title": "Errors", "href": "/reference/errors" },
-        { "title": "Skills", "href": "/reference/skills" }
+        {
+          "title": "MCP tools",
+          "href": "/reference/tools"
+        },
+        {
+          "title": "Resources",
+          "href": "/reference/resources"
+        },
+        {
+          "title": "CLI",
+          "href": "/reference/cli"
+        },
+        {
+          "title": "Server flags",
+          "href": "/reference/server-flags"
+        },
+        {
+          "title": "Errors",
+          "href": "/reference/errors"
+        },
+        {
+          "title": "Skills",
+          "href": "/reference/skills"
+        }
       ]
     },
     {
       "group": "Help",
       "pages": [
-        { "title": "Troubleshooting", "href": "/troubleshooting" },
-        { "title": "Migration v2 → v3", "href": "/migration/migration_v2_to_v3" },
-        { "title": "Projections migration", "href": "/migration/migration_toolkit_projections" },
-        { "title": "Agent call entry migration", "href": "/migration/migration_mcp_call_entry_to_agent_call_entry" },
-        { "title": "ADR index", "href": "/decisions" },
-        { "title": "Contributing", "href": "/contributing/guide" },
-        { "title": "Contributors", "href": "/contributing/contributors" }
+        {
+          "title": "Troubleshooting",
+          "href": "/troubleshooting"
+        },
+        {
+          "title": "Migration v2 → v3",
+          "href": "/migration/migration_v2_to_v3"
+        },
+        {
+          "title": "Projections migration",
+          "href": "/migration/migration_toolkit_projections"
+        },
+        {
+          "title": "Agent call entry migration",
+          "href": "/migration/migration_mcp_call_entry_to_agent_call_entry"
+        },
+        {
+          "title": "ADR index",
+          "href": "/decisions"
+        },
+        {
+          "title": "Contributing",
+          "href": "/contributing/guide"
+        },
+        {
+          "title": "Contributors",
+          "href": "/contributing/contributors"
+        }
       ]
     },
     {
       "group": "Maintainers",
       "pages": [
-        { "title": "Evidence archive", "href": "https://github.com/Arenukvern/mcp_flutter/tree/main/maintainers/evidence" },
-        { "title": "Superpowers / plans", "href": "https://github.com/Arenukvern/mcp_flutter/tree/main/maintainers/superpowers" },
-        { "title": "Marketplace runbook", "href": "/contributing/marketplace_submission_runbook" },
-        { "title": "Registry publish runbook", "href": "/contributing/mcp_registry_publish_runbook" },
-        { "title": "Docs maintenance", "href": "/contributing/docs_maintenance" }
+        {
+          "title": "Evidence archive",
+          "href": "https://github.com/Arenukvern/mcp_flutter/tree/main/maintainers/evidence"
+        },
+        {
+          "title": "Superpowers / plans",
+          "href": "https://github.com/Arenukvern/mcp_flutter/tree/main/maintainers/superpowers"
+        },
+        {
+          "title": "Marketplace runbook",
+          "href": "/contributing/marketplace_submission_runbook"
+        },
+        {
+          "title": "Registry publish runbook",
+          "href": "/contributing/mcp_registry_publish_runbook"
+        },
+        {
+          "title": "Docs maintenance",
+          "href": "/contributing/docs_maintenance"
+        }
       ]
     }
   ]

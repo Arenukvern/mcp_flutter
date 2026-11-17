@@ -3,6 +3,26 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
+## [7.2.0](https://github.com/Arenukvern/mcp_flutter/compare/v7.1.1...v7.2.0) (2026-11-17)
+
+### Features
+
+* Human-readable `flutter-mcp-toolkit doctor` on TTY (table, colors, width-aware wrap, `NO_COLOR` respect) ([#181](https://github.com/Arenukvern/mcp_flutter/pull/181))
+
+### Bug Fixes
+
+* **Harness:** attach waits only for hard toolkit verbs (`semantic_snapshot`, `tap_widget`, `enter_text`); optional extensions get a grace period on first use, then per-isolate absent cache; typed `ToolkitNotReady` and `ToolkitExtensionUnavailable` (minimum `mcp_toolkit` **7.1.0** for the full verb set) ([#182](https://github.com/Arenukvern/mcp_flutter/pull/182), [#186](https://github.com/Arenukvern/mcp_flutter/pull/186))
+* **Doctor:** resolve visual-capture routing platform from the connected VM target (bounded probes, distrust native probes after `js_util` timeout, skip CDP when VM probes time out, injectable resolver) ([#183](https://github.com/Arenukvern/mcp_flutter/pull/183))
+* **Server:** gate dynamic MCP instructions, correct install URL, and expand help-surface tests ([#172](https://github.com/Arenukvern/mcp_flutter/pull/172))
+* **CI:** MCP Registry Docker overlay guard matches `FROM` lines only ([#169](https://github.com/Arenukvern/mcp_flutter/pull/169))
+* Post-merge review nits (bin import order, analyzer cleanups in visual-capture tests, README alt text and walkthrough labels) ([#185](https://github.com/Arenukvern/mcp_flutter/pull/185))
+
+### Documentation
+
+* Docs-first site (quickstart, install, use cases, migration) with generated CLI reference and link/tool-count contract gates ([#171](https://github.com/Arenukvern/mcp_flutter/pull/171))
+* Restore README branding, infographic, demo GIF, and video walkthrough links ([#176](https://github.com/Arenukvern/mcp_flutter/pull/176))
+* Reproducible CLI demo GIFs with VHS and showcase harness drives ([#177](https://github.com/Arenukvern/mcp_flutter/pull/177))
+
 ## [7.1.1](https://github.com/Arenukvern/mcp_flutter/compare/v7.1.0...v7.1.1) (2026-11-11)
 
 
