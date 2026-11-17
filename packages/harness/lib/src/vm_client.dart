@@ -80,23 +80,67 @@ final class VmClient {
     Duration timeout = const Duration(seconds: 90),
     Duration rpcTimeout = const Duration(seconds: 30),
   }) async {
-    await _service.streamListen(vm.EventStreams.kIsolate);
-    final extensionAdded = _service.onIsolateEvent
-        .where(
-          (event) =>
-              event.kind == vm.EventKind.kServiceExtensionAdded &&
-              event.extensionRPC != null &&
-              event.extensionRPC!.startsWith(ToolkitExtensions.prefix),
-        )
-        .map((event) => event.extensionRPC!);
-    await waitUntilToolkitRegistered(
-      readExtensions: extensionNames,
-      rebind: _rebindToToolkitIsolate,
-      extensionAdded: extensionAdded,
-      timeout: timeout,
-      rpcTimeout: rpcTimeout,
-      diagnosticUri: httpUri,
-    );
+    final stopwatch = Stopwatch()..start();
+    final needed = Set<String>.from(ToolkitExtensions.requiredForToolkitDriver);
+
+    Duration rpcBudget() {
+      final remaining = timeout - stopwatch.elapsed;
+      if (remaining <= Duration.zero) return Duration.zero;
+      final micros = math.min(
+        rpcTimeout.inMicroseconds,
+        remaining.inMicroseconds,
+      );
+      return Duration(microseconds: micros);
+    }
+
+    var subscribedHere = false;
+    try {
+      final listenBudget = rpcBudget();
+      if (listenBudget <= Duration.zero) {
+        throw _toolkitRegistrationTimeout(
+          timeout,
+          needed,
+          const {},
+          httpUri,
+        );
+      }
+      subscribedHere = await subscribeIsolateStream(
+        streamListen: _service.streamListen,
+        budget: listenBudget,
+      );
+
+      final remaining = timeout - stopwatch.elapsed;
+      if (remaining <= Duration.zero) {
+        throw _toolkitRegistrationTimeout(
+          timeout,
+          needed,
+          const {},
+          httpUri,
+        );
+      }
+
+      final extensionAdded = _service.onIsolateEvent
+          .where(
+            (event) =>
+                event.kind == vm.EventKind.kServiceExtensionAdded &&
+                event.extensionRPC != null &&
+                event.extensionRPC!.startsWith(ToolkitExtensions.prefix),
+          )
+          .map((event) => event.extensionRPC!);
+      await waitUntilToolkitRegistered(
+        readExtensions: extensionNames,
+        rebind: _rebindToToolkitIsolate,
+        extensionAdded: extensionAdded,
+        timeout: remaining,
+        rpcTimeout: rpcTimeout,
+        diagnosticUri: httpUri,
+      );
+    } finally {
+      await cancelIsolateStreamIfSubscribed(
+        _service.streamCancel,
+        subscribedHere,
+      );
+    }
   }
 
   /// Calls a registered service extension and returns its JSON response.
@@ -257,6 +301,41 @@ final class VmClient {
 
   Future<void> dispose() async {
     _service.dispose();
+  }
+}
+
+/// Subscribes to the VM Isolate event stream within [budget].
+///
+/// Returns `true` when this call established the subscription (caller should
+/// [cancelIsolateStreamIfSubscribed] on exit). Returns `false` when the client
+/// was already subscribed (`RPCError` code 103).
+@visibleForTesting
+Future<bool> subscribeIsolateStream({
+  required Future<vm.Success> Function(String streamId) streamListen,
+  required Duration budget,
+}) async {
+  try {
+    await streamListen(vm.EventStreams.kIsolate).timeout(budget);
+    return true;
+  } on vm.RPCError catch (error) {
+    if (error.code == vm.RPCErrorKind.kStreamAlreadySubscribed.code) {
+      return false;
+    }
+    rethrow;
+  }
+}
+
+/// Cancels the Isolate stream only when [subscribedHere] is true.
+@visibleForTesting
+Future<void> cancelIsolateStreamIfSubscribed(
+  Future<vm.Success> Function(String streamId) streamCancel,
+  bool subscribedHere,
+) async {
+  if (!subscribedHere) return;
+  try {
+    await streamCancel(vm.EventStreams.kIsolate);
+  } on Object {
+    // Best-effort teardown; leave an external subscription intact on 103.
   }
 }
 
