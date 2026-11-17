@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:math' as math;
 
+import 'package:meta/meta.dart';
 import 'package:vm_service/vm_service.dart' as vm;
 import 'package:vm_service/vm_service_io.dart' as vm_io;
 
@@ -71,25 +73,29 @@ final class VmClient {
     return List<String>.from(isolate.extensionRPCs ?? const <String>[]);
   }
 
-  /// Polls [extensionNames] (re-scanning isolates each tick) until the MCP
-  /// toolkit registers on the UI isolate — web/chrome often attaches before
-  /// `ext.mcp.toolkit.*` land on [extensionRPCs].
+  /// Listens for [ServiceExtensionAdded] on the Isolate stream, then waits
+  /// until every extension in [ToolkitExtensions.requiredForToolkitDriver]
+  /// is present — web/chrome often attaches before the full toolkit lands.
   Future<void> waitForToolkitExtensions({
     Duration timeout = const Duration(seconds: 90),
-    Duration poll = const Duration(milliseconds: 250),
-    String required = ToolkitExtensions.snapshot,
+    Duration rpcTimeout = const Duration(seconds: 30),
   }) async {
+    await _service.streamListen(vm.EventStreams.kIsolate);
+    final extensionAdded = _service.onIsolateEvent
+        .where(
+          (event) =>
+              event.kind == vm.EventKind.kServiceExtensionAdded &&
+              event.extensionRPC != null &&
+              event.extensionRPC!.startsWith(ToolkitExtensions.prefix),
+        )
+        .map((event) => event.extensionRPC!);
     await waitUntilToolkitRegistered(
       readExtensions: extensionNames,
       rebind: _rebindToToolkitIsolate,
-      required: required,
+      extensionAdded: extensionAdded,
       timeout: timeout,
-      poll: poll,
-      onTimeout: () => throw TimeoutException(
-        'MCP toolkit extensions not registered within $timeout '
-        '(waited for $required on $httpUri)',
-        timeout,
-      ),
+      rpcTimeout: rpcTimeout,
+      diagnosticUri: httpUri,
     );
   }
 
@@ -254,29 +260,106 @@ final class VmClient {
   }
 }
 
-/// Returns true when [names] includes [required] (typically semantic_snapshot).
+/// True when [names] contains every entry in [required].
 bool toolkitExtensionsReady(
-  List<String> names, {
-  String required = ToolkitExtensions.snapshot,
+  Iterable<String> names, {
+  Iterable<String> required = ToolkitExtensions.requiredForToolkitDriver,
 }) {
-  return names.contains(required);
+  final present = names is Set<String> ? names : names.toSet();
+  for (final extension in required) {
+    if (!present.contains(extension)) return false;
+  }
+  return true;
 }
 
-/// Shared poll loop for toolkit registration (tested directly).
+/// Event-driven wait for toolkit registration (tested directly).
+@visibleForTesting
 Future<void> waitUntilToolkitRegistered({
   required Future<List<String>> Function() readExtensions,
   required Future<void> Function() rebind,
-  String required = ToolkitExtensions.snapshot,
+  required Stream<String> extensionAdded,
+  Iterable<String> required = ToolkitExtensions.requiredForToolkitDriver,
   Duration timeout = const Duration(seconds: 90),
-  Duration poll = const Duration(milliseconds: 250),
-  required void Function() onTimeout,
+  Duration rpcTimeout = const Duration(seconds: 30),
+  Uri? diagnosticUri,
 }) async {
-  final deadline = DateTime.now().add(timeout);
-  while (DateTime.now().isBefore(deadline)) {
-    await rebind();
-    final names = await readExtensions();
-    if (toolkitExtensionsReady(names, required: required)) return;
-    await Future<void>.delayed(poll);
+  final stopwatch = Stopwatch()..start();
+  final needed = Set<String>.from(required);
+  final present = <String>{};
+
+  bool isReady() => toolkitExtensionsReady(present, required: needed);
+
+  final ready = Completer<void>();
+  void tryComplete() {
+    if (!ready.isCompleted && isReady()) ready.complete();
   }
-  onTimeout();
+
+  Future<void> snapshotOnce() async {
+    final elapsed = stopwatch.elapsed;
+    if (elapsed >= timeout) return;
+    final budget = timeout - elapsed;
+    final bound = math.min(rpcTimeout.inMicroseconds, budget.inMicroseconds);
+    if (bound <= 0) return;
+    final perRpc = Duration(microseconds: bound);
+    try {
+      await rebind().timeout(perRpc);
+      final names = await readExtensions().timeout(perRpc);
+      present.addAll(names);
+      tryComplete();
+    } on TimeoutException {
+      // Hung rebind/read — retry on the next extension event.
+    } on vm.RPCError {
+      // Isolate restart — retryable until the overall deadline.
+    }
+  }
+
+  late final StreamSubscription<String> addedSubscription;
+  addedSubscription = extensionAdded.listen((name) {
+    present.add(name);
+    tryComplete();
+    if (!isReady()) unawaited(snapshotOnce());
+  });
+
+  try {
+    await snapshotOnce();
+    tryComplete();
+    if (isReady()) return;
+
+    final remaining = timeout - stopwatch.elapsed;
+    if (remaining <= Duration.zero) {
+      throw _toolkitRegistrationTimeout(
+        timeout,
+        needed,
+        present,
+        diagnosticUri,
+      );
+    }
+
+    await ready.future.timeout(
+      remaining,
+      onTimeout: () => throw _toolkitRegistrationTimeout(
+        timeout,
+        needed,
+        present,
+        diagnosticUri,
+      ),
+    );
+  } finally {
+    await addedSubscription.cancel();
+  }
+}
+
+TimeoutException _toolkitRegistrationTimeout(
+  Duration timeout,
+  Set<String> needed,
+  Set<String> present,
+  Uri? httpUri,
+) {
+  final missing = needed.difference(present).toList()..sort();
+  final target = httpUri == null ? '' : ' on $httpUri';
+  return TimeoutException(
+    'MCP toolkit extensions not registered within $timeout$target '
+    '(missing: ${missing.join(', ')})',
+    timeout,
+  );
 }

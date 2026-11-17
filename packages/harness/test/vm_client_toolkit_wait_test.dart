@@ -1,21 +1,28 @@
-import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
+import 'dart:async';
+
+import 'package:flutter_mcp_harness/src/toolkit_extensions.dart';
 import 'package:flutter_mcp_harness/src/vm_client.dart';
 import 'package:test/test.dart';
 
 void main() {
   group('toolkitExtensionsReady', () {
-    test('accepts exact snapshot extension', () {
+    test('accepts the full ToolkitDriver extension set', () {
       expect(
-        toolkitExtensionsReady([
-          ToolkitExtensions.snapshot,
-        ]),
+        toolkitExtensionsReady(ToolkitExtensions.requiredForToolkitDriver),
         isTrue,
       );
     });
 
-    test('rejects other ext.mcp.toolkit verbs before snapshot registers', () {
+    test('rejects a partial toolkit subset', () {
       expect(
-        toolkitExtensionsReady(['ext.mcp.toolkit.tap_widget']),
+        toolkitExtensionsReady([ToolkitExtensions.tap]),
+        isFalse,
+      );
+      expect(
+        toolkitExtensionsReady([
+          ToolkitExtensions.snapshot,
+          ToolkitExtensions.tap,
+        ]),
         isFalse,
       );
     });
@@ -26,32 +33,92 @@ void main() {
   });
 
   group('waitUntilToolkitRegistered', () {
-    test('returns once extensions appear', () async {
-      var reads = 0;
+    test('completes when extensions are already registered', () async {
       await waitUntilToolkitRegistered(
-        readExtensions: () async {
-          reads++;
-          if (reads >= 3) return [ToolkitExtensions.snapshot];
-          return const <String>[];
-        },
+        readExtensions: () async => [
+          ...ToolkitExtensions.requiredForToolkitDriver,
+        ],
         rebind: () async {},
-        poll: const Duration(milliseconds: 1),
+        extensionAdded: const Stream<String>.empty(),
         timeout: const Duration(seconds: 1),
-        onTimeout: () => fail('should not time out'),
       );
-      expect(reads, greaterThanOrEqualTo(3));
     });
 
-    test('invokes onTimeout when extensions never register', () async {
-      var timedOut = false;
+    test('completes when an extension arrives on the event stream', () async {
+      final added = StreamController<String>();
+      unawaited(
+        Future<void>(() async {
+          await Future<void>.delayed(const Duration(milliseconds: 5));
+          for (final name in ToolkitExtensions.requiredForToolkitDriver) {
+            added.add(name);
+          }
+        }),
+      );
       await waitUntilToolkitRegistered(
         readExtensions: () async => const <String>[],
         rebind: () async {},
-        poll: const Duration(milliseconds: 1),
-        timeout: const Duration(milliseconds: 5),
-        onTimeout: () => timedOut = true,
+        extensionAdded: added.stream,
+        timeout: const Duration(seconds: 1),
+        rpcTimeout: const Duration(milliseconds: 100),
       );
-      expect(timedOut, isTrue);
+      await added.close();
+    });
+
+    test('throws TimeoutException when registration never completes', () async {
+      await expectLater(
+        waitUntilToolkitRegistered(
+          readExtensions: () async => const <String>[],
+          rebind: () async {},
+          extensionAdded: const Stream<String>.empty(),
+          timeout: const Duration(milliseconds: 50),
+          rpcTimeout: const Duration(milliseconds: 10),
+        ),
+        throwsA(isA<TimeoutException>()),
+      );
+    });
+
+    test('partial toolkit registration does not complete before deadline',
+        () async {
+      final added = StreamController<String>();
+      added.add(ToolkitExtensions.tap);
+      await expectLater(
+        waitUntilToolkitRegistered(
+          readExtensions: () async => [ToolkitExtensions.tap],
+          rebind: () async {},
+          extensionAdded: added.stream,
+          timeout: const Duration(milliseconds: 50),
+          rpcTimeout: const Duration(milliseconds: 10),
+        ),
+        throwsA(isA<TimeoutException>()),
+      );
+      await added.close();
+    });
+
+    test('per-RPC timeout on hung rebind then event-driven retry', () async {
+      final added = StreamController<String>();
+      var rebindCalls = 0;
+      unawaited(
+        Future<void>(() async {
+          await Future<void>.delayed(const Duration(milliseconds: 80));
+          for (final name in ToolkitExtensions.requiredForToolkitDriver) {
+            added.add(name);
+          }
+        }),
+      );
+      await waitUntilToolkitRegistered(
+        readExtensions: () async => const <String>[],
+        rebind: () async {
+          rebindCalls++;
+          if (rebindCalls == 1) {
+            await Future<void>.delayed(const Duration(seconds: 10));
+          }
+        },
+        extensionAdded: added.stream,
+        timeout: const Duration(seconds: 2),
+        rpcTimeout: const Duration(milliseconds: 30),
+      );
+      expect(rebindCalls, greaterThanOrEqualTo(1));
+      await added.close();
     });
   });
 }
