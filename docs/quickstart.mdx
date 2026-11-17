@@ -52,6 +52,8 @@ flutter run --debug
 flutter-mcp-toolkit doctor
 ```
 
+In an interactive terminal, doctor prints a readable pass/warn/fail table. Pipes, CI, and agents still get compact JSON by default; pass `--json` anytime you need the envelope explicitly.
+
 Doctor checks the binary, PATH, and (with a target) VM connectivity and `mcp_toolkit` extensions. If tools return `connection_selection_required`, pass `connection.uri` from `flutter run` output — see [troubleshooting](./troubleshooting.mdx).
 
 ## 5. First prompt to your agent
