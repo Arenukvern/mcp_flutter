@@ -1,6 +1,6 @@
 # Recover missing GitHub Release binaries
 
-Use when a tagged release exists but [`release.yml`](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release.yml) failed before attaching `flutter_mcp_<version>_<triple>.tar.gz` and `checksums.txt` (for example after an unsupported macOS runner image).
+Use when a tagged release exists but [`release.yml`](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release.yml) failed before attaching `flutter_mcp_<version>_<triple>.tar.gz` and `checksums.txt` (for example after a GitHub hosted macOS arm64 runner shortage that cancels `macos-15` build jobs with **zero steps**).
 
 ## Preconditions
 
@@ -18,11 +18,21 @@ Use when a tagged release exists but [`release.yml`](https://github.com/Arenukve
 
 Build uses **tooling** scripts against **release-src** (`RELEASE_ROOT`). Historical tags (for example `v7.0.2`) may lack newer helpers; dispatch recovery still works because helpers come from `_tooling`.
 
+## Automatic runner-shortage retry
+
+[`release_runner_retry.yml`](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release_runner_retry.yml) runs on **Release** `workflow_run` completion when the triggering repo is canonical (not a fork). It inspects failed/cancelled jobs and **only** re-runs jobs that look like hosted-runner acquisition failures:
+
+- job cancelled with **zero steps** and `runner_id: 0`, or
+- a check annotation containing GitHub’s “not acquired by a Runner of type hosted” message.
+
+It refuses to rerun when any job failed a real build/test step, backs off a few minutes based on `run_attempt`, and caps at **three** attempts. Each decision is written to the job summary.
+
 ## Manual recovery (maintainers)
 
-1. Open **Actions → Release → Run workflow** on `main` (after runner/dispatch fix is merged).
-2. `release_tag`: existing tag (for example `v7.0.2`).
-3. The run checks out `release-src`, records `release_sha`, and uploads to that tag via explicit `tag_name`.
+1. **Re-run failed jobs** on the Release workflow run when only the macOS matrix job was cancelled and the linux artifact already succeeded (safe after the retry workflow hits its cap).
+2. Or open **Actions → Release → Run workflow** on `main` (after runner/dispatch fix is merged).
+3. `release_tag`: existing tag (for example `v7.0.2`).
+4. The run checks out `release-src`, records `release_sha`, and uploads to that tag via explicit `tag_name` (`publish_release_assets.sh` uses `gh release upload --clobber` for idempotent recovery).
 
 **Not verified in CI:** a full end-to-end dispatch against `v7.0.2` until a maintainer runs it post-merge.
 
