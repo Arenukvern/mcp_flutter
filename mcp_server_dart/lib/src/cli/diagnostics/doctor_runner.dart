@@ -25,13 +25,17 @@ final class DoctorRunner {
     required this.stateFilePath,
     required this.dynamicRegistrySupported,
     required this.logger,
-  });
+    ResolveVisualCaptureTargetPlatform? visualCaptureTargetPlatformResolver,
+  }) : visualCaptureTargetPlatformResolver =
+           visualCaptureTargetPlatformResolver ??
+           resolveVisualCaptureTargetPlatform;
 
   final ConnectionContext connectionContext;
   final DefaultCoreCommandExecutor executor;
   final String stateFilePath;
   final bool dynamicRegistrySupported;
   final CoreLogger logger;
+  final ResolveVisualCaptureTargetPlatform visualCaptureTargetPlatformResolver;
 
   Future<Map<String, Object?>> run({
     String? target,
@@ -52,7 +56,8 @@ final class DoctorRunner {
       );
       final resolution = await catchVisualCaptureTargetPlatformProbeFailures(
         configuration: executor.configuration,
-        probe: resolveVisualCaptureTargetPlatform(
+        logger: logger,
+        probe: visualCaptureTargetPlatformResolver(
           configuration: executor.configuration,
           connectionContext: connectionContext,
           probeTimeout: timeout,

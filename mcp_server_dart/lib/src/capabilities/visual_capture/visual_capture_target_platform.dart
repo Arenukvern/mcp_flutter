@@ -3,8 +3,8 @@
 
 import 'dart:async';
 
+import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/visual_capture.dart';
-import 'package:meta/meta.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/web_cdp_discovery.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/types/core_types.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/connection_context.dart';
@@ -12,19 +12,18 @@ import 'package:vm_service/vm_service.dart';
 
 const _flutterPlatformOverrideExtension = 'ext.flutter.platformOverride';
 
-/// When set, replaces [resolveVisualCaptureTargetPlatform] for tests only.
-@visibleForTesting
-Future<VisualCaptureTargetPlatformResolution> Function({
-  required CoreRuntimeConfiguration configuration,
-  required ConnectionContext connectionContext,
-  required Duration probeTimeout,
-})? testOnlyVisualCaptureTargetPlatformProbe;
-
 /// Result of probing the connected debug target for visual-capture routing.
 typedef VisualCaptureTargetPlatformResolution = ({
   String platform,
   String? warning,
 });
+
+typedef ResolveVisualCaptureTargetPlatform =
+    Future<VisualCaptureTargetPlatformResolution> Function({
+      required CoreRuntimeConfiguration configuration,
+      required ConnectionContext connectionContext,
+      required Duration probeTimeout,
+    });
 
 /// Resolves which capture platform rules apply for the connected debug target.
 ///
@@ -35,15 +34,6 @@ Future<VisualCaptureTargetPlatformResolution> resolveVisualCaptureTargetPlatform
   required ConnectionContext connectionContext,
   required Duration probeTimeout,
 }) async {
-  final testProbe = testOnlyVisualCaptureTargetPlatformProbe;
-  if (testProbe != null) {
-    return testProbe(
-      configuration: configuration,
-      connectionContext: connectionContext,
-      probeTimeout: probeTimeout,
-    );
-  }
-
   final fromDevice = _platformFromFlutterDevice(configuration.flutterDevice);
   if (fromDevice != null) {
     return (platform: fromDevice, warning: null);
@@ -60,7 +50,7 @@ Future<VisualCaptureTargetPlatformResolution> resolveVisualCaptureTargetPlatform
   final timedOut = <String>{};
   final probeDeadline = DateTime.now().add(probeTimeout);
 
-  Duration _remainingProbeBudget() {
+  Duration remainingProbeBudget() {
     final left = probeDeadline.difference(DateTime.now());
     if (left <= Duration.zero) {
       return Duration.zero;
@@ -71,14 +61,13 @@ Future<VisualCaptureTargetPlatformResolution> resolveVisualCaptureTargetPlatform
   Future<T?> runVmProbe<T>({
     required String label,
     required Future<T> Function() action,
-  }) {
-    return _runProbe(
-      label: label,
-      timedOut: timedOut,
-      probeTimeout: _remainingProbeBudget(),
-      action: action,
-    );
-  }
+  }) =>
+      _runProbe(
+        label: label,
+        timedOut: timedOut,
+        probeTimeout: remainingProbeBudget(),
+        action: action,
+      );
 
   final webViaJsUtil = await runVmProbe(
     label: 'dart.library.js_util',
@@ -179,10 +168,21 @@ Future<VisualCaptureTargetPlatformResolution>
 catchVisualCaptureTargetPlatformProbeFailures({
   required Future<VisualCaptureTargetPlatformResolution> probe,
   required CoreRuntimeConfiguration configuration,
+  required CoreLogger logger,
 }) async {
   try {
     return await probe;
-  } on Object catch (error) {
+  } on Object catch (error, stackTrace) {
+    logger(
+      LoggingLevel.debug,
+      'Visual capture target platform probe failed: $error',
+      logger: 'DoctorRunner',
+    );
+    logger(
+      LoggingLevel.debug,
+      '$stackTrace',
+      logger: 'DoctorRunner',
+    );
     return (
       platform: effectiveVisualCapturePlatformFromConfiguration(configuration),
       warning:

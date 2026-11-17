@@ -180,6 +180,7 @@ void main() {
       final configuration = _baseConfiguration();
       final resolution = await catchVisualCaptureTargetPlatformProbeFailures(
         configuration: configuration,
+        logger: (level, message, {logger = 'test'}) {},
         probe: Future<VisualCaptureTargetPlatformResolution>(() async {
           throw StateError('paused');
         }),
