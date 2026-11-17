@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/visual_capture_target_platform.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -16,7 +17,7 @@ void main() {
         initialStickyEndpointUri: 'ws://127.0.0.1:8181/abc/ws',
       );
 
-      final configuration = const CoreRuntimeConfiguration(
+      const configuration = CoreRuntimeConfiguration(
         vmHost: '127.0.0.1',
         vmPort: 8181,
         resourcesSupported: true,
@@ -30,21 +31,18 @@ void main() {
         connectionContext: context,
         executor: DefaultCoreCommandExecutor(
           connectionContext: context,
-          portScanner: CorePortScanner(logger: _noopLogger),
-          imageFileSaver: CoreImageFileSaver(logger: _noopLogger),
+          portScanner: const CorePortScanner(logger: _noopLogger),
+          imageFileSaver: const CoreImageFileSaver(logger: _noopLogger),
           configuration: configuration,
         ),
         stateFilePath: '${Directory.systemTemp.path}/fmtk_doctor_test_state.json',
         dynamicRegistrySupported: false,
         logger: _noopLogger,
         visualCaptureTargetPlatformResolver:
-            ({
-              required CoreRuntimeConfiguration configuration,
-              required ConnectionContext connectionContext,
-              required Duration probeTimeout,
-            }) async {
-              throw StateError('paused native app');
-            },
+            ({required configuration, required connectionContext, required probeTimeout}) =>
+                Future<VisualCaptureTargetPlatformResolution>.error(
+                  StateError('paused native app'),
+                ),
       );
 
       final result = await runner.run(
@@ -52,7 +50,7 @@ void main() {
         timeout: const Duration(milliseconds: 200),
       );
 
-      final checks = (result['checks'] as List).cast<Map<String, Object?>>();
+      final checks = (result['checks']! as List).cast<Map<String, Object?>>();
       final platformWarn = checks.firstWhere(
         (c) => c['id'] == 'visual_capture_target_platform',
         orElse: () =>

@@ -7,22 +7,22 @@ import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/visua
 import 'package:flutter_mcp_toolkit_server/src/shared_core/types/core_types.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/connection_context.dart';
 import 'package:test/test.dart';
+
 CoreRuntimeConfiguration _baseConfiguration({
   String? flutterDevice,
   int? webBrowserDebuggingPort,
-}) {
-  return CoreRuntimeConfiguration(
-    vmHost: '127.0.0.1',
-    vmPort: 8181,
-    resourcesSupported: true,
-    imagesSupported: true,
-    dumpsSupported: false,
-    dynamicRegistrySupported: true,
-    saveImagesToFiles: false,
-    flutterDevice: flutterDevice,
-    webBrowserDebuggingPort: webBrowserDebuggingPort,
-  );
-}
+}) =>
+    CoreRuntimeConfiguration(
+      vmHost: '127.0.0.1',
+      vmPort: 8181,
+      resourcesSupported: true,
+      imagesSupported: true,
+      dumpsSupported: false,
+      dynamicRegistrySupported: true,
+      saveImagesToFiles: false,
+      flutterDevice: flutterDevice,
+      webBrowserDebuggingPort: webBrowserDebuggingPort,
+    );
 
 void main() {
   test('explicit flutterDevice wins without VM', () async {
@@ -61,7 +61,6 @@ void main() {
 
     final vmServer = await _startVmFake(
       platformOverride: 'android',
-      jsUtil: false,
     );
     addTearDown(() => vmServer.close(force: true));
 
@@ -121,7 +120,6 @@ void main() {
       );
 
       final vmServer = await _startVmFake(
-        jsUtil: false,
         delayMethods: const {'evaluate', 'ext.flutter.platformOverride'},
       );
       addTearDown(() => vmServer.close(force: true));
@@ -149,7 +147,6 @@ void main() {
     'js_util timeout ignores browser-derived native platformOverride answers',
     () async {
       final vmServer = await _startVmFake(
-        jsUtil: false,
         platformOverride: 'macOS',
         delayMethods: const {'evaluate'},
       );
@@ -181,9 +178,9 @@ void main() {
       final resolution = await catchVisualCaptureTargetPlatformProbeFailures(
         configuration: configuration,
         logger: (level, message, {logger = 'test'}) {},
-        probe: Future<VisualCaptureTargetPlatformResolution>(() async {
-          throw StateError('paused');
-        }),
+        probe: Future<VisualCaptureTargetPlatformResolution>.error(
+          StateError('paused'),
+        ),
       );
 
       expect(

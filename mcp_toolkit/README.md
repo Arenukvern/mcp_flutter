@@ -14,7 +14,7 @@ Flutter-side library for [flutter-mcp-toolkit](https://github.com/Arenukvern/mcp
 
 **Not** the [Dart MCP server](https://github.com/dart-lang/ai/tree/main/pkgs/dart_mcp_server) (analyzer/tooling). This package targets a **running debug app**.
 
-![View Screenshots](https://raw.githubusercontent.com/Arenukvern/mcp_flutter/main/docs/view_screenshots.gif)
+![Screen recording of fmt_get_screenshots capturing a running Flutter debug app and returning UI frames to an AI assistant.](https://raw.githubusercontent.com/Arenukvern/mcp_flutter/main/docs/view_screenshots.gif)
 
 See dynamic tools registration in this [short YouTube video](https://www.youtube.com/watch?v=Qog3x2VcO98).
 

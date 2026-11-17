@@ -3,18 +3,17 @@ import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/web_b
 import 'package:flutter_mcp_toolkit_server/src/shared_core/types/core_types.dart';
 import 'package:test/test.dart';
 
-CoreRuntimeConfiguration _baseConfiguration({String? flutterDevice}) {
-  return CoreRuntimeConfiguration(
-    vmHost: '127.0.0.1',
-    vmPort: 8181,
-    resourcesSupported: true,
-    imagesSupported: true,
-    dumpsSupported: false,
-    dynamicRegistrySupported: true,
-    saveImagesToFiles: false,
-    flutterDevice: flutterDevice,
-  );
-}
+CoreRuntimeConfiguration _baseConfiguration({String? flutterDevice}) =>
+    CoreRuntimeConfiguration(
+      vmHost: '127.0.0.1',
+      vmPort: 8181,
+      resourcesSupported: true,
+      imagesSupported: true,
+      dumpsSupported: false,
+      dynamicRegistrySupported: true,
+      saveImagesToFiles: false,
+      flutterDevice: flutterDevice,
+    );
 
 void main() {
   test('broker targetPlatform override selects web backend adapters', () {
@@ -70,10 +69,7 @@ void main() {
         configuration: configuration,
         targetPlatform: 'web',
         adapters: <VisualCapturePlatformAdapter>[
-          WebBrowserScreenshotService(
-            configuration: configuration,
-            connectionContext: null,
-          ),
+          WebBrowserScreenshotService(configuration: configuration),
         ],
       );
 
