@@ -81,7 +81,8 @@ Future<void> main(List<String> arguments) async {
 // ---------------------------------------------------------------------------
 
 Future<void> stopShowcase() async {
-  log('cleaning showcase/flutter_test_app / MCP showcase processes…');
+  final appPath = p.relative(appDir, from: repoRoot);
+  log('cleaning $appPath / MCP showcase processes…');
   final pidFile = File(p.join(showcaseDir, 'flutter.pid'));
   if (pidFile.existsSync()) {
     final savedPid = int.tryParse(pidFile.readAsStringSync().trim());
@@ -100,9 +101,9 @@ Future<void> stopShowcase() async {
     webPidFile.deleteSync();
   }
 
-  // Flutter tool driving this repo's test app.
-  await _runIgnoringExitCode(
-        'pkill', ['-f', 'flutter run.*showcase/flutter_test_app']);
+  // Flutter tool driving the resolved showcase app (SHOWCASE_APP_DIR or default).
+  final pkillPattern = 'flutter run.*$appPath';
+  await _runIgnoringExitCode('pkill', ['-f', pkillPattern]);
   await _runIgnoringExitCode('pkill', ['-f', 'flutter_tools.*run.*macos']);
 
   // macOS showcase GUI (survives parent flutter kill).

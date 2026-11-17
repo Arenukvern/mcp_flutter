@@ -33,6 +33,8 @@ if [[ -x tool/ci/checkout_intentcall.sh ]]; then
   fi
 fi
 
+# Detached showcase launch is temporary until oka ships a web/desktop target:
+# https://github.com/Arenukvern/mcp_flutter/issues/179
 pkill -f 'flutter run.*flutter_demo' 2>/dev/null || true
 pkill -f 'flutter run.*flutter_test_app' 2>/dev/null || true
 

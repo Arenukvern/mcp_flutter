@@ -15,6 +15,8 @@ bash docs/assets/gifs/regenerate_cli_gifs.sh
 
 The script compiles the workspace **`flutter-mcp-toolkit`** (`mcp_server_dart/make compile`), provisions **intentcall** for `showcase/flutter_demo`, prebuilds web assets, and runs vhs. **No URI grep/sed** — `cli-exec` warm uses `showcase.dart --web --detach` writing `runner-session.json`; `flutter-mcp-toolkit exec` in the app directory uses runner discovery.
 
+`SHOWCASE_APP_DIR` (repo-relative) selects which showcase app `showcase.dart` launches and where `runner-session.json` is written; default is `showcase/flutter_test_app` (unset env).
+
 ## Size budget
 
 | Asset | Target | Hard cap |
