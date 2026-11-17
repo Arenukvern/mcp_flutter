@@ -223,22 +223,28 @@ PlatformViewHints platformViewHintsFromCaptureHintsJson(
     );
   }
   final fromMatches = platformViewHintsFromMatches(matches);
+  final recommendedMode =
+      fromMatches.recommendedMode ?? kCaptureHintRecommendedDesktopWindow;
+  // The app's own flags are authoritative (the payload's `widgetTree` may be
+  // truncated away from the node that produced them), so the warning has to
+  // describe the state the app DECLARED. Deriving it from the match list let a
+  // declared platform view ship the external-Texture warning whenever the list
+  // held only weak matches, and a weak-only payload ship "native platform view
+  // detected" beside `platformViewsDetected: false`.
   if (platformViewsDetected) {
     return PlatformViewHints(
       platformViewsDetected: true,
       matches: fromMatches.matches,
-      recommendedMode:
-          fromMatches.recommendedMode ?? kCaptureHintRecommendedDesktopWindow,
-      warning: fromMatches.warning ?? kPlatformViewWarning,
+      recommendedMode: recommendedMode,
+      warning: kPlatformViewWarning,
     );
   }
   return PlatformViewHints(
     platformViewsDetected: false,
     weakSignalsDetected: true,
     matches: fromMatches.matches,
-    recommendedMode:
-        fromMatches.recommendedMode ?? kCaptureHintRecommendedDesktopWindow,
-    warning: fromMatches.warning ?? kWeakTextureWarning,
+    recommendedMode: recommendedMode,
+    warning: kWeakTextureWarning,
   );
 }
 
