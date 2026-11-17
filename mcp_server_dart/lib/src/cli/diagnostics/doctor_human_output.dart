@@ -3,6 +3,8 @@
 
 import 'dart:io' as io;
 
+import 'package:meta/meta.dart';
+
 enum DoctorStdoutFormat { jsonEnvelope, human }
 
 const _defaultWrapWidth = 76;
@@ -21,10 +23,14 @@ bool _envTruthy(String name) {
       normalized == 'on';
 }
 
-bool _noColorRequested() {
-  final raw = io.Platform.environment['NO_COLOR'];
-  return raw != null && raw.isNotEmpty;
+/// Returns whether [raw] or the live `NO_COLOR` env disables ANSI styling.
+@visibleForTesting
+bool noColorEnvDisablesAnsi([String? raw]) {
+  final value = raw ?? io.Platform.environment['NO_COLOR'];
+  return value != null && value.isNotEmpty;
 }
+
+bool _noColorRequested() => noColorEnvDisablesAnsi();
 
 bool doctorUseAnsiColor({
   required bool stdoutHasTerminal,
@@ -102,13 +108,24 @@ String formatDoctorHuman(
     }
 
     buffer.writeln('$statusLabel  $idLabel');
-    for (final line in _wrapDiagnostic(rawDiagnostic, wrapWidth: wrapWidth)) {
+    final detailWrapWidth = _contentWrapWidth(
+      wrapWidth,
+      _detailIndent.length,
+    );
+    for (final line in _wrapDiagnostic(
+      rawDiagnostic,
+      wrapWidth: detailWrapWidth,
+    )) {
       buffer.writeln('$_detailIndent$line');
     }
     if (fixCommand.isNotEmpty) {
+      final fixWrapWidth = _contentWrapWidth(
+        wrapWidth,
+        _fixCommandIndent.length,
+      );
       final fixLines = _wrapDiagnostic(
         fixCommand,
-        wrapWidth: wrapWidth - _fixCommandIndent.length,
+        wrapWidth: fixWrapWidth,
       );
       for (var index = 0; index < fixLines.length; index++) {
         final prefix = index == 0 ? _fixCommandIndent : ' ' * _fixCommandIndent.length;
@@ -223,4 +240,9 @@ int _asInt(Object? value) {
     return value.toInt();
   }
   return 0;
+}
+
+int _contentWrapWidth(int terminalWidth, int indentLength) {
+  final content = terminalWidth - indentLength;
+  return content < 1 ? 1 : content;
 }

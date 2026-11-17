@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter_mcp_toolkit_server/src/cli/diagnostics/doctor_human_output.dart';
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 void main() {
@@ -19,18 +22,32 @@ void main() {
     });
 
     test('NO_COLOR disables ANSI output when set to any non-empty value', () {
+      expect(noColorEnvDisablesAnsi('1'), isTrue);
+      expect(noColorEnvDisablesAnsi(' '), isTrue);
+      expect(noColorEnvDisablesAnsi(''), isFalse);
       expect(
         doctorUseAnsiColor(stdoutHasTerminal: true, noColorSet: true),
         isFalse,
       );
-      expect(
-        doctorUseAnsiColor(stdoutHasTerminal: true, noColorSet: false),
-        doctorUseAnsiColor(stdoutHasTerminal: true),
+    });
+
+    test('empty NO_COLOR env keeps colour path enabled', () async {
+      final probe = p.join('test', 'support', 'doctor_no_color_env_probe.dart');
+      final result = await Process.run(
+        Platform.resolvedExecutable,
+        ['run', probe],
+        workingDirectory: Directory.current.path,
+        environment: {
+          ...Platform.environment,
+          'NO_COLOR': '',
+        },
       );
+      expect(result.exitCode, 0);
+      expect((result.stdout as String).trim(), 'no_color_inactive');
     });
 
     test('formatDoctorHuman uses inline detail for pass and wrapped detail for warn/fail', () {
-      final longWarn =
+      const longWarn =
           'Visual capture backend could not be resolved because the app did not '
           'advertise any supported capture modes during the preflight probe.';
       final text = formatDoctorHuman(
@@ -58,8 +75,9 @@ void main() {
 
       expect(text, contains('pass  dart_sdk  Dart SDK version: 3.10.0'));
       expect(text, contains('warn  visual_capture_backend'));
-      expect(text, contains('Visual capture backend could not be'));
-      expect(text, contains('preflight probe.'));
+      expect(text, contains('Visual capture backend could not'));
+      expect(text, contains('during the preflight'));
+      expect(text, contains('probe.'));
       expect(text, contains('fix: Retry doctor'));
       expect(text, contains('ok (1 warning) - 1 pass'));
     });
