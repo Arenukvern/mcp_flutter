@@ -98,6 +98,53 @@ void main() {
     expect(resolution.platform, 'web');
   });
 
+  test(
+    'hanging VM probes skip CDP and never resolve to web when CDP is viable',
+    () async {
+      final cdpServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      addTearDown(() => cdpServer.close(force: true));
+      unawaited(
+        cdpServer.forEach((request) async {
+          final body = jsonEncode([
+            {
+              'type': 'page',
+              'url': 'http://localhost:${cdpServer.port}/',
+              'webSocketDebuggerUrl':
+                  'ws://127.0.0.1:${cdpServer.port}/devtools/page',
+            },
+          ]);
+          request.response
+            ..headers.contentType = ContentType.json
+            ..write(body);
+          await request.response.close();
+        }),
+      );
+
+      final vmServer = await _startVmFake(
+        jsUtil: false,
+        delayMethods: const {'evaluate', 'ext.flutter.platformOverride'},
+      );
+      addTearDown(() => vmServer.close(force: true));
+
+      final context = await _connectVmFake(vmServer);
+      final resolution = await resolveVisualCaptureTargetPlatform(
+        configuration: _baseConfiguration(
+          webBrowserDebuggingPort: cdpServer.port,
+        ),
+        connectionContext: context,
+        probeTimeout: const Duration(milliseconds: 80),
+      );
+
+      expect(resolution.platform, isNot('web'));
+      expect(
+        resolution.platform,
+        effectiveVisualCapturePlatformFromConfiguration(_baseConfiguration()),
+      );
+      expect(resolution.warning, isNotNull);
+      expect(resolution.warning, contains('timed out'));
+    },
+  );
+
   test('probe timeout falls back to host configuration', () async {
     final vmServer = await _startVmFake(
       delayMethod: 'ext.flutter.platformOverride',
@@ -142,6 +189,7 @@ Future<HttpServer> _startVmFake({
   bool jsUtil = false,
   String? platformOverride,
   String? delayMethod,
+  Set<String> delayMethods = const {},
 }) async {
   final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
   const isolateId = 'isolates/1';
@@ -192,7 +240,8 @@ Future<HttpServer> _startVmFake({
         final method = frame['method'] as String? ?? '';
         final id = frame['id'];
 
-        if (delayMethod != null && method == delayMethod) {
+        if ((delayMethod != null && method == delayMethod) ||
+            delayMethods.contains(method)) {
           await Future<void>.delayed(const Duration(seconds: 5));
         }
 

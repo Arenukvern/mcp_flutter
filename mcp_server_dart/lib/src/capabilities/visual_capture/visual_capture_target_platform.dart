@@ -40,21 +40,38 @@ Future<VisualCaptureTargetPlatformResolution> resolveVisualCaptureTargetPlatform
   }
 
   final timedOut = <String>{};
+  final probeDeadline = DateTime.now().add(probeTimeout);
 
-  final webViaJsUtil = await _runProbe(
+  Duration _remainingProbeBudget() {
+    final left = probeDeadline.difference(DateTime.now());
+    if (left <= Duration.zero) {
+      return Duration.zero;
+    }
+    return left;
+  }
+
+  Future<T?> runVmProbe<T>({
+    required String label,
+    required Future<T> Function() action,
+  }) {
+    return _runProbe(
+      label: label,
+      timedOut: timedOut,
+      probeTimeout: _remainingProbeBudget(),
+      action: action,
+    );
+  }
+
+  final webViaJsUtil = await runVmProbe(
     label: 'dart.library.js_util',
-    timedOut: timedOut,
-    probeTimeout: probeTimeout,
     action: () => _probeWebViaJsUtil(connectionContext: connectionContext),
   );
   if (webViaJsUtil == true) {
     return (platform: 'web', warning: null);
   }
 
-  final fromExtension = await _runProbe(
+  final fromExtension = await runVmProbe(
     label: _flutterPlatformOverrideExtension,
-    timedOut: timedOut,
-    probeTimeout: probeTimeout,
     action: () => _probeTargetPlatformViaFlutterExtension(
       connectionContext: connectionContext,
     ),
@@ -63,10 +80,8 @@ Future<VisualCaptureTargetPlatformResolution> resolveVisualCaptureTargetPlatform
     return (platform: fromExtension, warning: _timeoutWarning(timedOut));
   }
 
-  final fromEvaluate = await _runProbe(
+  final fromEvaluate = await runVmProbe(
     label: 'defaultTargetPlatform',
-    timedOut: timedOut,
-    probeTimeout: probeTimeout,
     action: () => _probeTargetPlatformViaEvaluateFallback(
       connectionContext: connectionContext,
     ),
@@ -75,26 +90,23 @@ Future<VisualCaptureTargetPlatformResolution> resolveVisualCaptureTargetPlatform
     return (platform: fromEvaluate, warning: _timeoutWarning(timedOut));
   }
 
-  if (connectionContext.stickyBrowserDebugPort != null && webViaJsUtil == true) {
-    return (platform: 'web', warning: _timeoutWarning(timedOut));
-  }
-
-  final connectionTarget = _connectionTargetForProbe(
-    connectionContext: connectionContext,
-    configuration: configuration,
-  );
-  final cdpViable = await _runProbe(
-    label: 'web_cdp_viability',
-    timedOut: timedOut,
-    probeTimeout: probeTimeout,
-    action: () => isWebCdpCaptureViable(
+  final vmProbesTimedOut = timedOut.isNotEmpty;
+  if (!vmProbesTimedOut) {
+    final connectionTarget = _connectionTargetForProbe(
+      connectionContext: connectionContext,
       configuration: configuration,
-      connectionTarget: connectionTarget,
-      includeProcessScan: false,
-    ),
-  );
-  if (cdpViable == true) {
-    return (platform: 'web', warning: _timeoutWarning(timedOut));
+    );
+    final cdpViable = await runVmProbe(
+      label: 'web_cdp_viability',
+      action: () => isWebCdpCaptureViable(
+        configuration: configuration,
+        connectionTarget: connectionTarget,
+        includeProcessScan: false,
+      ),
+    );
+    if (cdpViable == true) {
+      return (platform: 'web', warning: _timeoutWarning(timedOut));
+    }
   }
 
   if (fromExtension == 'web' || fromEvaluate == 'web') {
@@ -121,6 +133,10 @@ Future<T?> _runProbe<T>({
   required Duration probeTimeout,
   required Future<T> Function() action,
 }) async {
+  if (probeTimeout <= Duration.zero) {
+    timedOut.add(label);
+    return null;
+  }
   try {
     return await action().timeout(probeTimeout);
   } on TimeoutException {
