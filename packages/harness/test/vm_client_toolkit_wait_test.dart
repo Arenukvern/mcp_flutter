@@ -7,18 +7,21 @@ import 'package:vm_service/vm_service.dart' as vm;
 
 void main() {
   group('toolkitExtensionsReady', () {
-    test('accepts the full ToolkitDriver extension set', () {
+    test('accepts requiredAtAttach', () {
+      expect(
+        toolkitExtensionsReady(ToolkitExtensions.requiredAtAttach),
+        isTrue,
+      );
+    });
+
+    test('accepts full driver set', () {
       expect(
         toolkitExtensionsReady(ToolkitExtensions.requiredForToolkitDriver),
         isTrue,
       );
     });
 
-    test('rejects a partial toolkit subset', () {
-      expect(
-        toolkitExtensionsReady([ToolkitExtensions.tap]),
-        isFalse,
-      );
+    test('rejects when enter_text is missing', () {
       expect(
         toolkitExtensionsReady([
           ToolkitExtensions.snapshot,
@@ -30,6 +33,39 @@ void main() {
 
     test('rejects unrelated extensions', () {
       expect(toolkitExtensionsReady(['ext.flutter.inspector.']), isFalse);
+    });
+  });
+
+  group('assertToolkitExtension', () {
+    test('optional verb missing throws with version hint', () {
+      expect(
+        () => assertToolkitExtension(
+          ToolkitExtensions.requiredAtAttach.toSet(),
+          ToolkitExtensions.scroll,
+        ),
+        throwsA(
+          predicate<StateError>(
+            (error) =>
+                error.message.contains(ToolkitExtensions.scroll) &&
+                error.message.contains(
+                  ToolkitExtensions.minimumMcpToolkitVersionForFullDriverSet,
+                ),
+          ),
+        ),
+      );
+    });
+
+    test('optional verb present allows use', () {
+      expect(
+        () => assertToolkitExtension(
+          {
+            ...ToolkitExtensions.requiredAtAttach,
+            ToolkitExtensions.navigate,
+          },
+          ToolkitExtensions.navigate,
+        ),
+        returnsNormally,
+      );
     });
   });
 
@@ -49,11 +85,9 @@ void main() {
       );
       expect(subscribed, isFalse);
       await waitUntilToolkitRegistered(
-        readExtensions: () async => [
-          ...ToolkitExtensions.requiredForToolkitDriver,
-        ],
+        readExtensions: () async => [...ToolkitExtensions.requiredAtAttach],
         rebind: () async {},
-        extensionAdded: const Stream<String>.empty(),
+        extensionAdded: const Stream<ToolkitExtensionRegistrationEvent>.empty(),
         timeout: const Duration(seconds: 1),
       );
     });
@@ -82,24 +116,26 @@ void main() {
   });
 
   group('waitUntilToolkitRegistered', () {
-    test('completes when extensions are already registered', () async {
-      await waitUntilToolkitRegistered(
-        readExtensions: () async => [
-          ...ToolkitExtensions.requiredForToolkitDriver,
-        ],
+    test('completes with only requiredAtAttach registered', () async {
+      final present = await waitUntilToolkitRegistered(
+        readExtensions: () async => [...ToolkitExtensions.requiredAtAttach],
         rebind: () async {},
-        extensionAdded: const Stream<String>.empty(),
+        extensionAdded: const Stream<ToolkitExtensionRegistrationEvent>.empty(),
         timeout: const Duration(seconds: 1),
+      );
+      expect(
+        present,
+        containsAll(ToolkitExtensions.requiredAtAttach),
       );
     });
 
-    test('completes when an extension arrives on the event stream', () async {
-      final added = StreamController<String>();
+    test('completes when extensions arrive on the event stream', () async {
+      final added = StreamController<ToolkitExtensionRegistrationEvent>();
       unawaited(
         Future<void>(() async {
           await Future<void>.delayed(const Duration(milliseconds: 5));
-          for (final name in ToolkitExtensions.requiredForToolkitDriver) {
-            added.add(name);
+          for (final name in ToolkitExtensions.requiredAtAttach) {
+            added.add(ToolkitExtensionRegistrationEvent(extension: name));
           }
         }),
       );
@@ -113,12 +149,14 @@ void main() {
       await added.close();
     });
 
-    test('throws TimeoutException when registration never completes', () async {
+    test('throws TimeoutException when hard extensions never register',
+        () async {
       await expectLater(
         waitUntilToolkitRegistered(
           readExtensions: () async => const <String>[],
           rebind: () async {},
-          extensionAdded: const Stream<String>.empty(),
+          extensionAdded:
+              const Stream<ToolkitExtensionRegistrationEvent>.empty(),
           timeout: const Duration(milliseconds: 50),
           rpcTimeout: const Duration(milliseconds: 10),
         ),
@@ -126,13 +164,15 @@ void main() {
       );
     });
 
-    test('partial toolkit registration does not complete before deadline',
-        () async {
-      final added = StreamController<String>();
-      added.add(ToolkitExtensions.tap);
+    test('snapshot and tap without enter_text does not complete', () async {
+      final added = StreamController<ToolkitExtensionRegistrationEvent>();
+      added.add(ToolkitExtensionRegistrationEvent(extension: ToolkitExtensions.tap));
       await expectLater(
         waitUntilToolkitRegistered(
-          readExtensions: () async => [ToolkitExtensions.tap],
+          readExtensions: () async => [
+            ToolkitExtensions.snapshot,
+            ToolkitExtensions.tap,
+          ],
           rebind: () async {},
           extensionAdded: added.stream,
           timeout: const Duration(milliseconds: 50),
@@ -143,14 +183,84 @@ void main() {
       await added.close();
     });
 
+    test('resets present when a new isolate id appears', () async {
+      final added = StreamController<ToolkitExtensionRegistrationEvent>();
+      added.add(
+        ToolkitExtensionRegistrationEvent(
+          isolateId: 'isol-a',
+          extension: ToolkitExtensions.snapshot,
+        ),
+      );
+      added.add(
+        ToolkitExtensionRegistrationEvent(
+          isolateId: 'isol-a',
+          extension: ToolkitExtensions.tap,
+        ),
+      );
+      added.add(
+        ToolkitExtensionRegistrationEvent(
+          isolateId: 'isol-b',
+          extension: ToolkitExtensions.snapshot,
+        ),
+      );
+      unawaited(
+        Future<void>(() async {
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+          for (final name in [
+            ToolkitExtensions.tap,
+            ToolkitExtensions.enterText,
+          ]) {
+            added.add(
+              ToolkitExtensionRegistrationEvent(
+                isolateId: 'isol-b',
+                extension: name,
+              ),
+            );
+          }
+        }),
+      );
+      await waitUntilToolkitRegistered(
+        readExtensions: () async => const <String>[],
+        rebind: () async {},
+        readBoundIsolateId: () async => 'isol-b',
+        extensionAdded: added.stream,
+        timeout: const Duration(seconds: 1),
+        rpcTimeout: const Duration(milliseconds: 100),
+      );
+      await added.close();
+    });
+
+    test('SentinelException during snapshot is retryable', () async {
+      var reads = 0;
+      final present = await waitUntilToolkitRegistered(
+        readExtensions: () async {
+          reads++;
+          if (reads == 1) {
+            throw vm.SentinelException.parse('getIsolate', {
+              'type': 'Sentinel',
+              'valueAsString': 'Collected',
+              'kind': 'Collected',
+            });
+          }
+          return [...ToolkitExtensions.requiredAtAttach];
+        },
+        rebind: () async {},
+        extensionAdded: const Stream<ToolkitExtensionRegistrationEvent>.empty(),
+        timeout: const Duration(seconds: 1),
+        rpcTimeout: const Duration(milliseconds: 100),
+      );
+      expect(reads, greaterThanOrEqualTo(2));
+      expect(present, containsAll(ToolkitExtensions.requiredAtAttach));
+    });
+
     test('per-RPC timeout on hung rebind then event-driven retry', () async {
-      final added = StreamController<String>();
+      final added = StreamController<ToolkitExtensionRegistrationEvent>();
       var rebindCalls = 0;
       unawaited(
         Future<void>(() async {
           await Future<void>.delayed(const Duration(milliseconds: 80));
-          for (final name in ToolkitExtensions.requiredForToolkitDriver) {
-            added.add(name);
+          for (final name in ToolkitExtensions.requiredAtAttach) {
+            added.add(ToolkitExtensionRegistrationEvent(extension: name));
           }
         }),
       );

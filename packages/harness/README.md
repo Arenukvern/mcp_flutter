@@ -13,6 +13,8 @@ A guided tour lives in the
 
 Recorded harness drives and GIFs: [Testing / E2E scenarios](../../docs/use-cases/e2e-scenarios.mdx) (`make drive-flutter-chrome`, `make drive-web`).
 
+**Toolkit attach:** `attachDriver` waits only for `semantic_snapshot`, `tap_widget`, and `enter_text`. Other [ToolkitDriver] verbs are optional capabilities probed at attach; the first call to a missing optional verb fails with the extension name and a minimum `mcp_toolkit` version (**7.1.0** for the full driver verb set).
+
 **macOS shot-list (not recorded in Linux CI):** `make drive-flutter` with the app window beside the terminal; two-instance pairing via `dart run example/desktop_pair.dart --skip-build`.
 
 ## Quick start
