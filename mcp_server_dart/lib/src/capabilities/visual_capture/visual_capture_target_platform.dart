@@ -153,16 +153,15 @@ VisualCaptureTargetPlatformResolution _resolution({
   required String platform,
   required CoreRuntimeConfiguration configuration,
   required Set<String> timedOut,
-}) {
-  return (
-    platform: platform,
-    warning: _probeResolutionWarning(
-      timedOut: timedOut,
-      resolvedPlatform: platform,
-      configuration: configuration,
-    ),
-  );
-}
+}) =>
+    (
+      platform: platform,
+      warning: _probeResolutionWarning(
+        timedOut: timedOut,
+        resolvedPlatform: platform,
+        configuration: configuration,
+      ),
+    );
 
 Future<VisualCaptureTargetPlatformResolution>
 catchVisualCaptureTargetPlatformProbeFailures({
@@ -229,12 +228,11 @@ Future<T?> _runProbe<T>({
   }
 }
 
-bool _isNativeCapturePlatform(String platform) {
-  return switch (platform) {
-    'android' || 'ios' || 'linux' || 'macos' || 'windows' || 'fuchsia' => true,
-    _ => false,
-  };
-}
+bool _isNativeCapturePlatform(String platform) => switch (platform) {
+      'android' || 'ios' || 'linux' || 'macos' || 'windows' || 'fuchsia' =>
+        true,
+      _ => false,
+    };
 
 String? _platformFromFlutterDevice(String? flutterDevice) {
   final device = flutterDevice?.trim().toLowerCase();
