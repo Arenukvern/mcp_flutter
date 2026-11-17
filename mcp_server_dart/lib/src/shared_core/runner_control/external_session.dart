@@ -200,6 +200,11 @@ final class ExternalSessionRunnerControl implements RunnerControl {
   Future<bool> isAlive() async {
     final config = await readSessionConfigOrNull();
     if (config == null) return false;
+  // The harness showcase detach path owns the flutter tool process and
+  // publishes runner-session.json without a TCP control plane.
+    if (config.runner == 'showcase') {
+      return _pidAlive(config.pid);
+    }
     try {
       final socket = await Socket.connect(
         InternetAddress.loopbackIPv4,
@@ -497,6 +502,16 @@ final class ExternalSessionRunnerControl implements RunnerControl {
 
   void _log(LoggingLevel level, String message) {
     logger?.call(level, message, logger: runnerName);
+  }
+}
+
+Future<bool> _pidAlive(int pid) async {
+  if (pid <= 0) return false;
+  try {
+    final result = await Process.run('kill', ['-0', '$pid']);
+    return result.exitCode == 0;
+  } on Object {
+    return false;
   }
 }
 

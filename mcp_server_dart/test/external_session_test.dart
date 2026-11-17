@@ -186,6 +186,20 @@ void main() {
       );
     });
 
+    test('showcase runner is alive when pid answers kill -0', () async {
+      final path = ExternalSessionRunnerControl.defaultSessionPathFor(
+        projectDir.path,
+      );
+      _writeSessionFile(
+        path,
+        runner: 'showcase',
+        pid: pid,
+        controlPort: 1,
+      );
+      final control = _makeControl(path);
+      expect(await control.isAlive(), isTrue);
+    });
+
     test('rejects unknown schema values', () async {
       final path = ExternalSessionRunnerControl.defaultSessionPathFor(
         projectDir.path,
