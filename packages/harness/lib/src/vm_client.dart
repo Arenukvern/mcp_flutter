@@ -7,6 +7,7 @@ import 'package:vm_service/vm_service_io.dart' as vm_io;
 
 import 'toolkit_extension_unavailable.dart';
 import 'toolkit_extensions.dart';
+import 'toolkit_not_ready.dart';
 import 'toolkit_optional_absent_cache.dart';
 import 'vm_service_uri.dart';
 
@@ -128,7 +129,7 @@ final class VmClient {
     try {
       final listenBudget = rpcBudget();
       if (listenBudget <= Duration.zero) {
-        throw _toolkitRegistrationTimeout(
+        throw toolkitNotReadyTimeout(
           timeout,
           needed,
           const {},
@@ -142,7 +143,7 @@ final class VmClient {
 
       final remaining = timeout - stopwatch.elapsed;
       if (remaining <= Duration.zero) {
-        throw _toolkitRegistrationTimeout(
+        throw toolkitNotReadyTimeout(
           timeout,
           needed,
           const {},
@@ -281,24 +282,15 @@ final class VmClient {
     bool Function(Map<String, dynamic> response)? until,
     int attempts = 15,
     Duration delay = const Duration(seconds: 2),
-  }) async {
-    Object? lastError;
-    Map<String, dynamic>? lastResponse;
-    for (var i = 1; i <= attempts; i++) {
-      try {
-        final response = await callExtension(name, args: args);
-        if (until == null || until(response)) return response;
-        lastResponse = response;
-      } on Object catch (error) {
-        lastError = error;
-      }
-      await Future<void>.delayed(delay);
-    }
-    throw StateError(
-      'callExtensionUntil($name) exhausted $attempts attempts '
-      '(last error: $lastError, last response: $lastResponse)',
-    );
-  }
+  }) =>
+      callExtensionUntilWith(
+        callExtension: callExtension,
+        name: name,
+        args: args,
+        until: until,
+        attempts: attempts,
+        delay: delay,
+      );
 
   Future<Map<String, dynamic>> _callExtension(
     String name,
@@ -487,11 +479,13 @@ Future<Set<String>> waitUntilToolkitRegistered({
   bool isReady() => toolkitExtensionsReady(present, required: needed);
 
   final ready = Completer<void>();
+  var waitEnded = false;
   void tryComplete() {
     if (!ready.isCompleted && isReady()) ready.complete();
   }
 
   Future<void> snapshotOnce() async {
+    if (waitEnded || ready.isCompleted) return;
     final elapsed = stopwatch.elapsed;
     if (elapsed >= timeout) return;
     final budget = timeout - elapsed;
@@ -510,11 +504,12 @@ Future<Set<String>> waitUntilToolkitRegistered({
     } on vm.RPCError {
       // Isolate restart — retryable until the overall deadline.
     } on vm.SentinelException {
-      if (stopwatch.elapsed < timeout) {
+      if (stopwatch.elapsed < timeout && !waitEnded && !ready.isCompleted) {
         final backoff =
             sentinelRetryBackoff?.call() ?? sentinelRetryBackoffDelay();
         unawaited(Future<void>(() async {
           await Future<void>.delayed(backoff);
+          if (waitEnded || ready.isCompleted) return;
           await snapshotOnce();
         }));
       }
@@ -539,7 +534,7 @@ Future<Set<String>> waitUntilToolkitRegistered({
 
     final remaining = timeout - stopwatch.elapsed;
     if (remaining <= Duration.zero) {
-      throw _toolkitRegistrationTimeout(
+      throw toolkitNotReadyTimeout(
         timeout,
         needed,
         present,
@@ -549,7 +544,7 @@ Future<Set<String>> waitUntilToolkitRegistered({
 
     await ready.future.timeout(
       remaining,
-      onTimeout: () => throw _toolkitRegistrationTimeout(
+      onTimeout: () => throw toolkitNotReadyTimeout(
         timeout,
         needed,
         present,
@@ -558,22 +553,24 @@ Future<Set<String>> waitUntilToolkitRegistered({
     );
     return Set<String>.from(present);
   } finally {
+    waitEnded = true;
     await addedSubscription.cancel();
   }
 }
 
-TimeoutException _toolkitRegistrationTimeout(
+/// Attach wait exhausted before hard toolkit verbs registered.
+@visibleForTesting
+ToolkitNotReady toolkitNotReadyTimeout(
   Duration timeout,
   Set<String> needed,
   Set<String> present,
-  Uri? httpUri,
+  Uri? diagnosticUri,
 ) {
   final missing = needed.difference(present).toList()..sort();
-  final target = httpUri == null ? '' : ' on $httpUri';
-  return TimeoutException(
-    'MCP toolkit extensions not registered within $timeout$target '
-    '(missing: ${missing.join(', ')})',
-    timeout,
+  return ToolkitNotReady(
+    duration: timeout,
+    missingHardExtensions: missing,
+    diagnosticUri: diagnosticUri,
   );
 }
 
@@ -611,11 +608,13 @@ Future<Set<String>> absorbToolkitExtensionsDuringGrace({
   }
 
   final done = Completer<void>();
+  var graceEnded = false;
   void maybeFinish() {
     if (!done.isCompleted && graceComplete()) done.complete();
   }
 
   Future<void> snapshotOnce() async {
+    if (graceEnded || done.isCompleted) return;
     final elapsed = stopwatch.elapsed;
     if (elapsed >= grace) return;
     final budget = grace - elapsed;
@@ -634,11 +633,12 @@ Future<Set<String>> absorbToolkitExtensionsDuringGrace({
     } on vm.RPCError {
       // Isolate restart — retryable during grace.
     } on vm.SentinelException {
-      if (stopwatch.elapsed < grace) {
+      if (stopwatch.elapsed < grace && !graceEnded && !done.isCompleted) {
         final backoff =
             sentinelRetryBackoff?.call() ?? sentinelRetryBackoffDelay();
         unawaited(Future<void>(() async {
           await Future<void>.delayed(backoff);
+          if (graceEnded || done.isCompleted) return;
           await snapshotOnce();
         }));
       }
@@ -667,7 +667,41 @@ Future<Set<String>> absorbToolkitExtensionsDuringGrace({
   } on TimeoutException {
     return Set<String>.from(observed);
   } finally {
+    graceEnded = true;
     graceTimer.cancel();
     await subscription.cancel();
   }
+}
+
+/// Shared retry loop for [VmClient.callExtensionUntil] (tested directly).
+@visibleForTesting
+Future<Map<String, dynamic>> callExtensionUntilWith({
+  required Future<Map<String, dynamic>> Function(
+    String name, {
+    Map<String, Object?> args,
+  }) callExtension,
+  required String name,
+  Map<String, Object?> args = const <String, Object?>{},
+  bool Function(Map<String, dynamic> response)? until,
+  int attempts = 15,
+  Duration delay = const Duration(seconds: 2),
+}) async {
+  Object? lastError;
+  Map<String, dynamic>? lastResponse;
+  for (var i = 1; i <= attempts; i++) {
+    try {
+      final response = await callExtension(name, args: args);
+      if (until == null || until(response)) return response;
+      lastResponse = response;
+    } on ToolkitExtensionUnavailable {
+      rethrow;
+    } on Object catch (error) {
+      lastError = error;
+    }
+    await Future<void>.delayed(delay);
+  }
+  throw StateError(
+    'callExtensionUntil($name) exhausted $attempts attempts '
+    '(last error: $lastError, last response: $lastResponse)',
+  );
 }

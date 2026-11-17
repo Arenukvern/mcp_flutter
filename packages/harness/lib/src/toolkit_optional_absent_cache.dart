@@ -19,11 +19,8 @@ final class ToolkitOptionalAbsentCache {
   }
 
   void onIsolateChanged(String? previousId, String? newId) {
-    if (previousId != null && previousId != newId) {
-      clearIsolate(previousId);
-    }
-    if (newId != null) {
-      clearIsolate(newId);
-    }
+    if (previousId == newId) return;
+    if (previousId != null) clearIsolate(previousId);
+    if (newId != null) clearIsolate(newId);
   }
 }

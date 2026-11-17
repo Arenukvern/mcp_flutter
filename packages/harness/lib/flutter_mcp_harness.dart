@@ -30,6 +30,7 @@ export 'src/scenario.dart';
 export 'src/toolkit_driver.dart';
 export 'src/toolkit_extension_unavailable.dart';
 export 'src/toolkit_extensions.dart';
+export 'src/toolkit_not_ready.dart';
 export 'src/vm_client.dart';
 export 'src/vm_service_uri.dart';
 export 'src/web_app_target.dart';

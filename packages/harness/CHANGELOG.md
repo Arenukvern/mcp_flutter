@@ -15,6 +15,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Attach deadline failures throw [`ToolkitNotReady`] (extends `TimeoutException`,
+  lists missing hard attach verbs).
 - `attachDriver` waits event-driven for the hard attach set
   (`semantic_snapshot`, `tap_widget`, `enter_text`) via `ServiceExtensionAdded`,
   returns immediately once that set is present, and applies
