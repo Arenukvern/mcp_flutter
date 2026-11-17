@@ -205,7 +205,7 @@ void main() {
         ),
       );
 
-      TimeoutException? timeout;
+      late final TimeoutException timeout;
       try {
         await waitUntilToolkitRegistered(
           readExtensions: () async => const <String>[],
@@ -220,8 +220,7 @@ void main() {
       }
       await added.close();
 
-      expect(timeout, isNotNull);
-      expect(timeout!.message, contains(ToolkitExtensions.tap));
+      expect(timeout.message, contains(ToolkitExtensions.tap));
       expect(timeout.message, contains(ToolkitExtensions.enterText));
     });
 
