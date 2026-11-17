@@ -82,4 +82,32 @@ abstract final class ToolkitExtensions {
   /// args; the app side schema-validates before dispatch.
   static const String agentInvoke =
       '$prefix.${core.ToolkitExtensionNames.agentInvoke}';
+
+  /// Minimum `mcp_toolkit` / `mcp_toolkit_core` version that registers the full
+  /// [optionalForToolkitDriver] set beyond [requiredAtAttach].
+  static const String minimumMcpToolkitVersionForFullDriverSet = '7.1.0';
+
+  /// Extensions attach must wait for before returning a [ToolkitDriver].
+  static const List<String> requiredAtAttach = [
+    snapshot,
+    tap,
+    enterText,
+  ];
+
+  /// Extra verbs [ToolkitDriver] may call; attach records availability and
+  /// fails on first use when absent (see [VmClient.assertToolkitExtension]).
+  static const List<String> optionalForToolkitDriver = [
+    scroll,
+    agentCatalog,
+    agentInvoke,
+    viewScreenshots,
+    navigate,
+    pressKey,
+  ];
+
+  /// Every extension [ToolkitDriver] may call (hard + optional).
+  static const List<String> requiredForToolkitDriver = [
+    ...requiredAtAttach,
+    ...optionalForToolkitDriver,
+  ];
 }

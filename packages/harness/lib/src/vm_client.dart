@@ -1,9 +1,18 @@
 import 'dart:async';
+import 'dart:math' as math;
 
+import 'package:meta/meta.dart';
 import 'package:vm_service/vm_service.dart' as vm;
 import 'package:vm_service/vm_service_io.dart' as vm_io;
 
+import 'toolkit_extensions.dart';
 import 'vm_service_uri.dart';
+
+/// After the hard attach verbs register, optional toolkit extensions may still
+/// land asynchronously on current `mcp_toolkit` apps. Attach and the first
+/// optional [VmClient.callExtension] wait at most this long before treating a
+/// verb as absent on an older or custom entry set.
+const kOptionalToolkitExtensionGrace = Duration(seconds: 10);
 
 /// Owns the VM-service connection to one running Flutter app.
 ///
@@ -25,6 +34,13 @@ final class VmClient {
 
   vm.VmService _service;
   vm.IsolateRef _mainIsolate;
+
+  /// Toolkit extensions observed on the bound isolate after attach wait.
+  Set<String> _toolkitExtensionsPresent = const {};
+
+  /// Extensions registered on the UI isolate when attach completed.
+  Set<String> get toolkitExtensionsPresent =>
+      Set<String>.unmodifiable(_toolkitExtensionsPresent);
 
   /// The isolate id this client is bound to (diagnostics).
   String? get boundIsolateId => _mainIsolate.id;
@@ -70,6 +86,79 @@ final class VmClient {
     return List<String>.from(isolate.extensionRPCs ?? const <String>[]);
   }
 
+  /// Listens for [ServiceExtensionAdded] on the Isolate stream, then waits
+  /// until [ToolkitExtensions.requiredAtAttach] is present — web/chrome
+  /// often attaches before those verbs land. Optional driver verbs are
+  /// recorded but do not block attach.
+  Future<void> waitForToolkitExtensions({
+    Duration timeout = const Duration(seconds: 90),
+    Duration rpcTimeout = const Duration(seconds: 30),
+  }) async {
+    final stopwatch = Stopwatch()..start();
+    final needed = Set<String>.from(ToolkitExtensions.requiredAtAttach);
+
+    Duration rpcBudget() {
+      final remaining = timeout - stopwatch.elapsed;
+      if (remaining <= Duration.zero) return Duration.zero;
+      final micros = math.min(
+        rpcTimeout.inMicroseconds,
+        remaining.inMicroseconds,
+      );
+      return Duration(microseconds: micros);
+    }
+
+    var subscribedHere = false;
+    try {
+      final listenBudget = rpcBudget();
+      if (listenBudget <= Duration.zero) {
+        throw _toolkitRegistrationTimeout(
+          timeout,
+          needed,
+          const {},
+          httpUri,
+        );
+      }
+      subscribedHere = await subscribeIsolateStream(
+        streamListen: _service.streamListen,
+        budget: listenBudget,
+      );
+
+      final remaining = timeout - stopwatch.elapsed;
+      if (remaining <= Duration.zero) {
+        throw _toolkitRegistrationTimeout(
+          timeout,
+          needed,
+          const {},
+          httpUri,
+        );
+      }
+
+      final extensionAdded = _toolkitExtensionAddedStream();
+      final hardPresent = await waitUntilToolkitRegistered(
+        readExtensions: extensionNames,
+        rebind: _rebindToToolkitIsolate,
+        readBoundIsolateId: () async => _mainIsolate.id,
+        extensionAdded: extensionAdded,
+        timeout: remaining,
+        rpcTimeout: rpcTimeout,
+        diagnosticUri: httpUri,
+      );
+      _toolkitExtensionsPresent = await absorbToolkitExtensionsDuringGrace(
+        present: hardPresent,
+        extensionAdded: extensionAdded,
+        readExtensions: extensionNames,
+        rebind: _rebindToToolkitIsolate,
+        readBoundIsolateId: () async => _mainIsolate.id,
+        rpcTimeout: rpcTimeout,
+      );
+    } finally {
+      await cancelIsolateStreamIfSubscribed(
+        _service.streamCancel,
+        subscribedHere,
+      );
+    }
+  }
+
   /// Calls a registered service extension and returns its JSON response.
   ///
   /// Args must be JSON-encodable; the app side validates types (a point
@@ -90,10 +179,58 @@ final class VmClient {
   /// (e.g. a registry action awaiting something that never completes)
   /// surfaces as [TimeoutException] instead of wedging an unattended
   /// driver forever.
+  Stream<ToolkitExtensionRegistrationEvent> _toolkitExtensionAddedStream() =>
+      _service.onIsolateEvent
+          .where(
+            (event) =>
+                event.kind == vm.EventKind.kServiceExtensionAdded &&
+                event.extensionRPC != null &&
+                event.extensionRPC!.startsWith(ToolkitExtensions.prefix),
+          )
+          .map(
+            (event) => ToolkitExtensionRegistrationEvent(
+              isolateId: event.isolate?.id,
+              extension: event.extensionRPC!,
+            ),
+          );
+
+  Future<void> _ensureToolkitExtensionAvailable(String name) async {
+    if (_toolkitExtensionsPresent.contains(name)) return;
+    if (!ToolkitExtensions.optionalForToolkitDriver.contains(name)) {
+      assertToolkitExtension(_toolkitExtensionsPresent, name);
+      return;
+    }
+
+    var subscribedHere = false;
+    try {
+      subscribedHere = await subscribeIsolateStream(
+        streamListen: _service.streamListen,
+        budget: kOptionalToolkitExtensionGrace,
+      );
+      _toolkitExtensionsPresent = await absorbToolkitExtensionsDuringGrace(
+        present: Set<String>.from(_toolkitExtensionsPresent),
+        extensionAdded: _toolkitExtensionAddedStream(),
+        readExtensions: extensionNames,
+        rebind: _rebindToToolkitIsolate,
+        readBoundIsolateId: () async => _mainIsolate.id,
+        grace: kOptionalToolkitExtensionGrace,
+        rpcTimeout: const Duration(seconds: 30),
+        untilExtensionRegistered: name,
+      );
+    } finally {
+      await cancelIsolateStreamIfSubscribed(
+        _service.streamCancel,
+        subscribedHere,
+      );
+    }
+    assertToolkitExtension(_toolkitExtensionsPresent, name);
+  }
+
   Future<Map<String, dynamic>> callExtension(
     String name, {
     Map<String, Object?> args = const <String, Object?>{},
   }) async {
+    await _ensureToolkitExtensionAvailable(name);
     try {
       return await _callExtension(name, args).timeout(_callTimeout);
     } on vm.RPCError catch (error) {
@@ -228,5 +365,280 @@ final class VmClient {
 
   Future<void> dispose() async {
     _service.dispose();
+  }
+}
+
+/// Subscribes to the VM Isolate event stream within [budget].
+///
+/// Returns `true` when this call established the subscription (caller should
+/// [cancelIsolateStreamIfSubscribed] on exit). Returns `false` when the client
+/// was already subscribed (`RPCError` code 103).
+@visibleForTesting
+Future<bool> subscribeIsolateStream({
+  required Future<vm.Success> Function(String streamId) streamListen,
+  required Duration budget,
+}) async {
+  try {
+    await streamListen(vm.EventStreams.kIsolate).timeout(budget);
+    return true;
+  } on vm.RPCError catch (error) {
+    if (error.code == vm.RPCErrorKind.kStreamAlreadySubscribed.code) {
+      return false;
+    }
+    rethrow;
+  }
+}
+
+/// Cancels the Isolate stream only when [subscribedHere] is true.
+@visibleForTesting
+Future<void> cancelIsolateStreamIfSubscribed(
+  Future<vm.Success> Function(String streamId) streamCancel,
+  bool subscribedHere,
+) async {
+  if (!subscribedHere) return;
+  try {
+    await streamCancel(vm.EventStreams.kIsolate);
+  } on Object {
+    // Best-effort teardown; leave an external subscription intact on 103.
+  }
+}
+
+/// One `ServiceExtensionAdded` (or synthetic) notification during attach wait.
+@visibleForTesting
+final class ToolkitExtensionRegistrationEvent {
+  const ToolkitExtensionRegistrationEvent({
+    required this.extension,
+    this.isolateId,
+  });
+
+  final String? isolateId;
+  final String extension;
+}
+
+/// True when [names] contains every entry in [required].
+bool toolkitExtensionsReady(
+  Iterable<String> names, {
+  Iterable<String> required = ToolkitExtensions.requiredAtAttach,
+}) {
+  final present = names is Set<String> ? names : names.toSet();
+  for (final extension in required) {
+    if (!present.contains(extension)) return false;
+  }
+  return true;
+}
+
+/// Fails when [name] is an optional driver verb that stayed absent after
+/// [kOptionalToolkitExtensionGrace].
+@visibleForTesting
+void assertToolkitExtension(Set<String> present, String name) {
+  if (ToolkitExtensions.requiredAtAttach.contains(name)) return;
+  if (!ToolkitExtensions.optionalForToolkitDriver.contains(name)) return;
+  if (present.contains(name)) return;
+  throw StateError(
+    'Service extension "$name" is not registered on this app. '
+    'Upgrade mcp_toolkit to >= '
+    '${ToolkitExtensions.minimumMcpToolkitVersionForFullDriverSet} for the full '
+    'ToolkitDriver verb set, or register "$name" in a custom toolkit entry set.',
+  );
+}
+
+/// Event-driven wait for toolkit registration (tested directly).
+///
+/// Returns every toolkit extension observed on the current isolate after the
+/// hard [required] set is satisfied.
+@visibleForTesting
+Future<Set<String>> waitUntilToolkitRegistered({
+  required Future<List<String>> Function() readExtensions,
+  required Future<void> Function() rebind,
+  required Stream<ToolkitExtensionRegistrationEvent> extensionAdded,
+  Future<String?> Function()? readBoundIsolateId,
+  Iterable<String> required = ToolkitExtensions.requiredAtAttach,
+  Duration timeout = const Duration(seconds: 90),
+  Duration rpcTimeout = const Duration(seconds: 30),
+  Uri? diagnosticUri,
+}) async {
+  final stopwatch = Stopwatch()..start();
+  final needed = Set<String>.from(required);
+  final present = <String>{};
+  String? trackedIsolate;
+
+  void resetForIsolate(String? isolateId) {
+    if (isolateId == null) return;
+    if (trackedIsolate == isolateId) return;
+    trackedIsolate = isolateId;
+    present.clear();
+  }
+
+  bool isReady() => toolkitExtensionsReady(present, required: needed);
+
+  final ready = Completer<void>();
+  void tryComplete() {
+    if (!ready.isCompleted && isReady()) ready.complete();
+  }
+
+  Future<void> snapshotOnce() async {
+    final elapsed = stopwatch.elapsed;
+    if (elapsed >= timeout) return;
+    final budget = timeout - elapsed;
+    final bound = math.min(rpcTimeout.inMicroseconds, budget.inMicroseconds);
+    if (bound <= 0) return;
+    final perRpc = Duration(microseconds: bound);
+    try {
+      await rebind().timeout(perRpc);
+      final boundId = await readBoundIsolateId?.call().timeout(perRpc);
+      resetForIsolate(boundId);
+      final names = await readExtensions().timeout(perRpc);
+      present.addAll(names);
+      tryComplete();
+    } on TimeoutException {
+      // Hung rebind/read — retry on the next extension event.
+    } on vm.RPCError {
+      // Isolate restart — retryable until the overall deadline.
+    } on vm.SentinelException {
+      // Stale isolate during restart — retryable until the overall deadline.
+      if (stopwatch.elapsed < timeout) unawaited(snapshotOnce());
+    }
+  }
+
+  void onRegistrationEvent(ToolkitExtensionRegistrationEvent event) {
+    resetForIsolate(event.isolateId);
+    present.add(event.extension);
+    tryComplete();
+    if (!isReady()) unawaited(snapshotOnce());
+  }
+
+  late final StreamSubscription<ToolkitExtensionRegistrationEvent>
+      addedSubscription;
+  addedSubscription = extensionAdded.listen(onRegistrationEvent);
+
+  try {
+    await snapshotOnce();
+    tryComplete();
+    if (isReady()) return Set<String>.from(present);
+
+    final remaining = timeout - stopwatch.elapsed;
+    if (remaining <= Duration.zero) {
+      throw _toolkitRegistrationTimeout(
+        timeout,
+        needed,
+        present,
+        diagnosticUri,
+      );
+    }
+
+    await ready.future.timeout(
+      remaining,
+      onTimeout: () => throw _toolkitRegistrationTimeout(
+        timeout,
+        needed,
+        present,
+        diagnosticUri,
+      ),
+    );
+    return Set<String>.from(present);
+  } finally {
+    await addedSubscription.cancel();
+  }
+}
+
+TimeoutException _toolkitRegistrationTimeout(
+  Duration timeout,
+  Set<String> needed,
+  Set<String> present,
+  Uri? httpUri,
+) {
+  final missing = needed.difference(present).toList()..sort();
+  final target = httpUri == null ? '' : ' on $httpUri';
+  return TimeoutException(
+    'MCP toolkit extensions not registered within $timeout$target '
+    '(missing: ${missing.join(', ')})',
+    timeout,
+  );
+}
+
+/// Records late optional toolkit extensions after hard attach completes.
+@visibleForTesting
+Future<Set<String>> absorbToolkitExtensionsDuringGrace({
+  required Set<String> present,
+  required Stream<ToolkitExtensionRegistrationEvent> extensionAdded,
+  required Future<List<String>> Function() readExtensions,
+  required Future<void> Function() rebind,
+  Future<String?> Function()? readBoundIsolateId,
+  Duration grace = kOptionalToolkitExtensionGrace,
+  Duration rpcTimeout = const Duration(seconds: 30),
+  String? untilExtensionRegistered,
+}) async {
+  final stopwatch = Stopwatch()..start();
+  final observed = Set<String>.from(present);
+  String? trackedIsolate;
+
+  void resetForIsolate(String? isolateId) {
+    if (isolateId == null) return;
+    if (trackedIsolate == isolateId) return;
+    trackedIsolate = isolateId;
+    observed.clear();
+  }
+
+  bool graceComplete() {
+    if (stopwatch.elapsed >= grace) return true;
+    if (untilExtensionRegistered != null) {
+      return observed.contains(untilExtensionRegistered);
+    }
+    return ToolkitExtensions.optionalForToolkitDriver
+        .every(observed.contains);
+  }
+
+  final done = Completer<void>();
+  void maybeFinish() {
+    if (!done.isCompleted && graceComplete()) done.complete();
+  }
+
+  Future<void> snapshotOnce() async {
+    final elapsed = stopwatch.elapsed;
+    if (elapsed >= grace) return;
+    final budget = grace - elapsed;
+    final bound = math.min(rpcTimeout.inMicroseconds, budget.inMicroseconds);
+    if (bound <= 0) return;
+    final perRpc = Duration(microseconds: bound);
+    try {
+      await rebind().timeout(perRpc);
+      final boundId = await readBoundIsolateId?.call().timeout(perRpc);
+      resetForIsolate(boundId);
+      final names = await readExtensions().timeout(perRpc);
+      observed.addAll(names);
+      maybeFinish();
+    } on TimeoutException {
+      // Retry on the next extension event until grace elapses.
+    } on vm.RPCError {
+      // Isolate restart — retryable during grace.
+    } on vm.SentinelException {
+      if (stopwatch.elapsed < grace) unawaited(snapshotOnce());
+    }
+  }
+
+  late final StreamSubscription<ToolkitExtensionRegistrationEvent> subscription;
+  subscription = extensionAdded.listen((event) {
+    resetForIsolate(event.isolateId);
+    observed.add(event.extension);
+    maybeFinish();
+    if (!graceComplete()) unawaited(snapshotOnce());
+  });
+
+  final graceTimer = Timer(grace, maybeFinish);
+  try {
+    await snapshotOnce();
+    maybeFinish();
+    if (!graceComplete()) {
+      final remaining = grace - stopwatch.elapsed;
+      if (remaining > Duration.zero) {
+        await done.future.timeout(remaining);
+      }
+    }
+    return Set<String>.from(observed);
+  } on TimeoutException {
+    return Set<String>.from(observed);
+  } finally {
+    graceTimer.cancel();
+    await subscription.cancel();
   }
 }

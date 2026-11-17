@@ -15,6 +15,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- `attachDriver` waits event-driven for the hard attach set
+  (`semantic_snapshot`, `tap_widget`, `enter_text`) via `ServiceExtensionAdded`,
+  then absorbs late optional verbs for up to
+  [`kOptionalToolkitExtensionGrace`](lib/src/vm_client.dart) (**10s**) before
+  attach returns. A missing optional still fails on first use with an upgrade
+  hint after the same grace (`mcp_toolkit` >= **7.1.0** for the full verb set).
+  Isolate restarts during the wait reset tracked extensions; stale isolate reads
+  retry on `SentinelException`.
+
 - `ToolkitDriver` tap/enter_text now surface the app-side refusal
   (`success: false` — ref not found, stale ref, disabled control,
   `target_outside_viewport` with its reveal hint) as `ProtocolException`
