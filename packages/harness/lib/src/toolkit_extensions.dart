@@ -82,4 +82,17 @@ abstract final class ToolkitExtensions {
   /// args; the app side schema-validates before dispatch.
   static const String agentInvoke =
       '$prefix.${core.ToolkitExtensionNames.agentInvoke}';
+
+  /// Every extension [ToolkitDriver] may call — attach waits for this set.
+  static const List<String> requiredForToolkitDriver = [
+    snapshot,
+    tap,
+    enterText,
+    scroll,
+    agentCatalog,
+    agentInvoke,
+    viewScreenshots,
+    navigate,
+    pressKey,
+  ];
 }
