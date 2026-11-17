@@ -5,70 +5,23 @@
 
 ## [7.2.0](https://github.com/Arenukvern/mcp_flutter/compare/v7.1.1...v7.2.0) (2026-11-17)
 
-
 ### Features
 
-* **cli:** human-readable doctor output ([8fb6e09](https://github.com/Arenukvern/mcp_flutter/commit/8fb6e095407c88dc5aa9759c9bdd42a44f2413a7))
-* **cli:** human-readable doctor output ([5eb686b](https://github.com/Arenukvern/mcp_flutter/commit/5eb686be742e314d0e69ed05521ba97e09292244))
-
+* Human-readable `flutter-mcp-toolkit doctor` on TTY (table, colors, width-aware wrap, `NO_COLOR` respect) ([#181](https://github.com/Arenukvern/mcp_flutter/pull/181))
 
 ### Bug Fixes
 
-* **cli:** refine doctor human output per review ([bd82ad3](https://github.com/Arenukvern/mcp_flutter/commit/bd82ad394bf600442823d883a1452c86d8139687))
-* **cli:** scope doctor bin diff and trim trailing newline ([4462383](https://github.com/Arenukvern/mcp_flutter/commit/44623831929439926d37a1487d62ee08c89b9130))
-* **docs:** contract checks, restored content, and review follow-ups ([70d4f64](https://github.com/Arenukvern/mcp_flutter/commit/70d4f64673eb57d90019a6a34815360bd9d2b436))
-* **docs:** gating contract checks, links, and review blockers ([e192b23](https://github.com/Arenukvern/mcp_flutter/commit/e192b2375db290debd3e989d08ac1deca0ca5c85))
-* **doctor:** bound VM probes and prefer platformOverride isolate ([dee5f60](https://github.com/Arenukvern/mcp_flutter/commit/dee5f60219750d53b0565799cb486bbb4a6abb6e))
-* **doctor:** distrust native probes after js_util timeout ([2228917](https://github.com/Arenukvern/mcp_flutter/commit/22289174a1590a52cec6c0ccafa97b26d617180b))
-* **doctor:** inject stdout params and tighten human TTY output ([22f72bc](https://github.com/Arenukvern/mcp_flutter/commit/22f72bce179d713b522fb0957c8611ab3e23bf66))
-* **doctor:** inject visual capture platform resolver into DoctorRunner ([907ab5e](https://github.com/Arenukvern/mcp_flutter/commit/907ab5e90d974522fbc9726efe9e805fd4234af3))
-* **doctor:** probe platformOverride and avoid CDP false positives ([a26e3b1](https://github.com/Arenukvern/mcp_flutter/commit/a26e3b177f2f3579fe53c0ee1adb1fc5e94f46e5))
-* **doctor:** resolve visual capture platform from connected VM target ([441d42c](https://github.com/Arenukvern/mcp_flutter/commit/441d42c61ce6d0edebce89b858486949e023ff4c))
-* **doctor:** resolve visual capture platform from connected VM target ([a8d797c](https://github.com/Arenukvern/mcp_flutter/commit/a8d797c233bfd6edcf4136e4ef6bc236c2076d90))
-* **doctor:** skip CDP after VM probe timeouts ([2598497](https://github.com/Arenukvern/mcp_flutter/commit/2598497becbbec5d82e7607f04b08514ed03b641))
-* **doctor:** wrap human output within indented terminal width ([21f6211](https://github.com/Arenukvern/mcp_flutter/commit/21f6211ac76c8685e96d73997ae11280385a5319))
-* harden doc link and tool-count contract gates ([c27ae12](https://github.com/Arenukvern/mcp_flutter/commit/c27ae12117252ad0d37237994a2e81046244a765))
-* **harness:** attach waits for hard toolkit verbs only ([79bb64d](https://github.com/Arenukvern/mcp_flutter/commit/79bb64dc04d32d43a6c4044d376fc8430fadef6e))
-* **harness:** bound streamListen and cancel owned isolate sub ([d7ed21e](https://github.com/Arenukvern/mcp_flutter/commit/d7ed21e8f9d01384d34f18fb2e24e1bdcf5a8cc7))
-* **harness:** event-driven wait for ToolkitDriver extensions ([ecd574c](https://github.com/Arenukvern/mcp_flutter/commit/ecd574c1d421458c46731afa93cb853bf80d588a))
-* **harness:** grace-wait for late optional toolkit extensions ([283f78e](https://github.com/Arenukvern/mcp_flutter/commit/283f78e2588fe6426f055cd2d853223b05ec9f5e))
-* **harness:** showcase stop uses SHOWCASE_APP_DIR; docs gifs notes ([8ea8054](https://github.com/Arenukvern/mcp_flutter/commit/8ea805450172afdfa401daced52487b0f01d24ed))
-* **harness:** wait for semantic_snapshot extension only ([96bc90a](https://github.com/Arenukvern/mcp_flutter/commit/96bc90a908ce68b70b2b5864d2de262bece3a1b2))
-* **harness:** wait for semantic_snapshot extension only ([e6e3f26](https://github.com/Arenukvern/mcp_flutter/commit/e6e3f26150b0b118c5bdf0cfa533bc4ec1c25b9f))
-* **harness:** wait for toolkit VM extensions before attach ([5ffd4a4](https://github.com/Arenukvern/mcp_flutter/commit/5ffd4a4bb2b7e4c94e5c8af9f5446fcbae416cf0))
-* **harness:** wait for toolkit VM extensions before attach ([4d56373](https://github.com/Arenukvern/mcp_flutter/commit/4d563730dbd02c632b9f801a3d704aa34e6eab1c))
-* **harness:** wait for toolkit VM extensions before attach ([8fbb7dd](https://github.com/Arenukvern/mcp_flutter/commit/8fbb7dd80a21cbfd3138fe05a464b82b7f8131e6))
-* invoke tool-count scanner via perl for stable exit codes ([5bd7f6a](https://github.com/Arenukvern/mcp_flutter/commit/5bd7f6a4d8155bf9069ba74d6a4afe09d1e54851))
-* per-path doc link fixtures and checker mutation harness ([92208ae](https://github.com/Arenukvern/mcp_flutter/commit/92208aed4c015d34572299c08019e991d1153b12))
-* **release:** registry overlay guard matches FROM lines only ([4a43c44](https://github.com/Arenukvern/mcp_flutter/commit/4a43c44d2e0ebf8fd18cbe1d596b5c2b7ac6f0cc))
-* **release:** registry overlay guard matches FROM lines only ([f2dfd19](https://github.com/Arenukvern/mcp_flutter/commit/f2dfd194d73732993c96c2aae2cf94ba25c39b73))
-* **server-instructions:** address CodeRabbit review on PR [#172](https://github.com/Arenukvern/mcp_flutter/issues/172) ([9f507a8](https://github.com/Arenukvern/mcp_flutter/commit/9f507a8017c536d331416ed23fe88590c7a9842b))
-* **server:** gate dynamic instructions and expand MCP help tests ([eb68a4b](https://github.com/Arenukvern/mcp_flutter/commit/eb68a4bc073450c3bdce5b46207b8901874469e8))
-* **server:** hot restart for dynamics, resources gate test, zcode usage ([e014365](https://github.com/Arenukvern/mcp_flutter/commit/e014365a84d44e58019f255263b2604c2b2dcf12))
-* **server:** rebrand instructions and correct install URL ([fd89e45](https://github.com/Arenukvern/mcp_flutter/commit/fd89e451d45046b9d9b2b2ab7d17d22cae732898))
-* **server:** rebrand MCP instructions and init install URL ([ec78bd5](https://github.com/Arenukvern/mcp_flutter/commit/ec78bd504118fadcf1c427291c4807aab63b5964))
-* stale allowlist reporting and tighten doc-link probes ([1abcfd5](https://github.com/Arenukvern/mcp_flutter/commit/1abcfd526009bf246f36d6d438732704de8d7358))
-* tighten doc contract gates (tool counts, links, snippets) ([5f30f6b](https://github.com/Arenukvern/mcp_flutter/commit/5f30f6be527262a7f19f50dedd0bd8f0e875a49a))
-
+* **Harness:** attach waits only for hard toolkit verbs (`semantic_snapshot`, `tap_widget`, `enter_text`); optional extensions get a grace period on first use, then per-isolate absent cache; typed `ToolkitNotReady` and `ToolkitExtensionUnavailable` (minimum `mcp_toolkit` **7.1.0** for the full verb set) ([#182](https://github.com/Arenukvern/mcp_flutter/pull/182), [#186](https://github.com/Arenukvern/mcp_flutter/pull/186))
+* **Doctor:** resolve visual-capture routing platform from the connected VM target (bounded probes, distrust native probes after `js_util` timeout, skip CDP when VM probes time out, injectable resolver) ([#183](https://github.com/Arenukvern/mcp_flutter/pull/183))
+* **Server:** gate dynamic MCP instructions, correct install URL, and expand help-surface tests ([#172](https://github.com/Arenukvern/mcp_flutter/pull/172))
+* **CI:** MCP Registry Docker overlay guard matches `FROM` lines only ([#169](https://github.com/Arenukvern/mcp_flutter/pull/169))
+* Post-merge review nits (bin import order, analyzer cleanups in visual-capture tests, README alt text and walkthrough labels) ([#185](https://github.com/Arenukvern/mcp_flutter/pull/185))
 
 ### Documentation
 
-* add first-use MDX structure (quickstart, install, use cases, migration) ([9c12de2](https://github.com/Arenukvern/mcp_flutter/commit/9c12de2f74ffebff9a9165f0a5cce3b08ace847c))
-* address [#177](https://github.com/Arenukvern/mcp_flutter/issues/177) GIF review — passing doctor, visible exec, gitignore frames ([63cbceb](https://github.com/Arenukvern/mcp_flutter/commit/63cbceb9ac88e176963b6618ccaef6514a976b83))
-* first-use refactor with generated reference and maintainer archive ([08b098c](https://github.com/Arenukvern/mcp_flutter/commit/08b098c4dd641b87c2dd573f6c24cbb4bbc60c12))
-* first-use refactor, generated reference, and maintainer archive ([1a2a6a7](https://github.com/Arenukvern/mcp_flutter/commit/1a2a6a7cfd03e27ab38bbedb0944587f89a5fbc4))
-* fix internal links after docs-first restructure ([48d37bd](https://github.com/Arenukvern/mcp_flutter/commit/48d37bd025501fe875d20555b206de88acc34298))
-* fix relative links for gifs README and quickstart ([6b6407b](https://github.com/Arenukvern/mcp_flutter/commit/6b6407b698485c33ecf9a0f7fce25d93da691c6d))
-* fix tool-count scanner false positive in video walkthroughs ([5cff18b](https://github.com/Arenukvern/mcp_flutter/commit/5cff18b47f65c3961671f34dc3e2ff57173ad374))
-* **gifs:** cli-exec shows render line; SHOWCASE_APP_DIR ([3c8a352](https://github.com/Arenukvern/mcp_flutter/commit/3c8a352d6218b496074c85dc69f2650c4a68ae6e))
-* **gifs:** placement, regen script, exec runner-session ([a953b61](https://github.com/Arenukvern/mcp_flutter/commit/a953b610c039d61148fdd0e4d44d1826f058896b))
-* **gifs:** record showcase harness drives; drop scenario glue ([3f543b5](https://github.com/Arenukvern/mcp_flutter/commit/3f543b5be4bd5a0a2e1781315a7be1690543a28c))
-* **gifs:** warm fixture before doctor tape; tighten harness timing ([0b97a56](https://github.com/Arenukvern/mcp_flutter/commit/0b97a56646ae661584e5e006fffeb37d79fd6084))
-* reproducible CLI demo GIFs with vhs ([0154122](https://github.com/Arenukvern/mcp_flutter/commit/0154122fa444977d70df6d9edcf287566076e7c5))
-* reproducible CLI demo GIFs with vhs ([697f1b6](https://github.com/Arenukvern/mcp_flutter/commit/697f1b6f7861a5bf897734fa3015f496d7176fb6))
-* restore README branding, infographic, demo GIF and video walkthroughs ([8ec0b70](https://github.com/Arenukvern/mcp_flutter/commit/8ec0b70098b38665e1ee28cfb8941c94a9590e31))
-* restore README branding, infographic, demo GIF and video walkthroughs ([22234ba](https://github.com/Arenukvern/mcp_flutter/commit/22234ba3ec553f9d7648f2d8411dccc72ce9fcf6))
-* split quickstart paragraph for tool-count linter ([032c0de](https://github.com/Arenukvern/mcp_flutter/commit/032c0dee404779bf21c4002f734c11d026e50bf7))
+* Docs-first site (quickstart, install, use cases, migration) with generated CLI reference and link/tool-count contract gates ([#171](https://github.com/Arenukvern/mcp_flutter/pull/171))
+* Restore README branding, infographic, demo GIF, and video walkthrough links ([#176](https://github.com/Arenukvern/mcp_flutter/pull/176))
+* Reproducible CLI demo GIFs with VHS and showcase harness drives ([#177](https://github.com/Arenukvern/mcp_flutter/pull/177))
 
 ## [7.1.1](https://github.com/Arenukvern/mcp_flutter/compare/v7.1.0...v7.1.1) (2026-11-11)
 
