@@ -183,6 +183,106 @@ void main() {
       await added.close();
     });
 
+    test('hot restart during wait does not count hard verb from dead isolate',
+        () async {
+      final added = StreamController<ToolkitExtensionRegistrationEvent>();
+      added.add(
+        ToolkitExtensionRegistrationEvent(
+          isolateId: 'isol-old',
+          extension: ToolkitExtensions.tap,
+        ),
+      );
+      added.add(
+        ToolkitExtensionRegistrationEvent(
+          isolateId: 'isol-old',
+          extension: ToolkitExtensions.snapshot,
+        ),
+      );
+      added.add(
+        ToolkitExtensionRegistrationEvent(
+          isolateId: 'isol-new',
+          extension: ToolkitExtensions.snapshot,
+        ),
+      );
+
+      TimeoutException? timeout;
+      try {
+        await waitUntilToolkitRegistered(
+          readExtensions: () async => const <String>[],
+          rebind: () async {},
+          extensionAdded: added.stream,
+          timeout: const Duration(milliseconds: 80),
+          rpcTimeout: const Duration(milliseconds: 20),
+        );
+        fail('expected attach wait to time out after hot restart');
+      } on TimeoutException catch (error) {
+        timeout = error;
+      }
+      await added.close();
+
+      expect(timeout, isNotNull);
+      expect(timeout!.message, contains(ToolkitExtensions.tap));
+      expect(timeout.message, contains(ToolkitExtensions.enterText));
+    });
+
+    test('hot restart during wait drops optional verb from reported present',
+        () async {
+      final added = StreamController<ToolkitExtensionRegistrationEvent>();
+      added.add(
+        ToolkitExtensionRegistrationEvent(
+          isolateId: 'isol-old',
+          extension: ToolkitExtensions.scroll,
+        ),
+      );
+      added.add(
+        ToolkitExtensionRegistrationEvent(
+          isolateId: 'isol-old',
+          extension: ToolkitExtensions.snapshot,
+        ),
+      );
+      added.add(
+        ToolkitExtensionRegistrationEvent(
+          isolateId: 'isol-old',
+          extension: ToolkitExtensions.tap,
+        ),
+      );
+      added.add(
+        ToolkitExtensionRegistrationEvent(
+          isolateId: 'isol-new',
+          extension: ToolkitExtensions.snapshot,
+        ),
+      );
+      unawaited(
+        Future<void>(() async {
+          await Future<void>.delayed(const Duration(milliseconds: 15));
+          for (final name in [
+            ToolkitExtensions.tap,
+            ToolkitExtensions.enterText,
+          ]) {
+            added.add(
+              ToolkitExtensionRegistrationEvent(
+                isolateId: 'isol-new',
+                extension: name,
+              ),
+            );
+          }
+        }),
+      );
+
+      final present = await waitUntilToolkitRegistered(
+        readExtensions: () async => const <String>[],
+        rebind: () async {},
+        readBoundIsolateId: () async => 'isol-new',
+        extensionAdded: added.stream,
+        timeout: const Duration(seconds: 1),
+        rpcTimeout: const Duration(milliseconds: 100),
+      );
+      await added.close();
+
+      expect(present, containsAll(ToolkitExtensions.requiredAtAttach));
+      expect(present, isNot(contains(ToolkitExtensions.scroll)));
+    });
+
     test('resets present when a new isolate id appears', () async {
       final added = StreamController<ToolkitExtensionRegistrationEvent>();
       added.add(
