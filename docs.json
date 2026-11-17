@@ -89,6 +89,7 @@
       "group": "Concepts",
       "pages": [
         { "title": "How it works", "href": "/concepts/how-it-works" },
+        { "title": "Video walkthroughs", "href": "/concepts/video-walkthroughs" },
         { "title": "CLI vs MCP", "href": "/concepts/cli-vs-mcp" },
         { "title": "Automation chain", "href": "/concepts/automation-chain" },
         { "title": "Glossary", "href": "/concepts/glossary" }

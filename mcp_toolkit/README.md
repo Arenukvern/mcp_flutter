@@ -6,9 +6,17 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-blue.svg)](https://flutter.dev)
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Arenukvern/mcp_flutter/main/docs/assets/logo.png" alt="flutter-mcp-toolkit logo" width="160" />
+</p>
+
 Flutter-side library for [flutter-mcp-toolkit](https://github.com/Arenukvern/mcp_flutter): VM service extensions so the MCP server can read errors, capture UI, and run **your** tools at runtime.
 
 **Not** the [Dart MCP server](https://github.com/dart-lang/ai/tree/main/pkgs/dart_mcp_server) (analyzer/tooling). This package targets a **running debug app**.
+
+![View Screenshots](https://raw.githubusercontent.com/Arenukvern/mcp_flutter/main/docs/view_screenshots.gif)
+
+See dynamic tools registration in this [short YouTube video](https://www.youtube.com/watch?v=Qog3x2VcO98).
 
 Docs: [docs.page/arenukvern/mcp_flutter](https://docs.page/arenukvern/mcp_flutter/) · [quickstart](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/quickstart.mdx)
 
