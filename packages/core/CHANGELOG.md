@@ -10,8 +10,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Align package version with the Flutter MCP Toolkit 7.2.0 release.
-- Keep the package test constraint compatible with the pinned Flutter 3.44.2
-  `flutter_test` stack used by release PR checks.
 
 ## [7.1.1] - 2026-11-11
 
@@ -24,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Align package version with the Flutter MCP Toolkit 7.1.0 release.
+- Keep the package test constraint compatible with the pinned Flutter 3.44.2
+  `flutter_test` stack used by release PR checks.
 
 ## [7.0.2] - 2026-11-07
 

@@ -405,6 +405,42 @@ Map<String, Object?> _selectorArgsFromConnectCommand(
   };
 }
 
+/// Parses a strict decimal positive port (no sign prefix, hex, or whitespace).
+int? parseStrictPositiveDecimalPort(Object? raw) {
+  if (raw is int) {
+    return raw > 0 ? raw : null;
+  }
+  if (raw is num) {
+    if (raw != raw.toInt()) {
+      return null;
+    }
+    final value = raw.toInt();
+    return value > 0 ? value : null;
+  }
+  if (raw is String) {
+    if (raw.isEmpty) {
+      return null;
+    }
+    if (raw != raw.trim()) {
+      return null;
+    }
+    if (raw.startsWith('+') ||
+        raw.startsWith('0x') ||
+        raw.startsWith('0X')) {
+      return null;
+    }
+    if (!RegExp(r'^[0-9]+$').hasMatch(raw)) {
+      return null;
+    }
+    final value = int.tryParse(raw);
+    if (value == null || value <= 0) {
+      return null;
+    }
+    return value;
+  }
+  return null;
+}
+
 ({int? value, CoreResult? error}) _parsePortField(
   Map<String, Object?> source,
 ) {
@@ -413,13 +449,9 @@ Map<String, Object?> _selectorArgsFromConnectCommand(
   }
 
   final raw = source['port'];
-  final parsed = switch (raw) {
-    final int value => value,
-    final num value when value == value.toInt() => value.toInt(),
-    _ => null,
-  };
+  final parsed = parseStrictPositiveDecimalPort(raw);
 
-  if (parsed == null || parsed <= 0) {
+  if (parsed == null) {
     return (
       value: null,
       error: _invalidConnectionField(

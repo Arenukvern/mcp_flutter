@@ -44,7 +44,15 @@ void main() {
     });
 
     test('invalid query port returns connect_failed', () async {
-      for (final badPort in ['abc', '8181.9', '1e999', 'Infinity']) {
+      for (final badPort in [
+        'abc',
+        '8181.9',
+        '1e999',
+        'Infinity',
+        '+8181',
+        '0x1F90',
+        ' 8181 ',
+      ]) {
         final executor = _RecordingExecutor();
 
         final result = await applyConnectionOverrideFromResourceUri(

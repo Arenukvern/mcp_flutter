@@ -141,6 +141,34 @@ void main() {
       expect(result.error!.error?.code, equals(CoreErrorCode.invalidCommand));
     });
 
+    test('rejects loose port string forms', () {
+      for (final badPort in ['+8181', ' 8181 ', '0x1F90', '8181.9']) {
+        final result = parseConnectionOverrideArguments(
+          arguments: {
+            'connection': {'port': badPort},
+          },
+        );
+        expect(result.error, isNotNull, reason: 'expected error for $badPort');
+        expect(
+          result.error!.error?.code,
+          equals(CoreErrorCode.invalidCommand),
+          reason: badPort,
+        );
+        final details = result.error!.error?.details as Map<String, Object?>?;
+        expect(details?['actualType'], equals('String'), reason: badPort);
+      }
+    });
+
+    test('accepts strict decimal port strings', () {
+      final result = parseConnectionOverrideArguments(
+        arguments: {
+          'connection': {'mode': 'manual', 'host': '127.0.0.1', 'port': '8181'},
+        },
+      );
+      expect(result.error, isNull);
+      expect(result.preconnectCommand?.port, 8181);
+    });
+
     // 6. Mode out of enum — rejected.
     test('connection.mode: "galaxy" → structured error', () {
       final result = parseConnectionOverrideArguments(
