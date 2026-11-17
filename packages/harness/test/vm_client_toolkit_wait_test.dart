@@ -1,6 +1,9 @@
 import 'dart:async';
 
+import 'package:flutter_mcp_harness/src/toolkit_extension_unavailable.dart';
+import 'package:flutter_mcp_harness/src/toolkit_not_ready.dart';
 import 'package:flutter_mcp_harness/src/toolkit_extensions.dart';
+import 'package:flutter_mcp_harness/src/toolkit_optional_absent_cache.dart';
 import 'package:flutter_mcp_harness/src/vm_client.dart';
 import 'package:test/test.dart';
 import 'package:vm_service/vm_service.dart' as vm;
@@ -73,20 +76,115 @@ void main() {
     });
   });
 
+  group('ToolkitOptionalAbsentCache', () {
+    test('caches absent optional per isolate', () {
+      final cache = ToolkitOptionalAbsentCache();
+      cache.markAbsent('isol-a', ToolkitExtensions.scroll);
+      expect(cache.isAbsent('isol-a', ToolkitExtensions.scroll), isTrue);
+      expect(cache.isAbsent('isol-b', ToolkitExtensions.scroll), isFalse);
+    });
+
+    test('clears absent entries when isolate changes', () {
+      final cache = ToolkitOptionalAbsentCache();
+      cache.markAbsent('isol-a', ToolkitExtensions.scroll);
+      cache.onIsolateChanged('isol-a', 'isol-b');
+      expect(cache.isAbsent('isol-a', ToolkitExtensions.scroll), isFalse);
+      expect(cache.isAbsent('isol-b', ToolkitExtensions.scroll), isFalse);
+    });
+
+    test('rebind to same isolate preserves absent cache', () {
+      final cache = ToolkitOptionalAbsentCache();
+      cache.markAbsent('isol-1', ToolkitExtensions.scroll);
+      cache.onIsolateChanged('isol-1', 'isol-1');
+      expect(cache.isAbsent('isol-1', ToolkitExtensions.scroll), isTrue);
+    });
+
+    test('second absent lookup skips grace wait', () async {
+      final cache = ToolkitOptionalAbsentCache();
+      var graceWaits = 0;
+      Future<void> callOnce() async {
+        if (cache.isAbsent('isol-1', ToolkitExtensions.scroll)) {
+          throw ToolkitExtensionUnavailable(ToolkitExtensions.scroll);
+        }
+        graceWaits++;
+        cache.markAbsent('isol-1', ToolkitExtensions.scroll);
+        throw ToolkitExtensionUnavailable(ToolkitExtensions.scroll);
+      }
+
+      await expectLater(
+        callOnce(),
+        throwsA(isA<ToolkitExtensionUnavailable>()),
+      );
+      expect(graceWaits, 1);
+      await expectLater(
+        callOnce(),
+        throwsA(isA<ToolkitExtensionUnavailable>()),
+      );
+      expect(graceWaits, 1);
+
+      final instant = Stopwatch()..start();
+      await expectLater(
+        callOnce(),
+        throwsA(isA<ToolkitExtensionUnavailable>()),
+      );
+      expect(instant.elapsed, lessThan(const Duration(milliseconds: 50)));
+      expect(graceWaits, 1);
+    });
+  });
+
+  group('callExtensionUntilWith', () {
+    test('rethrows ToolkitExtensionUnavailable without retrying', () async {
+      var calls = 0;
+      await expectLater(
+        callExtensionUntilWith(
+          callExtension: (name, {args = const {}}) async {
+            calls++;
+            throw ToolkitExtensionUnavailable(name);
+          },
+          name: ToolkitExtensions.scroll,
+          attempts: 15,
+          delay: const Duration(milliseconds: 10),
+        ),
+        throwsA(isA<ToolkitExtensionUnavailable>()),
+      );
+      expect(calls, 1);
+    });
+  });
+
+  group('toolkitNotReadyTimeout', () {
+    test('is TimeoutException with missing hard verbs', () {
+      final error = toolkitNotReadyTimeout(
+        const Duration(seconds: 1),
+        ToolkitExtensions.requiredAtAttach.toSet(),
+        {ToolkitExtensions.snapshot},
+        Uri.parse('http://127.0.0.1:8181/'),
+      );
+      expect(error, isA<ToolkitNotReady>());
+      expect(error, isA<TimeoutException>());
+      expect(
+        error.missingHardExtensions,
+        containsAll([
+          ToolkitExtensions.tap,
+          ToolkitExtensions.enterText,
+        ]),
+      );
+      expect(error.message, contains(ToolkitExtensions.enterText));
+    });
+  });
+
   group('assertToolkitExtension', () {
-    test('optional verb missing throws with version hint', () {
+    test('optional verb missing throws ToolkitExtensionUnavailable', () {
       expect(
         () => assertToolkitExtension(
           ToolkitExtensions.requiredAtAttach.toSet(),
           ToolkitExtensions.scroll,
         ),
         throwsA(
-          predicate<StateError>(
+          predicate<ToolkitExtensionUnavailable>(
             (error) =>
-                error.message.contains(ToolkitExtensions.scroll) &&
-                error.message.contains(
-                  ToolkitExtensions.minimumMcpToolkitVersionForFullDriverSet,
-                ),
+                error.extensionName == ToolkitExtensions.scroll &&
+                error.minimumMcpToolkitVersion ==
+                    ToolkitExtensions.minimumMcpToolkitVersionForFullDriverSet,
           ),
         ),
       );
@@ -153,6 +251,17 @@ void main() {
   });
 
   group('waitUntilToolkitRegistered', () {
+    test('hard attach completes without optional grace window', () async {
+      final stopwatch = Stopwatch()..start();
+      await waitUntilToolkitRegistered(
+        readExtensions: () async => [...ToolkitExtensions.requiredAtAttach],
+        rebind: () async {},
+        extensionAdded: const Stream<ToolkitExtensionRegistrationEvent>.empty(),
+        timeout: const Duration(seconds: 1),
+      );
+      expect(stopwatch.elapsed, lessThan(const Duration(seconds: 1)));
+    });
+
     test('completes with only requiredAtAttach registered', () async {
       final present = await waitUntilToolkitRegistered(
         readExtensions: () async => [...ToolkitExtensions.requiredAtAttach],
@@ -387,6 +496,72 @@ void main() {
       );
       expect(reads, greaterThanOrEqualTo(2));
       expect(present, containsAll(ToolkitExtensions.requiredAtAttach));
+    });
+
+    test('SentinelException retry skipped once attach wait completes', () async {
+      final added = StreamController<ToolkitExtensionRegistrationEvent>();
+      var rebinds = 0;
+      var reads = 0;
+      unawaited(
+        Future<void>(() async {
+          await Future<void>.delayed(const Duration(milliseconds: 30));
+          for (final name in ToolkitExtensions.requiredAtAttach) {
+            added.add(ToolkitExtensionRegistrationEvent(extension: name));
+          }
+        }),
+      );
+
+      await waitUntilToolkitRegistered(
+        readExtensions: () async {
+          reads++;
+          if (reads == 1) {
+            throw vm.SentinelException.parse('getIsolate', {
+              'type': 'Sentinel',
+              'valueAsString': 'Collected',
+              'kind': 'Collected',
+            });
+          }
+          return const <String>[];
+        },
+        rebind: () async => rebinds++,
+        extensionAdded: added.stream,
+        timeout: const Duration(seconds: 2),
+        rpcTimeout: const Duration(milliseconds: 100),
+        sentinelRetryBackoff: () => const Duration(milliseconds: 200),
+      );
+      final rebindsAtReturn = rebinds;
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      expect(rebinds, rebindsAtReturn);
+      await added.close();
+    });
+
+    test('SentinelException waits backoff before retrying snapshot', () async {
+      final readTimes = <DateTime>[];
+      var reads = 0;
+      await waitUntilToolkitRegistered(
+        readExtensions: () async {
+          readTimes.add(DateTime.now());
+          reads++;
+          if (reads == 1) {
+            throw vm.SentinelException.parse('getIsolate', {
+              'type': 'Sentinel',
+              'valueAsString': 'Collected',
+              'kind': 'Collected',
+            });
+          }
+          return [...ToolkitExtensions.requiredAtAttach];
+        },
+        rebind: () async {},
+        extensionAdded: const Stream<ToolkitExtensionRegistrationEvent>.empty(),
+        timeout: const Duration(seconds: 2),
+        rpcTimeout: const Duration(milliseconds: 100),
+        sentinelRetryBackoff: () => const Duration(milliseconds: 150),
+      );
+      expect(reads, greaterThanOrEqualTo(2));
+      expect(
+        readTimes[1].difference(readTimes[0]),
+        greaterThanOrEqualTo(const Duration(milliseconds: 100)),
+      );
     });
 
     test('per-RPC timeout on hung rebind then event-driven retry', () async {

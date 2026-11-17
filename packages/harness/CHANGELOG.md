@@ -15,14 +15,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Attach deadline failures throw [`ToolkitNotReady`] (extends `TimeoutException`,
+  lists missing hard attach verbs).
 - `attachDriver` waits event-driven for the hard attach set
   (`semantic_snapshot`, `tap_widget`, `enter_text`) via `ServiceExtensionAdded`,
-  then absorbs late optional verbs for up to
-  [`kOptionalToolkitExtensionGrace`](lib/src/vm_client.dart) (**10s**) before
-  attach returns. A missing optional still fails on first use with an upgrade
-  hint after the same grace (`mcp_toolkit` >= **7.1.0** for the full verb set).
-  Isolate restarts during the wait reset tracked extensions; stale isolate reads
-  retry on `SentinelException`.
+  returns immediately once that set is present, and applies
+  [`kOptionalToolkitExtensionGrace`](lib/src/vm_client.dart) (**10s**) only on the
+  first call to each optional verb. Confirmed absences are cached per isolate;
+  missing optionals throw [`ToolkitExtensionUnavailable`]
+  (`mcp_toolkit` >= **7.1.0** for the full verb set). Stale isolate reads backoff
+  100–250 ms after `SentinelException` before retrying.
 
 - `ToolkitDriver` tap/enter_text now surface the app-side refusal
   (`success: false` — ref not found, stale ref, disabled control,
