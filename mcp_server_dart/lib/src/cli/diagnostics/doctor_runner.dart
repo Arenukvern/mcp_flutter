@@ -7,6 +7,8 @@ import 'dart:io' as io;
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/dynamic_gateway.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/visual_capture.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/visual_capture_target_platform.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/web_browser_screenshot.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_consts.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/command_executor.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/commands/commands.dart';
@@ -23,26 +25,23 @@ final class DoctorRunner {
     required this.stateFilePath,
     required this.dynamicRegistrySupported,
     required this.logger,
-  });
+    ResolveVisualCaptureTargetPlatform? visualCaptureTargetPlatformResolver,
+  }) : visualCaptureTargetPlatformResolver =
+           visualCaptureTargetPlatformResolver ??
+           resolveVisualCaptureTargetPlatform;
 
   final ConnectionContext connectionContext;
   final DefaultCoreCommandExecutor executor;
   final String stateFilePath;
   final bool dynamicRegistrySupported;
   final CoreLogger logger;
+  final ResolveVisualCaptureTargetPlatform visualCaptureTargetPlatformResolver;
 
   Future<Map<String, Object?>> run({
     String? target,
     Duration timeout = const Duration(milliseconds: 2500),
   }) async {
     final checks = <Map<String, Object?>>[];
-    final visualCaptureBroker = VisualCaptureBroker(
-      configuration: executor.configuration,
-      dynamicGateway: dynamicRegistrySupported
-          ? VmExtensionDynamicGateway(connectionContext: connectionContext)
-          : null,
-      adapters: executor.visualCaptureAdapters,
-    );
 
     try {
       checks.add(await _checkDartSdk(timeout: timeout));
@@ -53,6 +52,38 @@ final class DoctorRunner {
           target: target,
           timeout: timeout,
           disconnectAfterCheck: false,
+        ),
+      );
+      final resolution = await catchVisualCaptureTargetPlatformProbeFailures(
+        configuration: executor.configuration,
+        logger: logger,
+        probe: visualCaptureTargetPlatformResolver(
+          configuration: executor.configuration,
+          connectionContext: connectionContext,
+          probeTimeout: timeout,
+        ),
+      );
+      final targetPlatform = resolution.platform;
+      if (resolution.warning != null) {
+        checks.add(
+          _check(
+            id: 'visual_capture_target_platform',
+            status: DoctorCheckStatus.warn,
+            critical: false,
+            diagnostic: resolution.warning!,
+            fixCommand:
+                'Increase --timeout-ms or reconnect to the debug target and re-run doctor.',
+          ),
+        );
+      }
+      final visualCaptureBroker = VisualCaptureBroker(
+        configuration: executor.configuration,
+        targetPlatform: targetPlatform,
+        dynamicGateway: dynamicRegistrySupported
+            ? VmExtensionDynamicGateway(connectionContext: connectionContext)
+            : null,
+        adapters: _doctorVisualCaptureAdapters(
+          targetPlatform: targetPlatform,
         ),
       );
       checks.add(await _checkVisualCaptureBackend(broker: visualCaptureBroker));
@@ -338,7 +369,9 @@ final class DoctorRunner {
         status: status,
         critical: false,
         diagnostic:
-            'Visual capture backend ${result.backend} (owner: ${result.owner.wireName}; capabilities: $capabilityNames).',
+            'Visual capture backend ${result.backend} '
+            '(target platform: ${broker.effectivePlatform}; '
+            'owner: ${result.owner.wireName}; capabilities: $capabilityNames).',
         fixCommand:
             'Use `flutter-mcp-toolkit permissions status` to inspect capture support for the selected target.',
       );
@@ -509,6 +542,20 @@ final class DoctorRunner {
       fixCommand:
           'Install the optional mcp_toolkit permission delegate and re-run doctor.',
     );
+  }
+
+  Iterable<VisualCapturePlatformAdapter> _doctorVisualCaptureAdapters({
+    required String targetPlatform,
+  }) {
+    if (targetPlatform == 'web') {
+      return <VisualCapturePlatformAdapter>[
+        WebBrowserScreenshotService(
+          configuration: executor.configuration,
+          connectionContext: connectionContext,
+        ),
+      ];
+    }
+    return executor.visualCaptureAdapters;
   }
 
   Map<String, Object?>? _skipAppOwnedBridgeCheck({
