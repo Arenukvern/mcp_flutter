@@ -145,6 +145,55 @@ void main() {
     },
   );
 
+  test(
+    'js_util timeout ignores browser-derived native platformOverride answers',
+    () async {
+      final vmServer = await _startVmFake(
+        jsUtil: false,
+        platformOverride: 'macOS',
+        delayMethods: const {'evaluate'},
+      );
+      addTearDown(() => vmServer.close(force: true));
+
+      final context = await _connectVmFake(vmServer);
+      final configuration = _baseConfiguration();
+      final resolution = await resolveVisualCaptureTargetPlatform(
+        configuration: configuration,
+        connectionContext: context,
+        probeTimeout: const Duration(milliseconds: 80),
+      );
+
+      expect(resolution.platform, isNot('macos'));
+      expect(
+        resolution.platform,
+        effectiveVisualCapturePlatformFromConfiguration(configuration),
+      );
+      expect(resolution.warning, isNotNull);
+      expect(resolution.warning, contains('timed out'));
+      expect(resolution.warning, contains('host/default routing'));
+    },
+  );
+
+  test(
+    'catchVisualCaptureTargetPlatformProbeFailures returns warning on throw',
+    () async {
+      final configuration = _baseConfiguration();
+      final resolution = await catchVisualCaptureTargetPlatformProbeFailures(
+        configuration: configuration,
+        probe: Future<VisualCaptureTargetPlatformResolution>(() async {
+          throw StateError('paused');
+        }),
+      );
+
+      expect(
+        resolution.platform,
+        effectiveVisualCapturePlatformFromConfiguration(configuration),
+      );
+      expect(resolution.warning, contains('StateError'));
+      expect(resolution.warning, contains('host/default routing'));
+    },
+  );
+
   test('probe timeout falls back to host configuration', () async {
     final vmServer = await _startVmFake(
       delayMethod: 'ext.flutter.platformOverride',

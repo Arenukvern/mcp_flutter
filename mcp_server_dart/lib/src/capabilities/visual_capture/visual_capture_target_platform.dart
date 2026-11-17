@@ -4,12 +4,21 @@
 import 'dart:async';
 
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/visual_capture.dart';
+import 'package:meta/meta.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/web_cdp_discovery.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/types/core_types.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/connection_context.dart';
 import 'package:vm_service/vm_service.dart';
 
 const _flutterPlatformOverrideExtension = 'ext.flutter.platformOverride';
+
+/// When set, replaces [resolveVisualCaptureTargetPlatform] for tests only.
+@visibleForTesting
+Future<VisualCaptureTargetPlatformResolution> Function({
+  required CoreRuntimeConfiguration configuration,
+  required ConnectionContext connectionContext,
+  required Duration probeTimeout,
+})? testOnlyVisualCaptureTargetPlatformProbe;
 
 /// Result of probing the connected debug target for visual-capture routing.
 typedef VisualCaptureTargetPlatformResolution = ({
@@ -26,6 +35,15 @@ Future<VisualCaptureTargetPlatformResolution> resolveVisualCaptureTargetPlatform
   required ConnectionContext connectionContext,
   required Duration probeTimeout,
 }) async {
+  final testProbe = testOnlyVisualCaptureTargetPlatformProbe;
+  if (testProbe != null) {
+    return testProbe(
+      configuration: configuration,
+      connectionContext: connectionContext,
+      probeTimeout: probeTimeout,
+    );
+  }
+
   final fromDevice = _platformFromFlutterDevice(configuration.flutterDevice);
   if (fromDevice != null) {
     return (platform: fromDevice, warning: null);
@@ -70,14 +88,22 @@ Future<VisualCaptureTargetPlatformResolution> resolveVisualCaptureTargetPlatform
     return (platform: 'web', warning: null);
   }
 
+  final jsUtilTimedOut = timedOut.contains('dart.library.js_util');
+
   final fromExtension = await runVmProbe(
     label: _flutterPlatformOverrideExtension,
     action: () => _probeTargetPlatformViaFlutterExtension(
       connectionContext: connectionContext,
     ),
   );
-  if (fromExtension != null && _isNativeCapturePlatform(fromExtension)) {
-    return (platform: fromExtension, warning: _timeoutWarning(timedOut));
+  if (!jsUtilTimedOut &&
+      fromExtension != null &&
+      _isNativeCapturePlatform(fromExtension)) {
+    return _resolution(
+      platform: fromExtension,
+      configuration: configuration,
+      timedOut: timedOut,
+    );
   }
 
   final fromEvaluate = await runVmProbe(
@@ -86,8 +112,14 @@ Future<VisualCaptureTargetPlatformResolution> resolveVisualCaptureTargetPlatform
       connectionContext: connectionContext,
     ),
   );
-  if (fromEvaluate != null && _isNativeCapturePlatform(fromEvaluate)) {
-    return (platform: fromEvaluate, warning: _timeoutWarning(timedOut));
+  if (!jsUtilTimedOut &&
+      fromEvaluate != null &&
+      _isNativeCapturePlatform(fromEvaluate)) {
+    return _resolution(
+      platform: fromEvaluate,
+      configuration: configuration,
+      timedOut: timedOut,
+    );
   }
 
   final vmProbesTimedOut = timedOut.isNotEmpty;
@@ -105,26 +137,78 @@ Future<VisualCaptureTargetPlatformResolution> resolveVisualCaptureTargetPlatform
       ),
     );
     if (cdpViable == true) {
-      return (platform: 'web', warning: _timeoutWarning(timedOut));
+      return _resolution(
+        platform: 'web',
+        configuration: configuration,
+        timedOut: timedOut,
+      );
     }
   }
 
-  if (fromExtension == 'web' || fromEvaluate == 'web') {
-    return (platform: 'web', warning: _timeoutWarning(timedOut));
+  if (!jsUtilTimedOut && (fromExtension == 'web' || fromEvaluate == 'web')) {
+    return _resolution(
+      platform: 'web',
+      configuration: configuration,
+      timedOut: timedOut,
+    );
   }
 
-  return (
+  return _resolution(
     platform: effectiveVisualCapturePlatformFromConfiguration(configuration),
-    warning: _timeoutWarning(timedOut),
+    configuration: configuration,
+    timedOut: timedOut,
   );
 }
 
-String? _timeoutWarning(Set<String> timedOut) {
+VisualCaptureTargetPlatformResolution _resolution({
+  required String platform,
+  required CoreRuntimeConfiguration configuration,
+  required Set<String> timedOut,
+}) {
+  return (
+    platform: platform,
+    warning: _probeResolutionWarning(
+      timedOut: timedOut,
+      resolvedPlatform: platform,
+      configuration: configuration,
+    ),
+  );
+}
+
+Future<VisualCaptureTargetPlatformResolution>
+catchVisualCaptureTargetPlatformProbeFailures({
+  required Future<VisualCaptureTargetPlatformResolution> probe,
+  required CoreRuntimeConfiguration configuration,
+}) async {
+  try {
+    return await probe;
+  } on Object catch (error) {
+    return (
+      platform: effectiveVisualCapturePlatformFromConfiguration(configuration),
+      warning:
+          'Visual capture target platform probe failed (${error.runtimeType}); '
+          'using host/default routing.',
+    );
+  }
+}
+
+String? _probeResolutionWarning({
+  required Set<String> timedOut,
+  required String resolvedPlatform,
+  required CoreRuntimeConfiguration configuration,
+}) {
   if (timedOut.isEmpty) {
     return null;
   }
+  final hostPlatform = effectiveVisualCapturePlatformFromConfiguration(
+    configuration,
+  );
+  if (resolvedPlatform == hostPlatform) {
+    return 'Visual capture target platform probe timed out (${timedOut.join(', ')}); '
+        'using host/default routing.';
+  }
   return 'Visual capture target platform probe timed out (${timedOut.join(', ')}); '
-      'using host/default routing.';
+      'resolved platform: $resolvedPlatform.';
 }
 
 Future<T?> _runProbe<T>({
