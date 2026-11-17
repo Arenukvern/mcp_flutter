@@ -1,0 +1,69 @@
+import 'dart:io';
+
+import 'package:dart_mcp/server.dart';
+import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/visual_capture_target_platform.dart';
+import 'package:test/test.dart';
+
+void main() {
+  test(
+    'doctor run survives throwing visual capture platform probe',
+    () async {
+      final context = ConnectionContext(
+        defaultHost: '127.0.0.1',
+        defaultPort: 8181,
+        logger: _noopLogger,
+        discoverPorts: () async => <int>[],
+        initialStickyEndpointUri: 'ws://127.0.0.1:8181/abc/ws',
+      );
+
+      const configuration = CoreRuntimeConfiguration(
+        vmHost: '127.0.0.1',
+        vmPort: 8181,
+        resourcesSupported: true,
+        imagesSupported: true,
+        dumpsSupported: false,
+        dynamicRegistrySupported: false,
+        saveImagesToFiles: false,
+      );
+
+      final runner = DoctorRunner(
+        connectionContext: context,
+        executor: DefaultCoreCommandExecutor(
+          connectionContext: context,
+          portScanner: const CorePortScanner(logger: _noopLogger),
+          imageFileSaver: const CoreImageFileSaver(logger: _noopLogger),
+          configuration: configuration,
+        ),
+        stateFilePath: '${Directory.systemTemp.path}/fmtk_doctor_test_state.json',
+        dynamicRegistrySupported: false,
+        logger: _noopLogger,
+        visualCaptureTargetPlatformResolver:
+            ({required configuration, required connectionContext, required probeTimeout}) =>
+                Future<VisualCaptureTargetPlatformResolution>.error(
+                  StateError('paused native app'),
+                ),
+      );
+
+      final result = await runner.run(
+        target: 'ws://127.0.0.1:8181/abc/ws',
+        timeout: const Duration(milliseconds: 200),
+      );
+
+      final checks = (result['checks']! as List).cast<Map<String, Object?>>();
+      final platformWarn = checks.firstWhere(
+        (c) => c['id'] == 'visual_capture_target_platform',
+        orElse: () =>
+            throw StateError('missing visual_capture_target_platform check'),
+      );
+      expect(platformWarn['status'], 'warn');
+      expect('${platformWarn['diagnostic']}', contains('StateError'));
+    },
+  );
+}
+
+void _noopLogger(
+  LoggingLevel level,
+  String message, {
+  String logger = 'test',
+}) {}

@@ -158,6 +158,7 @@ Future<WebCdpEndpoint?> discoverWebCdpEndpoint({
   required CoreRuntimeConfiguration configuration,
   CoreConnectionTarget? connectionTarget,
   List<int> extraCandidatePorts = const <int>[],
+  bool includeProcessScan = true,
 }) async {
   final candidates = <int>{};
 
@@ -172,7 +173,9 @@ Future<WebCdpEndpoint?> discoverWebCdpEndpoint({
   }
 
   candidates.addAll(extraCandidatePorts);
-  candidates.addAll(await discoverChromeDebugPortsFromProcesses());
+  if (includeProcessScan) {
+    candidates.addAll(await discoverChromeDebugPortsFromProcesses());
+  }
 
   for (final port in candidates) {
     final targets = await fetchCdpTargetList(port);
@@ -203,10 +206,12 @@ Future<WebCdpEndpoint?> discoverWebCdpEndpoint({
 Future<bool> isWebCdpCaptureViable({
   required CoreRuntimeConfiguration configuration,
   CoreConnectionTarget? connectionTarget,
+  bool includeProcessScan = true,
 }) async {
   final endpoint = await discoverWebCdpEndpoint(
     configuration: configuration,
     connectionTarget: connectionTarget,
+    includeProcessScan: includeProcessScan,
   );
   return endpoint != null;
 }

@@ -11,6 +11,7 @@ import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/platf
 import 'package:flutter_mcp_toolkit_server/src/cli/appintents_testing_command.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/codegen_init_command.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/codegen_sync_command.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/diagnostics/doctor_human_output.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/init_command.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/init_intentcall_platform_command.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/init_mode.dart';
@@ -208,13 +209,7 @@ Future<void> main(List<String> args) async {
     result: result,
     outputDir: outputDir,
   );
-  final prettyPrintEnvelope = command.name == 'exec' && command.flag('pretty');
-  final envelopeJson = result.toEnvelopeJson();
-  io.stdout.writeln(
-    prettyPrintEnvelope
-        ? const JsonEncoder.withIndent('  ').convert(envelopeJson)
-        : jsonEncode(envelopeJson),
-  );
+  await _writeDoctorOrEnvelopeStdout(topLevel: command, result: result);
   await connectionContext.disconnect();
   io.exit(_resolveExitCode(topLevel: command, result: result));
 }
@@ -1445,6 +1440,54 @@ Future<void> _writeResultArtifactIfNeeded({
   );
 }
 
+Future<void> _writeDoctorOrEnvelopeStdout({
+  required ArgResults topLevel,
+  required CoreResult result,
+}) async {
+  final envelopeJson = result.toEnvelopeJson();
+  if (topLevel.name == 'doctor') {
+    final stdoutHasTerminal = io.stdout.hasTerminal;
+    final format = resolveDoctorStdoutFormat(
+      jsonFlag: topLevel.flag('json'),
+      stdoutHasTerminal: stdoutHasTerminal,
+    );
+    if (format == DoctorStdoutFormat.human) {
+      final wrapWidth = stdoutHasTerminal && io.stdout.terminalColumns > 0
+          ? io.stdout.terminalColumns
+          : 76;
+      final data = result.data;
+      if (data is Map<String, Object?>) {
+        io.stdout.write(
+          formatDoctorHuman(
+            data,
+            useColor: doctorUseAnsiColor(stdoutHasTerminal: stdoutHasTerminal),
+            width: wrapWidth,
+          ),
+        );
+        return;
+      }
+      if (data is Map) {
+        io.stdout.write(
+          formatDoctorHuman(
+            data.map((key, value) => MapEntry('$key', value)),
+            useColor: doctorUseAnsiColor(stdoutHasTerminal: stdoutHasTerminal),
+            width: wrapWidth,
+          ),
+        );
+        return;
+      }
+    }
+  }
+
+  final prettyPrintEnvelope =
+      topLevel.name == 'exec' && topLevel.flag('pretty');
+  io.stdout.writeln(
+    prettyPrintEnvelope
+        ? const JsonEncoder.withIndent('  ').convert(envelopeJson)
+        : jsonEncode(envelopeJson),
+  );
+}
+
 void _printInteractiveNarrativeIfNeeded({
   required ArgResults topLevel,
   required CoreResult result,
@@ -1455,6 +1498,9 @@ void _printInteractiveNarrativeIfNeeded({
 
   switch (topLevel.name) {
     case 'doctor':
+      if (topLevel.flag('json')) {
+        return;
+      }
       io.stdout.writeln(
         'doctor: visual-capture checks run in read-only mode; capture commands can auto-request once when needed.',
       );
@@ -2097,7 +2143,12 @@ final _argParser = ArgParser(allowTrailingOptions: false)
   ..addCommand(
     'doctor',
     _commandParser()
-      ..addFlag('json', help: 'Emit machine-readable JSON')
+      ..addFlag(
+        'json',
+        help:
+            'Emit the JSON response envelope (default on non-TTY; '
+            'use on TTY for scripts).',
+      )
       ..addOption(
         'target',
         help:
@@ -2482,6 +2533,11 @@ Usage: flutter-mcp-toolkit doctor [--json] [--target <ws_uri>] [--timeout-ms <n>
 Examples:
   flutter-mcp-toolkit doctor
   flutter-mcp-toolkit doctor --json --target ws://127.0.0.1:8181/<token>/ws --timeout-ms 4000
+
+Output:
+  - TTY (interactive terminal): human-readable check table by default.
+  - Non-TTY (pipes, CI, agents): compact JSON envelope (same as before).
+  - --json: always emit the JSON envelope (machine-readable).
 
 Doctor checks include:
   - VM reachability

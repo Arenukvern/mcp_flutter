@@ -16,10 +16,10 @@ export 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart'
         PermissionOwner,
         PermissionPolicy,
         PermissionStatus,
-        parsePermissionKind,
-        parsePermissionPolicy,
         captureBackendFlutterLayerVm,
         captureImplementationAppLayerTree,
+        parsePermissionKind,
+        parsePermissionPolicy,
         screenshotModeAuto,
         screenshotModeDesktopWindow,
         screenshotModeFlutterLayer;
@@ -326,6 +326,7 @@ final class VisualCaptureBroker {
   VisualCaptureBroker({
     required this.configuration,
     this.dynamicGateway,
+    this.targetPlatform,
     Iterable<VisualCapturePlatformAdapter>? adapters,
   }) : _adapters = <VisualCapturePlatformAdapter>[
          ...?adapters,
@@ -347,10 +348,18 @@ final class VisualCaptureBroker {
 
   final CoreRuntimeConfiguration configuration;
   final CoreDynamicGateway? dynamicGateway;
+
+  /// When set, overrides host/`flutterDevice` defaults (doctor VM probe).
+  final String? targetPlatform;
   final List<VisualCapturePlatformAdapter> _adapters;
 
-  String get effectivePlatform =>
-      _effectiveVisualCapturePlatform(configuration);
+  String get effectivePlatform {
+    final override = targetPlatform?.trim();
+    if (override != null && override.isNotEmpty) {
+      return override;
+    }
+    return _effectiveVisualCapturePlatform(configuration);
+  }
 
   VisualCapturePlatformAdapter get adapter {
     for (final candidate in _adapters) {
@@ -699,6 +708,10 @@ String _resolveBridgeBackend({
 }
 
 enum _PermissionBrokerAction { status, request, openSettings }
+
+String effectiveVisualCapturePlatformFromConfiguration(
+  CoreRuntimeConfiguration configuration,
+) => _effectiveVisualCapturePlatform(configuration);
 
 String _effectiveVisualCapturePlatform(
   CoreRuntimeConfiguration configuration,

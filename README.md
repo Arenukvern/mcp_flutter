@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/assets/logo.png" alt="flutter-mcp-toolkit logo" width="160" />
+
 # flutter-mcp-toolkit
 
 [![MCP Toplist](https://mcptoplist.com/badge/glama%2FArenukvern%2Fmcp_flutter.svg)](https://mcptoplist.com/server/glama%2FArenukvern%2Fmcp_flutter)
@@ -26,6 +28,23 @@ _Inspect and drive a running Flutter app from your AI assistant._
 Docs: [docs.page/arenukvern/mcp_flutter](https://docs.page/arenukvern/mcp_flutter/) · [llms.txt](./llms.txt) · Contribute: [guide](docs/contributing/guide.mdx)
 
 **flutter-mcp-toolkit** is a Dart MCP server plus the `mcp_toolkit` Flutter package. An agent can discover your debug app, read semantic UI snapshots, tap and type, hot-reload, and call **custom tools your app registers at runtime** — a closed loop with runtime proof instead of guessing.
+
+![Watercolor comic infographic explaining flutter-mcp-toolkit: install fmtk, add it to a Flutter app, connect an AI agent, then inspect, tap, reload, and prove changes in a closed feedback loop.](docs/assets/flutter-mcp-toolkit-infographic.png)
+
+The picture's story: the toolkit gives an AI assistant a shared window and control loop into a running Flutter app, so it can inspect state, act like a user, hot reload, read proof, and use custom tools from your app instead of guessing.
+
+![Screen recording of fmt_get_screenshots capturing a running Flutter debug app and returning UI frames to an AI assistant.](docs/view_screenshots.gif)
+
+## See it in action
+
+Existing walkthroughs (YouTube):
+
+- Dynamic tools in Cursor — [short video](https://www.youtube.com/watch?v=Qog3x2VcO98)
+- Grok Build (2026, June) — [video](https://youtu.be/P0ObCyt0k3M)
+- IntentCall / WebMCP projection — [video](https://www.youtube.com/watch?v=mX4xxVeImq0)
+- Cursor MCP setup — [video](https://www.youtube.com/watch?v=pyDHaI81uts)
+
+Full list and suggested watch order: [Video walkthroughs](docs/concepts/video-walkthroughs.mdx).
 
 ## Evaluate in 30 seconds
 

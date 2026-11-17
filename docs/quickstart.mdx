@@ -52,13 +52,13 @@ flutter run --debug
 flutter-mcp-toolkit doctor
 ```
 
-Doctor checks the binary, PATH, and (with a target) VM connectivity and `mcp_toolkit` extensions. A terminal-friendly doctor walkthrough lands with [pull request 181](https://github.com/Arenukvern/mcp_flutter/pull/181) (no doctor GIF in docs until then).
+In an interactive terminal, doctor prints a readable pass/warn/fail table. Pipes, CI, and agents still get compact JSON by default; pass `--json` anytime you need the envelope explicitly.
 
-If tools return `connection_selection_required`, pass `connection.uri` from `flutter run` output — see [troubleshooting](./troubleshooting.mdx).
+Doctor checks the binary, PATH, and (with a target) VM connectivity and `mcp_toolkit` extensions. If tools return `connection_selection_required`, pass `connection.uri` from `flutter run` output — see [troubleshooting](./troubleshooting.mdx).
 
 ## One-shot CLI (no MCP chat)
 
-With a debug app already running (or the repo [showcase web detach](../packages/harness/README.md#showcase) via `dart run packages/harness/tool/showcase.dart --web --detach`, which writes `.flutter_mcp/runner-session.json` under the showcase app directory):
+With a debug app already running (or the repo [showcase web detach](../packages/harness/README.md#showcase) via `dart run packages/harness/tool/showcase.dart --web --detach`, which writes `.flutter_mcp/runner-session.json` under the showcase app directory). Set `SHOWCASE_APP_DIR` (repo-relative) to pick the app; default is `showcase/flutter_test_app` (`showcase/flutter_demo` for the committed `cli-exec` GIF).
 
 ![flutter-mcp-toolkit exec — semantic_snapshot JSON on stdout](./assets/gifs/cli-exec.gif)
 
