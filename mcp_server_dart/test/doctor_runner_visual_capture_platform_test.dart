@@ -2,9 +2,6 @@ import 'dart:io';
 
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
-import 'package:flutter_mcp_toolkit_server/src/cli/diagnostics/doctor_runner.dart';
-import 'package:flutter_mcp_toolkit_server/src/shared_core/types/core_types.dart';
-import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/connection_context.dart';
 import 'package:test/test.dart';
 
 void main() {
