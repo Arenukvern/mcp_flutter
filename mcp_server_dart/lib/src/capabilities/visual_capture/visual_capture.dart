@@ -221,7 +221,8 @@ final class WebVisualCapturePlatformAdapter
   String get truthMode => screenshotModeFlutterLayer;
 
   @override
-  bool supportsPlatform(String effectivePlatform) => effectivePlatform == 'web';
+  bool supportsPlatform(String effectivePlatform) =>
+      effectivePlatform == 'web';
 
   @override
   Future<PermissionBrokerResult> status({
@@ -299,7 +300,8 @@ final class UnsupportedUntilAppBridgeVisualCapturePlatformAdapter
     capabilities: capabilities,
     supportedModes: supportedModes,
     truthMode: truthMode,
-    message: 'Visual capture is app-owned on this target and requires the optional app permission bridge.',
+    message:
+        'Visual capture is app-owned on this target and requires the optional app permission bridge.',
     details: <String, Object?>{
       'platform': _effectiveVisualCapturePlatform(configuration),
     },
@@ -611,7 +613,10 @@ final class VisualCaptureBroker {
         actualMode: screenshotModeFlutterLayer,
         truthMode: screenshotModeFlutterLayer,
         status: PermissionStatus.granted,
-        supportedModes: {screenshotModeFlutterLayer, ...result.supportedModes},
+        supportedModes: {
+          screenshotModeFlutterLayer,
+          ...result.supportedModes,
+        },
         clearFallbackReason: true,
       );
     }
@@ -708,7 +713,9 @@ String effectiveVisualCapturePlatformFromConfiguration(
   CoreRuntimeConfiguration configuration,
 ) => _effectiveVisualCapturePlatform(configuration);
 
-String _effectiveVisualCapturePlatform(CoreRuntimeConfiguration configuration) {
+String _effectiveVisualCapturePlatform(
+  CoreRuntimeConfiguration configuration,
+) {
   final device = configuration.flutterDevice?.trim().toLowerCase();
   switch (device) {
     case 'macos':

@@ -72,4 +72,32 @@ void main() {
       expect(platform, 'web');
     },
   );
+
+  test(
+    'linux host with web VM target uses web_browser when flutterDevice unset',
+    () async {
+      final configuration = _baseConfiguration();
+      expect(
+        effectiveVisualCapturePlatformFromConfiguration(configuration),
+        'linux',
+        reason: 'host-only fallback is still linux on CI',
+      );
+
+      final broker = VisualCaptureBroker(
+        configuration: configuration,
+        targetPlatform: 'web',
+        adapters: <VisualCapturePlatformAdapter>[
+          WebBrowserScreenshotService(
+            configuration: configuration,
+            connectionContext: null,
+          ),
+        ],
+      );
+
+      final status = await broker.status();
+      expect(broker.effectivePlatform, 'web');
+      expect(status.backend, 'web_browser');
+      expect(status.owner, PermissionOwner.none);
+    },
+  );
 }
