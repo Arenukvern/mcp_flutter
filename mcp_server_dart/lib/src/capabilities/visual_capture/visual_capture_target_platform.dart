@@ -1,6 +1,8 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 // Licensed under the MIT License.
 
+import 'dart:async';
+
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/visual_capture.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/web_cdp_discovery.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/types/core_types.dart';
@@ -9,58 +11,129 @@ import 'package:vm_service/vm_service.dart';
 
 const _flutterPlatformOverrideExtension = 'ext.flutter.platformOverride';
 
+/// Result of probing the connected debug target for visual-capture routing.
+typedef VisualCaptureTargetPlatformResolution = ({
+  String platform,
+  String? warning,
+});
+
 /// Resolves which capture platform rules apply for the connected debug target.
 ///
 /// [configuration.flutterDevice] wins when set explicitly; otherwise a connected
 /// VM target is probed before falling back to the host default.
-Future<String> resolveVisualCaptureTargetPlatform({
+Future<VisualCaptureTargetPlatformResolution> resolveVisualCaptureTargetPlatform({
   required CoreRuntimeConfiguration configuration,
   required ConnectionContext connectionContext,
+  required Duration probeTimeout,
 }) async {
   final fromDevice = _platformFromFlutterDevice(configuration.flutterDevice);
   if (fromDevice != null) {
-    return fromDevice;
+    return (platform: fromDevice, warning: null);
   }
 
   if (!connectionContext.isConnected) {
-    return effectiveVisualCapturePlatformFromConfiguration(configuration);
+    return (
+      platform: effectiveVisualCapturePlatformFromConfiguration(configuration),
+      warning:
+          'Visual capture target platform could not be probed because the VM target is not connected.',
+    );
   }
 
-  if (connectionContext.stickyBrowserDebugPort != null) {
-    return 'web';
+  final timedOut = <String>{};
+
+  final webViaJsUtil = await _runProbe(
+    label: 'dart.library.js_util',
+    timedOut: timedOut,
+    probeTimeout: probeTimeout,
+    action: () => _probeWebViaJsUtil(connectionContext: connectionContext),
+  );
+  if (webViaJsUtil == true) {
+    return (platform: 'web', warning: null);
+  }
+
+  final fromExtension = await _runProbe(
+    label: _flutterPlatformOverrideExtension,
+    timedOut: timedOut,
+    probeTimeout: probeTimeout,
+    action: () => _probeTargetPlatformViaFlutterExtension(
+      connectionContext: connectionContext,
+    ),
+  );
+  if (fromExtension != null && _isNativeCapturePlatform(fromExtension)) {
+    return (platform: fromExtension, warning: _timeoutWarning(timedOut));
+  }
+
+  final fromEvaluate = await _runProbe(
+    label: 'defaultTargetPlatform',
+    timedOut: timedOut,
+    probeTimeout: probeTimeout,
+    action: () => _probeTargetPlatformViaEvaluateFallback(
+      connectionContext: connectionContext,
+    ),
+  );
+  if (fromEvaluate != null && _isNativeCapturePlatform(fromEvaluate)) {
+    return (platform: fromEvaluate, warning: _timeoutWarning(timedOut));
+  }
+
+  if (connectionContext.stickyBrowserDebugPort != null && webViaJsUtil == true) {
+    return (platform: 'web', warning: _timeoutWarning(timedOut));
   }
 
   final connectionTarget = _connectionTargetForProbe(
     connectionContext: connectionContext,
     configuration: configuration,
   );
-  if (await isWebCdpCaptureViable(
-    configuration: configuration,
-    connectionTarget: connectionTarget,
-    includeProcessScan: false,
-  )) {
-    return 'web';
-  }
-
-  if (await _probeWebViaJsUtil(connectionContext: connectionContext)) {
-    return 'web';
-  }
-
-  final fromExtension = await _probeTargetPlatformViaFlutterExtension(
-    connectionContext: connectionContext,
+  final cdpViable = await _runProbe(
+    label: 'web_cdp_viability',
+    timedOut: timedOut,
+    probeTimeout: probeTimeout,
+    action: () => isWebCdpCaptureViable(
+      configuration: configuration,
+      connectionTarget: connectionTarget,
+      includeProcessScan: false,
+    ),
   );
-  if (fromExtension != null) {
-    return fromExtension;
+  if (cdpViable == true) {
+    return (platform: 'web', warning: _timeoutWarning(timedOut));
   }
 
-  final fromEvaluate = await _probeTargetPlatformViaEvaluateFallback(
-    connectionContext: connectionContext,
+  if (fromExtension == 'web' || fromEvaluate == 'web') {
+    return (platform: 'web', warning: _timeoutWarning(timedOut));
+  }
+
+  return (
+    platform: effectiveVisualCapturePlatformFromConfiguration(configuration),
+    warning: _timeoutWarning(timedOut),
   );
-  if (fromEvaluate != null) {
-    return fromEvaluate;
-  }
+}
 
-  return effectiveVisualCapturePlatformFromConfiguration(configuration);
+String? _timeoutWarning(Set<String> timedOut) {
+  if (timedOut.isEmpty) {
+    return null;
+  }
+  return 'Visual capture target platform probe timed out (${timedOut.join(', ')}); '
+      'using host/default routing.';
+}
+
+Future<T?> _runProbe<T>({
+  required String label,
+  required Set<String> timedOut,
+  required Duration probeTimeout,
+  required Future<T> Function() action,
+}) async {
+  try {
+    return await action().timeout(probeTimeout);
+  } on TimeoutException {
+    timedOut.add(label);
+    return null;
+  }
+}
+
+bool _isNativeCapturePlatform(String platform) {
+  return switch (platform) {
+    'android' || 'ios' || 'linux' || 'macos' || 'windows' || 'fuchsia' => true,
+    _ => false,
+  };
 }
 
 String? _platformFromFlutterDevice(String? flutterDevice) {
@@ -148,8 +221,15 @@ Future<bool> _probeWebViaJsUtil({
 Future<String?> _probeTargetPlatformViaFlutterExtension({
   required ConnectionContext connectionContext,
 }) async {
+  final isolateRef = await connectionContext.getFlutterIsolate();
+  final isolateId = isolateRef?.id;
+  if (isolateId == null) {
+    return null;
+  }
+
   final response = await connectionContext.callServiceExtension(
     _flutterPlatformOverrideExtension,
+    isolateId: isolateId,
   );
   if (response == null) {
     return null;

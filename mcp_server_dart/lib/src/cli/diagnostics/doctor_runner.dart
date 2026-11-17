@@ -50,10 +50,22 @@ final class DoctorRunner {
           disconnectAfterCheck: false,
         ),
       );
-      final targetPlatform = await resolveVisualCaptureTargetPlatform(
-        configuration: executor.configuration,
-        connectionContext: connectionContext,
+      final resolution = await _resolveVisualCaptureTargetPlatformSafely(
+        timeout: timeout,
       );
+      final targetPlatform = resolution.platform;
+      if (resolution.warning != null) {
+        checks.add(
+          _check(
+            id: 'visual_capture_target_platform',
+            status: DoctorCheckStatus.warn,
+            critical: false,
+            diagnostic: resolution.warning!,
+            fixCommand:
+                'Increase --timeout-ms or reconnect to the debug target and re-run doctor.',
+          ),
+        );
+      }
       final visualCaptureBroker = VisualCaptureBroker(
         configuration: executor.configuration,
         targetPlatform: targetPlatform,
@@ -520,6 +532,38 @@ final class DoctorRunner {
       fixCommand:
           'Install the optional mcp_toolkit permission delegate and re-run doctor.',
     );
+  }
+
+  Future<VisualCaptureTargetPlatformResolution>
+  _resolveVisualCaptureTargetPlatformSafely({
+    required Duration timeout,
+  }) async {
+    try {
+      return await resolveVisualCaptureTargetPlatform(
+        configuration: executor.configuration,
+        connectionContext: connectionContext,
+        probeTimeout: timeout,
+      );
+    } on Object catch (error, stackTrace) {
+      logger(
+        LoggingLevel.debug,
+        'Visual capture target platform probe failed: $error',
+        logger: 'DoctorRunner',
+      );
+      logger(
+        LoggingLevel.debug,
+        '$stackTrace',
+        logger: 'DoctorRunner',
+      );
+      return (
+        platform: effectiveVisualCapturePlatformFromConfiguration(
+          executor.configuration,
+        ),
+        warning:
+            'Visual capture target platform probe failed (${error.runtimeType}); '
+            'using host/default routing.',
+      );
+    }
   }
 
   Iterable<VisualCapturePlatformAdapter> _doctorVisualCaptureAdapters({

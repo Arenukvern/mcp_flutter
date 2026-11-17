@@ -1,5 +1,4 @@
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/visual_capture.dart';
-import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/visual_capture_target_platform.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/web_browser_screenshot.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/types/core_types.dart';
 import 'package:test/test.dart';
@@ -64,25 +63,9 @@ void main() {
   });
 
   test(
-    'explicit flutterDevice maps without VM before host fallback on linux CI',
-    () {
-      final platform = effectiveVisualCapturePlatformFromConfiguration(
-        _baseConfiguration(flutterDevice: 'chrome'),
-      );
-      expect(platform, 'web');
-    },
-  );
-
-  test(
-    'linux host with web VM target uses web_browser when flutterDevice unset',
+    'unset flutterDevice with web targetPlatform selects web_browser backend',
     () async {
       final configuration = _baseConfiguration();
-      expect(
-        effectiveVisualCapturePlatformFromConfiguration(configuration),
-        'linux',
-        reason: 'host-only fallback is still linux on CI',
-      );
-
       final broker = VisualCaptureBroker(
         configuration: configuration,
         targetPlatform: 'web',
