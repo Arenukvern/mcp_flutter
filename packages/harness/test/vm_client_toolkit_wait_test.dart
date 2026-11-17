@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:flutter_mcp_harness/src/toolkit_extension_unavailable.dart';
 import 'package:flutter_mcp_harness/src/toolkit_extensions.dart';
+import 'package:flutter_mcp_harness/src/toolkit_optional_absent_cache.dart';
 import 'package:flutter_mcp_harness/src/vm_client.dart';
 import 'package:test/test.dart';
 import 'package:vm_service/vm_service.dart' as vm;
@@ -73,20 +75,60 @@ void main() {
     });
   });
 
+  group('ToolkitOptionalAbsentCache', () {
+    test('caches absent optional per isolate', () {
+      final cache = ToolkitOptionalAbsentCache();
+      cache.markAbsent('isol-a', ToolkitExtensions.scroll);
+      expect(cache.isAbsent('isol-a', ToolkitExtensions.scroll), isTrue);
+      expect(cache.isAbsent('isol-b', ToolkitExtensions.scroll), isFalse);
+    });
+
+    test('clears absent entries when isolate changes', () {
+      final cache = ToolkitOptionalAbsentCache();
+      cache.markAbsent('isol-a', ToolkitExtensions.scroll);
+      cache.onIsolateChanged('isol-a', 'isol-b');
+      expect(cache.isAbsent('isol-a', ToolkitExtensions.scroll), isFalse);
+      expect(cache.isAbsent('isol-b', ToolkitExtensions.scroll), isFalse);
+    });
+
+    test('second absent lookup skips grace wait', () async {
+      final cache = ToolkitOptionalAbsentCache();
+      var graceWaits = 0;
+      Future<void> callOnce() async {
+        if (cache.isAbsent('isol-1', ToolkitExtensions.scroll)) {
+          throw ToolkitExtensionUnavailable(ToolkitExtensions.scroll);
+        }
+        graceWaits++;
+        cache.markAbsent('isol-1', ToolkitExtensions.scroll);
+        throw ToolkitExtensionUnavailable(ToolkitExtensions.scroll);
+      }
+
+      await expectLater(
+        callOnce(),
+        throwsA(isA<ToolkitExtensionUnavailable>()),
+      );
+      expect(graceWaits, 1);
+      await expectLater(
+        callOnce(),
+        throwsA(isA<ToolkitExtensionUnavailable>()),
+      );
+      expect(graceWaits, 1);
+    });
+  });
+
   group('assertToolkitExtension', () {
-    test('optional verb missing throws with version hint', () {
+    test('optional verb missing throws ToolkitExtensionUnavailable', () {
       expect(
         () => assertToolkitExtension(
           ToolkitExtensions.requiredAtAttach.toSet(),
           ToolkitExtensions.scroll,
         ),
         throwsA(
-          predicate<StateError>(
+          predicate<ToolkitExtensionUnavailable>(
             (error) =>
-                error.message.contains(ToolkitExtensions.scroll) &&
-                error.message.contains(
-                  ToolkitExtensions.minimumMcpToolkitVersionForFullDriverSet,
-                ),
+                error.extensionName == ToolkitExtensions.scroll &&
+                error.minimumMcpToolkitVersion ==
+                    ToolkitExtensions.minimumMcpToolkitVersionForFullDriverSet,
           ),
         ),
       );
@@ -153,6 +195,17 @@ void main() {
   });
 
   group('waitUntilToolkitRegistered', () {
+    test('hard attach completes without optional grace window', () async {
+      final stopwatch = Stopwatch()..start();
+      await waitUntilToolkitRegistered(
+        readExtensions: () async => [...ToolkitExtensions.requiredAtAttach],
+        rebind: () async {},
+        extensionAdded: const Stream<ToolkitExtensionRegistrationEvent>.empty(),
+        timeout: const Duration(seconds: 1),
+      );
+      expect(stopwatch.elapsed, lessThan(const Duration(seconds: 1)));
+    });
+
     test('completes with only requiredAtAttach registered', () async {
       final present = await waitUntilToolkitRegistered(
         readExtensions: () async => [...ToolkitExtensions.requiredAtAttach],
@@ -387,6 +440,35 @@ void main() {
       );
       expect(reads, greaterThanOrEqualTo(2));
       expect(present, containsAll(ToolkitExtensions.requiredAtAttach));
+    });
+
+    test('SentinelException waits backoff before retrying snapshot', () async {
+      final readTimes = <DateTime>[];
+      var reads = 0;
+      await waitUntilToolkitRegistered(
+        readExtensions: () async {
+          readTimes.add(DateTime.now());
+          reads++;
+          if (reads == 1) {
+            throw vm.SentinelException.parse('getIsolate', {
+              'type': 'Sentinel',
+              'valueAsString': 'Collected',
+              'kind': 'Collected',
+            });
+          }
+          return [...ToolkitExtensions.requiredAtAttach];
+        },
+        rebind: () async {},
+        extensionAdded: const Stream<ToolkitExtensionRegistrationEvent>.empty(),
+        timeout: const Duration(seconds: 2),
+        rpcTimeout: const Duration(milliseconds: 100),
+        sentinelRetryBackoff: () => const Duration(milliseconds: 150),
+      );
+      expect(reads, greaterThanOrEqualTo(2));
+      expect(
+        readTimes[1].difference(readTimes[0]),
+        greaterThanOrEqualTo(const Duration(milliseconds: 100)),
+      );
     });
 
     test('per-RPC timeout on hung rebind then event-driven retry', () async {

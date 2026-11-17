@@ -5,14 +5,28 @@ import 'package:meta/meta.dart';
 import 'package:vm_service/vm_service.dart' as vm;
 import 'package:vm_service/vm_service_io.dart' as vm_io;
 
+import 'toolkit_extension_unavailable.dart';
 import 'toolkit_extensions.dart';
+import 'toolkit_optional_absent_cache.dart';
 import 'vm_service_uri.dart';
 
-/// After the hard attach verbs register, optional toolkit extensions may still
-/// land asynchronously on current `mcp_toolkit` apps. Attach and the first
-/// optional [VmClient.callExtension] wait at most this long before treating a
-/// verb as absent on an older or custom entry set.
+/// Optional toolkit verbs may register shortly after the hard attach set.
+/// The first [VmClient.callExtension] to each optional verb waits at most this
+/// long; attach itself does not wait for optionals.
 const kOptionalToolkitExtensionGrace = Duration(seconds: 10);
+
+/// Backoff before re-reading [extensionRPCs] after a [vm.SentinelException].
+const kSentinelRetryBackoffMin = Duration(milliseconds: 100);
+const kSentinelRetryBackoffMax = Duration(milliseconds: 250);
+
+/// Jittered backoff for sentinel retries (100–250 ms).
+Duration sentinelRetryBackoffDelay({math.Random? random}) {
+  final generator = random ?? math.Random();
+  final span = kSentinelRetryBackoffMax.inMilliseconds -
+      kSentinelRetryBackoffMin.inMilliseconds;
+  final jitter = span <= 0 ? 0 : generator.nextInt(span + 1);
+  return kSentinelRetryBackoffMin + Duration(milliseconds: jitter);
+}
 
 /// Owns the VM-service connection to one running Flutter app.
 ///
@@ -37,6 +51,9 @@ final class VmClient {
 
   /// Toolkit extensions observed on the bound isolate after attach wait.
   Set<String> _toolkitExtensionsPresent = const {};
+
+  final ToolkitOptionalAbsentCache _optionalAbsentAfterGrace =
+      ToolkitOptionalAbsentCache();
 
   /// Extensions registered on the UI isolate when attach completed.
   Set<String> get toolkitExtensionsPresent =>
@@ -134,7 +151,7 @@ final class VmClient {
       }
 
       final extensionAdded = _toolkitExtensionAddedStream();
-      final hardPresent = await waitUntilToolkitRegistered(
+      _toolkitExtensionsPresent = await waitUntilToolkitRegistered(
         readExtensions: extensionNames,
         rebind: _rebindToToolkitIsolate,
         readBoundIsolateId: () async => _mainIsolate.id,
@@ -142,14 +159,6 @@ final class VmClient {
         timeout: remaining,
         rpcTimeout: rpcTimeout,
         diagnosticUri: httpUri,
-      );
-      _toolkitExtensionsPresent = await absorbToolkitExtensionsDuringGrace(
-        present: hardPresent,
-        extensionAdded: extensionAdded,
-        readExtensions: extensionNames,
-        rebind: _rebindToToolkitIsolate,
-        readBoundIsolateId: () async => _mainIsolate.id,
-        rpcTimeout: rpcTimeout,
       );
     } finally {
       await cancelIsolateStreamIfSubscribed(
@@ -201,6 +210,11 @@ final class VmClient {
       return;
     }
 
+    final isolateId = _mainIsolate.id;
+    if (_optionalAbsentAfterGrace.isAbsent(isolateId, name)) {
+      throw ToolkitExtensionUnavailable(name);
+    }
+
     var subscribedHere = false;
     try {
       subscribedHere = await subscribeIsolateStream(
@@ -223,7 +237,10 @@ final class VmClient {
         subscribedHere,
       );
     }
-    assertToolkitExtension(_toolkitExtensionsPresent, name);
+    if (!_toolkitExtensionsPresent.contains(name)) {
+      _optionalAbsentAfterGrace.markAbsent(isolateId, name);
+      throw ToolkitExtensionUnavailable(name);
+    }
   }
 
   Future<Map<String, dynamic>> callExtension(
@@ -324,12 +341,14 @@ final class VmClient {
   /// toolkit registration. No-op when none does (the current binding
   /// stays — callers see the same -32601 as before).
   Future<void> _rebindToToolkitIsolate() async {
+    final previousId = _mainIsolate.id;
     final vmName = await _service.getVM();
     for (final ref in [...?vmName.isolates]) {
       try {
         final isolate = await _service.getIsolate(ref.id!);
         final extensions = List<String>.from(isolate.extensionRPCs ?? const []);
         if (extensions.any((name) => name.startsWith('ext.mcp.toolkit.'))) {
+          _optionalAbsentAfterGrace.onIsolateChanged(previousId, ref.id);
           _mainIsolate = ref;
           return;
         }
@@ -434,12 +453,7 @@ void assertToolkitExtension(Set<String> present, String name) {
   if (ToolkitExtensions.requiredAtAttach.contains(name)) return;
   if (!ToolkitExtensions.optionalForToolkitDriver.contains(name)) return;
   if (present.contains(name)) return;
-  throw StateError(
-    'Service extension "$name" is not registered on this app. '
-    'Upgrade mcp_toolkit to >= '
-    '${ToolkitExtensions.minimumMcpToolkitVersionForFullDriverSet} for the full '
-    'ToolkitDriver verb set, or register "$name" in a custom toolkit entry set.',
-  );
+  throw ToolkitExtensionUnavailable(name);
 }
 
 /// Event-driven wait for toolkit registration (tested directly).
@@ -456,6 +470,7 @@ Future<Set<String>> waitUntilToolkitRegistered({
   Duration timeout = const Duration(seconds: 90),
   Duration rpcTimeout = const Duration(seconds: 30),
   Uri? diagnosticUri,
+  Duration Function()? sentinelRetryBackoff,
 }) async {
   final stopwatch = Stopwatch()..start();
   final needed = Set<String>.from(required);
@@ -495,8 +510,14 @@ Future<Set<String>> waitUntilToolkitRegistered({
     } on vm.RPCError {
       // Isolate restart — retryable until the overall deadline.
     } on vm.SentinelException {
-      // Stale isolate during restart — retryable until the overall deadline.
-      if (stopwatch.elapsed < timeout) unawaited(snapshotOnce());
+      if (stopwatch.elapsed < timeout) {
+        final backoff =
+            sentinelRetryBackoff?.call() ?? sentinelRetryBackoffDelay();
+        unawaited(Future<void>(() async {
+          await Future<void>.delayed(backoff);
+          await snapshotOnce();
+        }));
+      }
     }
   }
 
@@ -567,6 +588,7 @@ Future<Set<String>> absorbToolkitExtensionsDuringGrace({
   Duration grace = kOptionalToolkitExtensionGrace,
   Duration rpcTimeout = const Duration(seconds: 30),
   String? untilExtensionRegistered,
+  Duration Function()? sentinelRetryBackoff,
 }) async {
   final stopwatch = Stopwatch()..start();
   final observed = Set<String>.from(present);
@@ -612,7 +634,14 @@ Future<Set<String>> absorbToolkitExtensionsDuringGrace({
     } on vm.RPCError {
       // Isolate restart — retryable during grace.
     } on vm.SentinelException {
-      if (stopwatch.elapsed < grace) unawaited(snapshotOnce());
+      if (stopwatch.elapsed < grace) {
+        final backoff =
+            sentinelRetryBackoff?.call() ?? sentinelRetryBackoffDelay();
+        unawaited(Future<void>(() async {
+          await Future<void>.delayed(backoff);
+          await snapshotOnce();
+        }));
+      }
     }
   }
 

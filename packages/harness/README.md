@@ -11,7 +11,7 @@ production E2E loop (see [ADR-0015](../../decisions/0015_flutter_mcp_harness_ext
 A guided tour lives in the
 [E2E scenarios](../../docs/use-cases/e2e-scenarios.mdx).
 
-**Toolkit attach:** `attachDriver` waits only for `semantic_snapshot`, `tap_widget`, and `enter_text`, then up to **10s** (`kOptionalToolkitExtensionGrace`) for optional verbs that register asynchronously. The first call to a still-missing optional waits through the same grace, then fails with the extension name and minimum `mcp_toolkit` version (**7.1.0** for the full driver verb set).
+**Toolkit attach:** `attachDriver` waits only for `semantic_snapshot`, `tap_widget`, and `enter_text`, then returns. Each optional verb gets at most **10s** (`kOptionalToolkitExtensionGrace`) on its **first** call; confirmed absences are cached per isolate (`ToolkitExtensionUnavailable` + **7.1.0** upgrade hint).
 
 ## Quick start
 

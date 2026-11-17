@@ -28,6 +28,7 @@ export 'src/flutter_web_cdp.dart';
 export 'src/log_tap.dart';
 export 'src/scenario.dart';
 export 'src/toolkit_driver.dart';
+export 'src/toolkit_extension_unavailable.dart';
 export 'src/toolkit_extensions.dart';
 export 'src/vm_client.dart';
 export 'src/vm_service_uri.dart';
