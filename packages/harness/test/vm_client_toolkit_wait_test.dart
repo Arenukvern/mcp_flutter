@@ -36,6 +36,43 @@ void main() {
     });
   });
 
+  group('absorbToolkitExtensionsDuringGrace', () {
+    test('optional extension registers 500 ms after attach before first use',
+        () async {
+      final added = StreamController<ToolkitExtensionRegistrationEvent>();
+      unawaited(
+        Future<void>(() async {
+          await Future<void>.delayed(const Duration(milliseconds: 500));
+          added.add(
+            ToolkitExtensionRegistrationEvent(
+              extension: ToolkitExtensions.viewScreenshots,
+            ),
+          );
+        }),
+      );
+
+      final present = await absorbToolkitExtensionsDuringGrace(
+        present: ToolkitExtensions.requiredAtAttach.toSet(),
+        readExtensions: () async => [...ToolkitExtensions.requiredAtAttach],
+        rebind: () async {},
+        extensionAdded: added.stream,
+        grace: const Duration(seconds: 2),
+        rpcTimeout: const Duration(milliseconds: 100),
+        untilExtensionRegistered: ToolkitExtensions.viewScreenshots,
+      );
+      await added.close();
+
+      expect(present, contains(ToolkitExtensions.viewScreenshots));
+      expect(
+        () => assertToolkitExtension(
+          present,
+          ToolkitExtensions.viewScreenshots,
+        ),
+        returnsNormally,
+      );
+    });
+  });
+
   group('assertToolkitExtension', () {
     test('optional verb missing throws with version hint', () {
       expect(
