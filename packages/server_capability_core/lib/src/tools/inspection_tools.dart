@@ -42,7 +42,9 @@ void registerInspectionTools(CapabilityContext context) {
             message: 'inspect_widget_at_point requires integer x and y',
           );
         }
-        final viewId = intArgOrNull(args['viewId']);
+        // viewId 0 is the engine's first FlutterView, not "absent": the
+        // zero-means-absent rule exists for snapshotId only.
+        final viewId = coordinateIntArgOrNull(args['viewId']);
         return runCommand(
           runner,
           args,

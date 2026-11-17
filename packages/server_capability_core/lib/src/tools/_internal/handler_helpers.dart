@@ -80,7 +80,9 @@ String? verbatimStringArgOrNull(Object? raw) =>
 
 /// Returns the int value of [raw], or null if absent or non-numeric.
 ///
-/// Unlike [intArgOrNull], zero is a valid coordinate (e.g. inspect at origin).
+/// Unlike [intArgOrNull], zero is a valid value: it is a real coordinate
+/// (inspect at the origin) and a real `FlutterView` id (the first view the
+/// engine creates).
 @internal
 int? coordinateIntArgOrNull(Object? raw) => switch (raw) {
   final int v => v,
