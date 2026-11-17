@@ -15,11 +15,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
-- `attachDriver` waits event-driven for every VM service extension
-  [ToolkitDriver] uses (snapshot, tap, enter_text, scroll, and the other
-  driver verbs) via `ServiceExtensionAdded`, with a one-shot read of existing
-  `extensionRPCs` — avoids web/chrome races where only a subset of toolkit
-  extensions is registered when attach returns.
+- `attachDriver` waits event-driven for the hard attach set
+  (`semantic_snapshot`, `tap_widget`, `enter_text`) via `ServiceExtensionAdded`,
+  records optional [ToolkitDriver] verbs when present, and fails on first use
+  with a clear message when an optional verb is missing (requires
+  `mcp_toolkit` >= **7.1.0** for the full verb set). Isolate restarts during
+  the wait reset tracked extensions; stale isolate reads retry on
+  `SentinelException`.
 
 - `ToolkitDriver` tap/enter_text now surface the app-side refusal
   (`success: false` — ref not found, stale ref, disabled control,
