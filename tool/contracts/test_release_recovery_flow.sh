@@ -78,9 +78,16 @@ gh() {
 export -f gh
 
 if bash "$tooling/tool/release/check_release_assets_conflict.sh" v7.0.2 7.0.2; then
-  fail "must fail on conflicting asset names"
+  ok "partial conflicting assets allow gap-fill recovery"
 else
-  ok "conflicting assets rejected"
+  fail "partial assets should pass for clobber recovery"
+fi
+
+export GH_RELEASE_FIXTURE='{"assets":[{"name":"flutter_mcp_7.0.2_darwin-arm64.tar.gz"},{"name":"flutter_mcp_7.0.2_linux-x64.tar.gz"},{"name":"checksums.txt"}]}'
+if bash "$tooling/tool/release/check_release_assets_conflict.sh" v7.0.2 7.0.2; then
+  fail "must fail when all expected assets already exist"
+else
+  ok "full duplicate release still rejected"
 fi
 
 unset -f gh
