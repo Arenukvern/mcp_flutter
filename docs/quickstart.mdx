@@ -56,6 +56,19 @@ In an interactive terminal, doctor prints a readable pass/warn/fail table. Pipes
 
 Doctor checks the binary, PATH, and (with a target) VM connectivity and `mcp_toolkit` extensions. If tools return `connection_selection_required`, pass `connection.uri` from `flutter run` output — see [troubleshooting](./troubleshooting.mdx).
 
+## One-shot CLI (no MCP chat)
+
+With a debug app already running (or the repo [showcase web detach](../packages/harness/README.md#showcase) via `dart run packages/harness/tool/showcase.dart --web --detach`, which writes `.flutter_mcp/runner-session.json` under the showcase app directory). Set `SHOWCASE_APP_DIR` (repo-relative) to pick the app; default is `showcase/flutter_test_app` (`showcase/flutter_demo` for the committed `cli-exec` GIF).
+
+![flutter-mcp-toolkit exec — semantic_snapshot JSON on stdout](./assets/gifs/cli-exec.gif)
+
+```bash
+cd showcase/flutter_test_app   # or your instrumented app directory
+flutter-mcp-toolkit exec --name semantic_snapshot --pretty
+```
+
+Use `--vm-service-uri` when auto-discovery needs a hint ([CLI reference](./reference/cli.mdx)). More scripting patterns: [CI and scripts](./use-cases/ci-and-scripts.mdx).
+
 ## 5. First prompt to your agent
 
 Ask something concrete, for example:

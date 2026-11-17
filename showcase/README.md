@@ -30,6 +30,8 @@ make drive-flutter            # macOS (first build takes minutes)
 make drive-flutter-chrome     # Flutter web
 ```
 
+Recording: [E2E scenarios — instrumented tier](../docs/use-cases/e2e-scenarios.mdx#instrumented-tier-showcaseflutter_demo).
+
 or directly:
 
 ```bash
@@ -53,6 +55,8 @@ by `serve.dart` and driven in Chrome:
 make drive-web                # headless Chrome
 make drive-web VISIBLE=1      # watch it
 ```
+
+Recording: [E2E scenarios — browser tier](../docs/use-cases/e2e-scenarios.mdx#browser-tier-showcaseweb_demo).
 
 or directly:
 

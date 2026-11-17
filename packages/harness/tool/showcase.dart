@@ -18,6 +18,7 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
@@ -28,7 +29,17 @@ final String repoRoot = p.normalize(
 );
 
 final String showcaseDir = p.join(repoRoot, '.showcase');
-final String appDir = p.join(repoRoot, 'showcase', 'flutter_test_app');
+
+/// Default dogfood app; override with `SHOWCASE_APP_DIR` (repo-relative path).
+String get appDir {
+  final override = Platform.environment['SHOWCASE_APP_DIR']?.trim();
+  if (override != null && override.isNotEmpty) {
+    return p.isAbsolute(override)
+        ? p.normalize(override)
+        : p.join(repoRoot, override);
+  }
+  return p.join(repoRoot, 'showcase', 'flutter_test_app');
+}
 
 const String scheme = 'mcpfluttertest';
 
@@ -70,7 +81,8 @@ Future<void> main(List<String> arguments) async {
 // ---------------------------------------------------------------------------
 
 Future<void> stopShowcase() async {
-  log('cleaning showcase/flutter_test_app / MCP showcase processes…');
+  final appPath = p.relative(appDir, from: repoRoot);
+  log('cleaning $appPath / MCP showcase processes…');
   final pidFile = File(p.join(showcaseDir, 'flutter.pid'));
   if (pidFile.existsSync()) {
     final savedPid = int.tryParse(pidFile.readAsStringSync().trim());
@@ -89,9 +101,9 @@ Future<void> stopShowcase() async {
     webPidFile.deleteSync();
   }
 
-  // Flutter tool driving this repo's test app.
-  await _runIgnoringExitCode(
-        'pkill', ['-f', 'flutter run.*showcase/flutter_test_app']);
+  // Flutter tool driving the resolved showcase app (SHOWCASE_APP_DIR or default).
+  final pkillPattern = 'flutter run.*$appPath';
+  await _runIgnoringExitCode('pkill', ['-f', pkillPattern]);
   await _runIgnoringExitCode('pkill', ['-f', 'flutter_tools.*run.*macos']);
 
   // macOS showcase GUI (survives parent flutter kill).
@@ -252,9 +264,15 @@ Future<void> webShowcase({required bool detach}) async {
   log('recipe: dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart '
       'webmcp chrome-args');
 
+  final headless = Platform.environment['WEB_HEADLESS'] == '1';
   final extraArgs = <String>[
     '--web-port=$webPort',
     '--host-vmservice-port=$vmPort',
+    '--disable-service-auth-codes',
+    if (headless) ...[
+      '--web-browser-flag=--headless=new',
+      '--web-browser-flag=--disable-gpu',
+    ],
     if (route.isNotEmpty) '--route=$route',
     if (dogfoodVisual == '1' || dogfoodVisual == 'true')
       '--dart-define=DOGFOOD_VISUAL=true',
@@ -290,6 +308,11 @@ Future<void> webShowcase({required bool detach}) async {
       log('flutter exited or never published a VM ws URI (180s).');
       await quit(1);
     }
+    await _writeShowcaseRunnerSession(
+      wsUri: ws,
+      flutterPid: pid,
+      deviceId: 'chrome',
+    );
     _printWebReady('$ws', webPort);
     await quit(0);
   }
@@ -322,6 +345,29 @@ Future<void> webShowcase({required bool detach}) async {
 
   _printWebReady('${canonicalVmServiceWsUri(app.vmUri)}', webPort);
   await _relayUntilExit(app, logSink);
+}
+
+Future<void> _writeShowcaseRunnerSession({
+  required Uri wsUri,
+  required int flutterPid,
+  required String deviceId,
+}) async {
+  final dir = Directory(p.join(appDir, '.flutter_mcp'));
+  dir.createSync(recursive: true);
+  final payload = <String, Object?>{
+    'schema': 1,
+    'runner': 'showcase',
+    'vm_service_uri': wsUri.toString(),
+    // Harness detach has no TCP control plane; fmtk treats runner=showcase
+    // as alive when [flutterPid] answers kill -0 (ADR-0014 display metadata).
+    'control_port': 1,
+    'device_id': deviceId,
+    'pid': flutterPid,
+    'started_at': DateTime.now().toUtc().toIso8601String(),
+  };
+  await File(p.join(dir.path, 'runner-session.json')).writeAsString(
+    '${jsonEncode(payload)}\n',
+  );
 }
 
 void _printWebReady(String wsUri, String webPort) {
