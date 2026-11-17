@@ -32,8 +32,7 @@ void main() {
       final executor = _RecordingExecutor();
 
       final result = await applyConnectionOverrideFromResourceUri(
-        resourceUri:
-            'visual://localhost/view/details?targetId=ws%3A%2F%2F127.0.0.1%3A8183%2Fqwerty%2Fws&forceReconnect=true',
+        resourceUri: 'visual://localhost/view/details?targetId=ws%3A%2F%2F127.0.0.1%3A8183%2Fqwerty%2Fws&forceReconnect=true',
         executor: executor,
       );
 
@@ -45,15 +44,37 @@ void main() {
     });
 
     test('invalid query port returns connect_failed', () async {
+      for (final badPort in ['abc', '8181.9', '1e999', 'Infinity']) {
+        final executor = _RecordingExecutor();
+
+        final result = await applyConnectionOverrideFromResourceUri(
+          resourceUri: 'visual://localhost/view/details?port=$badPort',
+          executor: executor,
+        );
+
+        expect(result, isNotNull, reason: 'expected failure for $badPort');
+        expect(
+          result!.error?.code,
+          equals(CoreErrorCode.connectFailed),
+          reason: 'expected connect_failed for $badPort',
+        );
+        expect(executor.lastCommand, isNull);
+      }
+    });
+
+    test('parses a numeric port from the resource URI query', () async {
       final executor = _RecordingExecutor();
 
       final result = await applyConnectionOverrideFromResourceUri(
-        resourceUri: 'visual://localhost/view/details?port=abc',
+        resourceUri: 'visual://localhost/view/details?mode=manual&host=127.0.0.1&port=8181',
         executor: executor,
       );
 
-      expect(result, isNotNull);
-      expect(result!.error?.code, equals(CoreErrorCode.connectFailed));
+      expect(result, isNull);
+      final command = executor.lastCommand! as ConnectCommand;
+      expect(command.mode, equals(CoreConnectionMode.manual));
+      expect(command.host, equals('127.0.0.1'));
+      expect(command.port, equals(8181));
     });
 
     test('rejects unknown fields in nested connection object', () async {
