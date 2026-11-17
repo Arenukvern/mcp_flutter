@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_mcp_harness/src/toolkit_extensions.dart';
 import 'package:flutter_mcp_harness/src/vm_client.dart';
 import 'package:test/test.dart';
+import 'package:vm_service/vm_service.dart' as vm;
 
 void main() {
   group('toolkitExtensionsReady', () {
@@ -29,6 +30,54 @@ void main() {
 
     test('rejects unrelated extensions', () {
       expect(toolkitExtensionsReady(['ext.flutter.inspector.']), isFalse);
+    });
+  });
+
+  group('subscribeIsolateStream', () {
+    test('stream already subscribed (103) returns false', () async {
+      final subscribed = await subscribeIsolateStream(
+        streamListen: (_) async => throw vm.RPCError('streamListen', 103),
+        budget: const Duration(seconds: 1),
+      );
+      expect(subscribed, isFalse);
+    });
+
+    test('103 path still allows toolkit registration to complete', () async {
+      final subscribed = await subscribeIsolateStream(
+        streamListen: (_) async => throw vm.RPCError('streamListen', 103),
+        budget: const Duration(seconds: 1),
+      );
+      expect(subscribed, isFalse);
+      await waitUntilToolkitRegistered(
+        readExtensions: () async => [
+          ...ToolkitExtensions.requiredForToolkitDriver,
+        ],
+        rebind: () async {},
+        extensionAdded: const Stream<String>.empty(),
+        timeout: const Duration(seconds: 1),
+      );
+    });
+
+    test('hung streamListen throws TimeoutException', () async {
+      await expectLater(
+        subscribeIsolateStream(
+          streamListen: (_) async {
+            await Future<void>.delayed(const Duration(seconds: 5));
+            return vm.Success();
+          },
+          budget: const Duration(milliseconds: 30),
+        ),
+        throwsA(isA<TimeoutException>()),
+      );
+    });
+
+    test('cancelIsolateStreamIfSubscribed is no-op when not subscribed', () async {
+      var canceled = false;
+      await cancelIsolateStreamIfSubscribed((_) async {
+        canceled = true;
+        return vm.Success();
+      }, false);
+      expect(canceled, isFalse);
     });
   });
 
