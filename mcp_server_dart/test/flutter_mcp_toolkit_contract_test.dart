@@ -226,7 +226,6 @@ void main() {
             '--timeout-ms',
             '50',
           ],
-          environment: {'FLUTTER_MCP_TOOLKIT_DOCTOR_STDOUT_IS_TTY': '0'},
         );
 
         final stdout = (result.stdout as String).trim();
@@ -238,30 +237,7 @@ void main() {
     );
 
     test(
-      'doctor on TTY without --json emits human-readable output',
-      () async {
-        final result = await _runCli(
-          statePath,
-          [
-            'doctor',
-            '--target',
-            'ws://127.0.0.1:1/unreachable/ws',
-            '--timeout-ms',
-            '50',
-          ],
-          environment: {'FLUTTER_MCP_TOOLKIT_DOCTOR_STDOUT_IS_TTY': '1'},
-        );
-
-        final stdout = result.stdout as String;
-        expect(() => jsonDecode(stdout.trim()), throwsFormatException);
-        expect(stdout, contains('vm_target_reachable (critical)'));
-        expect(stdout, contains('fail —'));
-        expect(stdout, contains('pass,'));
-      },
-    );
-
-    test(
-      'doctor --json on TTY emits compact JSON envelope',
+      'doctor --json emits compact JSON envelope on non-TTY',
       () async {
         final result = await _runCli(
           statePath,
@@ -273,7 +249,6 @@ void main() {
             '--timeout-ms',
             '50',
           ],
-          environment: {'FLUTTER_MCP_TOOLKIT_DOCTOR_STDOUT_IS_TTY': '1'},
         );
 
         final stdout = (result.stdout as String).trim();

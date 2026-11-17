@@ -3,16 +3,11 @@
 
 import 'dart:io' as io;
 
-import 'package:meta/meta.dart';
-
-/// When non-null, overrides [io.stdout.hasTerminal] for doctor output mode.
-@visibleForTesting
-bool? doctorStdoutIsTerminalOverride;
-
 enum DoctorStdoutFormat { jsonEnvelope, human }
 
+const _defaultWrapWidth = 76;
 const _detailIndent = '      ';
-const _wrapWidth = 76;
+const _fixCommandIndent = '        fix: ';
 
 bool _envTruthy(String name) {
   final raw = io.Platform.environment[name];
@@ -26,23 +21,19 @@ bool _envTruthy(String name) {
       normalized == 'on';
 }
 
-bool doctorStdoutHasTerminal() {
-  if (doctorStdoutIsTerminalOverride != null) {
-    return doctorStdoutIsTerminalOverride!;
-  }
-  final forced =
-      io.Platform.environment['FLUTTER_MCP_TOOLKIT_DOCTOR_STDOUT_IS_TTY'];
-  if (forced != null && forced.trim().isNotEmpty) {
-    return _envTruthy('FLUTTER_MCP_TOOLKIT_DOCTOR_STDOUT_IS_TTY');
-  }
-  return io.stdout.hasTerminal;
+bool _noColorRequested() {
+  final raw = io.Platform.environment['NO_COLOR'];
+  return raw != null && raw.isNotEmpty;
 }
 
-bool doctorUseAnsiColor() {
-  if (!doctorStdoutHasTerminal()) {
+bool doctorUseAnsiColor({
+  required bool stdoutHasTerminal,
+  bool? noColorSet,
+}) {
+  if (!stdoutHasTerminal) {
     return false;
   }
-  if (_envTruthy('NO_COLOR')) {
+  if (noColorSet ?? _noColorRequested()) {
     return false;
   }
   final clicolor = io.Platform.environment['CLICOLOR']?.trim();
@@ -55,17 +46,24 @@ bool doctorUseAnsiColor() {
   return io.stdout.supportsAnsiEscapes;
 }
 
-DoctorStdoutFormat resolveDoctorStdoutFormat({required bool jsonFlag}) {
+DoctorStdoutFormat resolveDoctorStdoutFormat({
+  required bool jsonFlag,
+  required bool stdoutHasTerminal,
+}) {
   if (jsonFlag) {
     return DoctorStdoutFormat.jsonEnvelope;
   }
-  if (doctorStdoutHasTerminal()) {
+  if (stdoutHasTerminal) {
     return DoctorStdoutFormat.human;
   }
   return DoctorStdoutFormat.jsonEnvelope;
 }
 
-String formatDoctorHuman(Map<String, Object?> doctorData) {
+String formatDoctorHuman(
+  Map<String, Object?> doctorData, {
+  required bool useColor,
+  int? width,
+}) {
   final checks = doctorData['checks'];
   if (checks is! List) {
     return 'doctor: missing checks in result';
@@ -77,8 +75,8 @@ String formatDoctorHuman(Map<String, Object?> doctorData) {
   final fail = _asInt(summary?['fail']);
   final critical = _asInt(summary?['criticalFailures']);
   final target = doctorData['target'];
+  final wrapWidth = width ?? _defaultWrapWidth;
 
-  final useColor = doctorUseAnsiColor();
   final buffer = StringBuffer();
 
   if (target is String && target.isNotEmpty) {
@@ -93,6 +91,7 @@ String formatDoctorHuman(Map<String, Object?> doctorData) {
     final status = '${entry['status'] ?? 'unknown'}';
     final criticalCheck = entry['critical'] == true;
     final rawDiagnostic = '${entry['diagnostic'] ?? ''}';
+    final fixCommand = '${entry['fix_command'] ?? ''}'.trim();
 
     final statusLabel = _statusLabel(status, useColor: useColor);
     final idLabel = criticalCheck ? '$id (critical)' : id;
@@ -103,15 +102,25 @@ String formatDoctorHuman(Map<String, Object?> doctorData) {
     }
 
     buffer.writeln('$statusLabel  $idLabel');
-    for (final line in _wrapDiagnostic(rawDiagnostic)) {
+    for (final line in _wrapDiagnostic(rawDiagnostic, wrapWidth: wrapWidth)) {
       buffer.writeln('$_detailIndent$line');
+    }
+    if (fixCommand.isNotEmpty) {
+      final fixLines = _wrapDiagnostic(
+        fixCommand,
+        wrapWidth: wrapWidth - _fixCommandIndent.length,
+      );
+      for (var index = 0; index < fixLines.length; index++) {
+        final prefix = index == 0 ? _fixCommandIndent : ' ' * _fixCommandIndent.length;
+        buffer.writeln('$prefix${fixLines[index]}');
+      }
     }
   }
 
   final overall = _overallHeadline(critical: critical, fail: fail, warn: warn);
   final overallLabel = _overallLabel(overall, useColor: useColor);
   buffer.write(
-    '$overallLabel — $pass pass, $warn warn, $fail fail ($critical critical)\n',
+    '$overallLabel - $pass pass, $warn warn, $fail fail ($critical critical)\n',
   );
   return buffer.toString();
 }
@@ -124,7 +133,7 @@ String _shortPassDetail(String diagnostic) {
   return '${collapsed.substring(0, 85)}...';
 }
 
-List<String> _wrapDiagnostic(String diagnostic) {
+List<String> _wrapDiagnostic(String diagnostic, {required int wrapWidth}) {
   final collapsed = diagnostic.replaceAll(RegExp(r'\s+'), ' ').trim();
   if (collapsed.isEmpty) {
     return const ['(no detail)'];
@@ -134,7 +143,7 @@ List<String> _wrapDiagnostic(String diagnostic) {
   var current = StringBuffer();
   for (final word in words) {
     final candidate = current.isEmpty ? word : '$current $word';
-    if (candidate.length > _wrapWidth && current.isNotEmpty) {
+    if (candidate.length > wrapWidth && current.isNotEmpty) {
       lines.add(current.toString());
       current = StringBuffer(word);
     } else {

@@ -1446,17 +1446,32 @@ Future<void> _writeDoctorOrEnvelopeStdout({
 }) async {
   final envelopeJson = result.toEnvelopeJson();
   if (topLevel.name == 'doctor') {
-    final format = resolveDoctorStdoutFormat(jsonFlag: topLevel.flag('json'));
+    final stdoutHasTerminal = io.stdout.hasTerminal;
+    final format = resolveDoctorStdoutFormat(
+      jsonFlag: topLevel.flag('json'),
+      stdoutHasTerminal: stdoutHasTerminal,
+    );
     if (format == DoctorStdoutFormat.human) {
+      final wrapWidth = stdoutHasTerminal && io.stdout.terminalColumns > 0
+          ? io.stdout.terminalColumns
+          : 76;
       final data = result.data;
       if (data is Map<String, Object?>) {
-        io.stdout.write(formatDoctorHuman(data));
+        io.stdout.write(
+          formatDoctorHuman(
+            data,
+            useColor: doctorUseAnsiColor(stdoutHasTerminal: stdoutHasTerminal),
+            width: wrapWidth,
+          ),
+        );
         return;
       }
       if (data is Map) {
         io.stdout.write(
           formatDoctorHuman(
             data.map((key, value) => MapEntry('$key', value)),
+            useColor: doctorUseAnsiColor(stdoutHasTerminal: stdoutHasTerminal),
+            width: wrapWidth,
           ),
         );
         return;
@@ -1483,6 +1498,9 @@ void _printInteractiveNarrativeIfNeeded({
 
   switch (topLevel.name) {
     case 'doctor':
+      if (topLevel.flag('json')) {
+        return;
+      }
       io.stdout.writeln(
         'doctor: visual-capture checks run in read-only mode; capture commands can auto-request once when needed.',
       );
@@ -2520,8 +2538,6 @@ Output:
   - TTY (interactive terminal): human-readable check table by default.
   - Non-TTY (pipes, CI, agents): compact JSON envelope (same as before).
   - --json: always emit the JSON envelope (machine-readable).
-  - Internal test override (not for production): set
-    FLUTTER_MCP_TOOLKIT_DOCTOR_STDOUT_IS_TTY=1|0 to force TTY behavior in CI.
 
 Doctor checks include:
   - VM reachability
