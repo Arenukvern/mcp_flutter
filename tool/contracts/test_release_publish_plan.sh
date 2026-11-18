@@ -27,10 +27,12 @@ guard_no_contract_env_in_release_scripts
 source "$LIB"
 
 contract_assert_real_publish_cb_run_argv() {
+  # shellcheck disable=SC2034
   local -a argv=(false)
   if release_publish__cb_run_argv argv 2>/dev/null; then
     fail "real release_publish__cb_run_argv must propagate false exit"
   fi
+  # shellcheck disable=SC2034
   argv=(printf x)
   local out
   out="$(release_publish__cb_run_argv argv)"

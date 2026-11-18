@@ -25,10 +25,12 @@ guard_no_contract_env_in_release_scripts
 source "$CONFLICT_LIB"
 
 contract_assert_real_conflict_cb_run_argv() {
+  # shellcheck disable=SC2034
   local -a argv=(false)
   if release_conflict__cb_run_argv argv 2>/dev/null; then
     fail "real release_conflict__cb_run_argv must propagate false exit"
   fi
+  # shellcheck disable=SC2034
   argv=(printf x)
   local out
   out="$(release_conflict__cb_run_argv argv)"
@@ -40,11 +42,6 @@ contract_assert_real_conflict_cb_run_argv
 RECOVERY_CONFLICT_FIXTURE_JSON=''
 RECOVERY_CONFLICT_CB_FAIL=0
 
-recovery__gh_fail_cb() {
-  echo "simulated gh api failure" >&2
-  return 1
-}
-
 # shellcheck source=../release/check_release_assets_conflict.sh
 source "$CONFLICT_MAIN"
 
@@ -53,13 +50,12 @@ ok() { test_ok "$@"; }
 
 release_conflict__require_gh() { :; }
 
-release_conflict__fetch_release_view_json() {
-  local tag="$1"
-  local repo="$2"
+release_conflict__cb_run_argv() {
+  # shellcheck disable=SC2034
+  local -n _cmd=$1
   if [[ "${RECOVERY_CONFLICT_CB_FAIL:-}" == 1 ]]; then
-  release_conflict__invoke_release_view_argv \
-    "$tag" "$repo" recovery__gh_fail_cb
-    return $?
+    echo "simulated gh api failure" >&2
+    return 1
   fi
   if [[ -z "${RECOVERY_CONFLICT_FIXTURE_JSON:-}" ]]; then
     echo "test_release_recovery_flow: RECOVERY_CONFLICT_FIXTURE_JSON unset" >&2
