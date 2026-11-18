@@ -245,6 +245,7 @@ release_runner_retry__invoke_rerun_argv() {
   local run_id="$1"
   local repo="$2"
   local callback="$3"
+  # shellcheck disable=SC2034 # argv is passed by nameref to the rerun callback
   local -a argv=(gh run rerun "$run_id" --repo "$repo" --failed)
   "$callback" argv || return 1
 }

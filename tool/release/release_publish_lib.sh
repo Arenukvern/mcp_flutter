@@ -190,28 +190,31 @@ release_publish__invoke_each_upload_argv_from_plan() {
     argv=(gh release upload "$gh_tag" --repo "$gh_repo" --clobber "${upload_paths[@]}")
     "$callback" argv || return 1
   else
-  while IFS= read -r name; do
-    [[ -n "$name" ]] || continue
-    argv=(gh release upload "$gh_tag" --repo "$gh_repo" "$asset_dir/$name")
-    "$callback" argv || return 1
-  done < <(echo "$plan" | jq -r '.upload_local_names[]?')
+    while IFS= read -r name; do
+      [[ -n "$name" ]] || continue
+      # shellcheck disable=SC2034 # nameref target for upload callback
+      argv=(gh release upload "$gh_tag" --repo "$gh_repo" "$asset_dir/$name")
+      "$callback" argv || return 1
+    done < <(echo "$plan" | jq -r '.upload_local_names[]?')
 
-  case "$action" in
-    upload_new)
-      argv=(gh release upload "$gh_tag" --repo "$gh_repo" "$checksums_path")
-      "$callback" argv || return 1
-      ;;
-    upload_checksums_superset)
-      argv=(gh release upload "$gh_tag" --repo "$gh_repo" \
-        --clobber "$checksums_path")
-      "$callback" argv || return 1
-      ;;
-    keep_checksums) ;;
-    *)
-      echo "release_publish: unknown checksums_upload_action: $action" >&2
-      return 1
-      ;;
-  esac
+    case "$action" in
+      upload_new)
+        # shellcheck disable=SC2034 # nameref target for upload callback
+        argv=(gh release upload "$gh_tag" --repo "$gh_repo" "$checksums_path")
+        "$callback" argv || return 1
+        ;;
+      upload_checksums_superset)
+        # shellcheck disable=SC2034 # nameref target for upload callback
+        argv=(gh release upload "$gh_tag" --repo "$gh_repo" \
+          --clobber "$checksums_path")
+        "$callback" argv || return 1
+        ;;
+      keep_checksums) ;;
+      *)
+        echo "release_publish: unknown checksums_upload_action: $action" >&2
+        return 1
+        ;;
+    esac
   fi
 }
 

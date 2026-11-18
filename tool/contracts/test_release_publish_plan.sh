@@ -8,6 +8,7 @@ SCRIPT="$ROOT_DIR/tool/release/publish_release_assets.sh"
 
 fail() { echo "test_release_publish_plan: $*" >&2; exit 1; }
 ok() { echo "test_release_publish_plan: $*"; }
+contract_ok() { echo "test_release_publish_plan: $*"; }
 
 command -v jq >/dev/null 2>&1 || fail "jq required"
 # shellcheck source=../release/release_publish_lib.sh
@@ -341,7 +342,8 @@ release_publish__test_cb_fail_on_darwin() {
 state_pub_upload="$(mktemp)"
 write_state false "" "$linux_h" "" "$linux_name $darwin_name" false >"$state_pub_upload"
 plan_pub_upload="$(release_publish__plan_from_state_file "$state_pub_upload")"
-printf '%s\n' "${plan_pub_upload%$'\n'}" >"$asset_dir/checksums.txt"
+release_publish__write_checksums_file "$asset_dir/checksums.txt" \
+  "$(echo "$plan_pub_upload" | jq -r '.checksums_body')"
 release_publish__invoke_each_upload_argv_from_plan \
   "$plan_pub_upload" "$asset_dir" "v7.2.1" "o/r" \
   release_publish__test_cb_fail_on_darwin 2>/dev/null && \
@@ -366,18 +368,30 @@ write_state true "" "$linux_h" "" "$linux_name $darwin_name" false >"$state_draf
 plan_draft_upload="$(release_publish__plan_from_state_file "$state_draft_upload")"
 [[ "$(echo "$plan_draft_upload" | jq -r '.checksums_upload_action')" == \
   "clobber_with_draft" ]] || fail "draft must plan clobber_with_draft"
-printf '%s\n' "${plan_draft_upload%$'\n'}" >"$asset_dir/checksums.txt"
+release_publish__write_checksums_file "$asset_dir/checksums.txt" \
+  "$(echo "$plan_draft_upload" | jq -r '.checksums_body')"
 release_publish__invoke_each_upload_argv_from_plan \
   "$plan_draft_upload" "$asset_dir" "v7.2.1" "o/r" \
   release_publish__test_cb_fail_draft_clobber 2>/dev/null && \
   fail "draft clobber upload must fail when callback fails"
 ok "draft upload fails closed on callback error"
 
+write_plan_checksums_fixture() {
+  local plan="$1"
+  release_publish__write_checksums_file "$asset_dir/checksums.txt" \
+    "$(echo "$plan" | jq -r '.checksums_body')"
+}
+
+rm -rf "$asset_dir/checksums.txt"
+mkdir -p "$asset_dir/checksums.txt"
+release_publish__write_checksums_file "$asset_dir/checksums.txt" \
+  "$(echo "$plan_pub_upload" | jq -r '.checksums_body')" 2>/dev/null && \
+  fail "write_checksums_file must fail when path is a directory"
+rm -rf "$asset_dir/checksums.txt"
+contract_ok "write_checksums_file fails closed on bad path"
+
 # shellcheck source=../release/publish_release_assets.sh
-contract_ok_msg="test_release_publish_plan"
 source "$SCRIPT"
-ok() { echo "${contract_ok_msg}: $*"; }
-fail() { echo "${contract_ok_msg}: $*" >&2; exit 1; }
 release_publish__cb_run_argv_contract() {
   # shellcheck disable=SC2034
   local -n _cmd=$1
@@ -387,6 +401,14 @@ release_publish__cb_run_argv_contract() {
   return 0
 }
 release_publish__cb_run_argv() { release_publish__cb_run_argv_contract "$@"; }
+rm -f "$asset_dir/checksums.txt"
+mkdir -p "$asset_dir/checksums.txt"
+release_publish__run_verify_and_upload \
+  "$plan_pub_upload" "$asset_dir" "" "" "v7.2.1" "o/r" "false" \
+  >/dev/null 2>&1 && fail "run_verify_and_upload must fail when checksums write fails"
+rm -rf "$asset_dir/checksums.txt"
+write_plan_checksums_fixture "$plan_pub_upload"
+contract_ok "run_verify_and_upload fails closed when checksums write fails"
 publish_snippet_out=""
 if release_publish__run_verify_and_upload \
   "$plan_pub_upload" "$asset_dir" "" "" "v7.2.1" "o/r" "false" \
@@ -396,4 +418,4 @@ fi
 [[ -z "$publish_snippet_out" ]] || \
   fail "must not reach published success path after upload failure"
 
-ok "release publish plan contracts OK"
+contract_ok "release publish plan contracts OK"

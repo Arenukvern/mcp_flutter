@@ -58,7 +58,7 @@ release_publish__run_verify_and_upload() {
   local repo_placeholder="${gh_repo:-$RELEASE_PUBLISH_PLAN_GH_REPO}"
 
   local checksums_path="$asset_dir/checksums.txt"
-  release_publish__write_checksums_file "$checksums_path" "$checksums_body"
+  release_publish__write_checksums_file "$checksums_path" "$checksums_body" || return 1
 
   if [[ "$dry_run" == "true" ]]; then
     release_publish__emit_plan_dry_run_trailer \
@@ -74,8 +74,7 @@ release_publish__run_verify_and_upload() {
     "$plan" "$asset_dir" "$gh_tag" "$gh_repo" || return 1
 }
 
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-
+publish_release_assets__main() {
 if [[ "${1:-}" == --plan ]]; then
   state_file="${2:-}"
   [[ -f "$state_file" ]] || fail "usage: publish_release_assets.sh --plan <state.json>"
@@ -211,5 +210,8 @@ published_checksums_dir=""
 
 upload_count="$(echo "$plan" | jq '[.upload_local_names[]? | select(. != "")] | length')"
 ok "published ${#local_tar_names[@]} local tarball(s); draft=$is_draft; new_uploads=$upload_count"
+}
 
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  publish_release_assets__main "$@"
 fi

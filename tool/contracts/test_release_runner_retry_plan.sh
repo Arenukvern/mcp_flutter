@@ -145,4 +145,27 @@ awk '/release_runner_retry__plan_from_state_file/,/^}/' "$RETRY_LIB" | \
   fail "plan loop must call classify_job"
 ok "plan loop uses classify_job (lib)"
 
+ANNO_FETCH_LINE=""
+release_runner_retry__test_record_argv() {
+  # shellcheck disable=SC2034 # argv array name passed by invoke builders
+  local -n _cmd=$1
+  ANNO_FETCH_LINE="$(release_runner_retry__argv_to_line "${_cmd[@]}")"
+}
+release_runner_retry__invoke_annotation_fetch_argv \
+  "https://api.github.com/repos/o/r/check-runs/42" \
+  release_runner_retry__test_record_argv
+grep -qF 'gh api https://api.github.com/repos/o/r/check-runs/42/annotations' \
+  <<<"$ANNO_FETCH_LINE" || fail "invoke must derive annotations URL from check_run_url"
+ok "annotation fetch URL derives from check_run_url"
+
+release_runner_retry__test_cb_rerun_fail() {
+  # shellcheck disable=SC2034
+  local -n _cmd=$1
+  return 1
+}
+release_runner_retry__invoke_rerun_argv 102 Arenukvern/mcp_flutter \
+  release_runner_retry__test_cb_rerun_fail 2>/dev/null && \
+  fail "failed rerun callback must return nonzero"
+ok "rerun dispatch fails closed on callback error"
+
 ok "runner retry plan contracts OK"
