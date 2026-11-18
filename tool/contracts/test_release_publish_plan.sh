@@ -9,6 +9,7 @@ SCRIPT="$ROOT_DIR/tool/release/publish_release_assets.sh"
 fail() { echo "test_release_publish_plan: $*" >&2; exit 1; }
 ok() { echo "test_release_publish_plan: $*"; }
 contract_ok() { echo "test_release_publish_plan: $*"; }
+contract_fail() { echo "test_release_publish_plan: $*" >&2; exit 1; }
 
 command -v jq >/dev/null 2>&1 || fail "jq required"
 # shellcheck source=../release/release_publish_lib.sh
@@ -392,6 +393,14 @@ contract_ok "write_checksums_file fails closed on bad path"
 
 # shellcheck source=../release/publish_release_assets.sh
 source "$SCRIPT"
+rm -f "$asset_dir/checksums.txt"
+mkdir -p "$asset_dir/checksums.txt"
+release_publish__run_verify_and_upload \
+  "$plan_pub_upload" "$asset_dir" "" "" "v7.2.1" "o/r" "false" \
+  >/dev/null 2>&1 && contract_fail "run_verify_and_upload must fail when checksums write fails"
+rm -rf "$asset_dir/checksums.txt"
+contract_ok "run_verify_and_upload fails closed when checksums write fails"
+
 release_publish__cb_run_argv_contract() {
   # shellcheck disable=SC2034
   local -n _cmd=$1
@@ -401,14 +410,7 @@ release_publish__cb_run_argv_contract() {
   return 0
 }
 release_publish__cb_run_argv() { release_publish__cb_run_argv_contract "$@"; }
-rm -f "$asset_dir/checksums.txt"
-mkdir -p "$asset_dir/checksums.txt"
-release_publish__run_verify_and_upload \
-  "$plan_pub_upload" "$asset_dir" "" "" "v7.2.1" "o/r" "false" \
-  >/dev/null 2>&1 && fail "run_verify_and_upload must fail when checksums write fails"
-rm -rf "$asset_dir/checksums.txt"
 write_plan_checksums_fixture "$plan_pub_upload"
-contract_ok "run_verify_and_upload fails closed when checksums write fails"
 publish_snippet_out=""
 if release_publish__run_verify_and_upload \
   "$plan_pub_upload" "$asset_dir" "" "" "v7.2.1" "o/r" "false" \
