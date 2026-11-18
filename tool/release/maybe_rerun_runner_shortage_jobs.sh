@@ -10,6 +10,8 @@ MAX_ATTEMPTS="${4:-3}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # shellcheck source=runner_shortage_lib.sh
 source "$ROOT_DIR/tool/release/runner_shortage_lib.sh"
+# shellcheck source=release_runner_retry_lib.sh
+source "$ROOT_DIR/tool/release/release_runner_retry_lib.sh"
 
 SUMMARY="${GITHUB_STEP_SUMMARY:-/dev/stdout}"
 NOT_ACQUIRED_RE="$NOT_ACQUIRED_RE_DEFAULT"
@@ -46,16 +48,15 @@ run_json="$(gh api "repos/$REPO/actions/runs/$RUN_ID")"
 head_branch="$(echo "$run_json" | jq -r '.head_branch // empty')"
 created_at="$(echo "$run_json" | jq -r '.created_at // empty')"
 
+workflow_runs_json='{"workflow_runs":[]}'
 if [[ -n "$head_branch" && -n "$created_at" ]]; then
   workflow_id="$(gh api "repos/$REPO/actions/workflows" \
     --jq '.workflows[] | select(.path | endswith("release.yml")) | .id' | head -n1)"
   if [[ -n "$workflow_id" ]]; then
     workflow_runs_json="$(gh api \
       "repos/$REPO/actions/workflows/$workflow_id/runs?per_page=30")"
-    newer_count="$(echo "$workflow_runs_json" | jq --arg hb "$head_branch" \
-      --arg ts "$created_at" --argjson rid "$RUN_ID" \
-      '[.workflow_runs[] | select(.head_branch == $hb and .created_at > $ts and .id != $rid)] | length')"
-    if [[ "$newer_count" -gt 0 ]]; then
+    if release_runner_retry__is_superseded \
+      "$workflow_runs_json" "$head_branch" "$created_at" "$RUN_ID"; then
       log ""
       log "**No rerun:** superseded by a newer Release run for \`$head_branch\`."
       exit 0
@@ -143,9 +144,6 @@ if [[ "$runner_shortage_detected" != true ]]; then
 fi
 
 sleep_seconds=$((120 * RUN_ATTEMPT))
-if [[ "${RUNNER_RETRY_SKIP_BACKOFF:-}" == "1" ]]; then
-  sleep_seconds=0
-fi
 log ""
 log "Backoff: waiting ${sleep_seconds}s (120s × run attempt $RUN_ATTEMPT) before rerun..."
 sleep "$sleep_seconds"

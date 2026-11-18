@@ -11,6 +11,7 @@ import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_capability_core/flutter_mcp_toolkit_capability_core.dart';
 import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_server.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/cli_port_options.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/core_port_scanner.dart';
 import 'package:stream_channel/stream_channel.dart';
 
@@ -29,8 +30,11 @@ Future<void> main(List<String> args) async {
     () async {
       final VMServiceConfigurationRecord configuration = (
         vmHost: parsedArgs.option(dartVMHost) ?? defaultHost,
-        vmPort:
-            int.tryParse(parsedArgs.option(dartVMPort) ?? '') ?? defaultPort,
+        vmPort: cliPositivePort(
+          parsedArgs.option(dartVMPort),
+          fallback: defaultPort,
+          flag: dartVMPort,
+        ),
         resourcesSupported: parsedArgs.flag(resourcesSupported),
         imagesSupported: parsedArgs.flag(imagesSupported),
         dumpsSupported: parsedArgs.flag(dumpsSupported),

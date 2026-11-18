@@ -5,6 +5,10 @@ set -euo pipefail
 TAG="${1:-}"
 ASSET_DIR="${2:-}"
 
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+# shellcheck source=release_publish_lib.sh
+source "$ROOT_DIR/tool/release/release_publish_lib.sh"
+
 fail() { echo "publish_release_assets: $*" >&2; exit 1; }
 ok() { echo "publish_release_assets: $*"; }
 
@@ -31,6 +35,19 @@ while IFS= read -r name; do
   remote_names["$name"]=1
 done < <(echo "$release_json" | jq -r '.assets[].name')
 
+published_checksums_path=""
+published_checksums_dir=""
+if [[ "$is_draft" != "true" && -n "${remote_names[checksums.txt]:-}" ]]; then
+  published_checksums_dir="$(mktemp -d)"
+  gh release download "$TAG" \
+    --repo "$GITHUB_REPOSITORY" \
+    --dir "$published_checksums_dir" \
+    --pattern checksums.txt
+  published_checksums_path="$published_checksums_dir/checksums.txt"
+  [[ -f "$published_checksums_path" ]] || \
+    fail "release lists checksums.txt but download failed"
+fi
+
 file_sha256() {
   sha256sum "$1" | awk '{print $1}'
 }
@@ -46,15 +63,20 @@ download_remote_asset_to() {
 
 remote_asset_sha256() {
   local asset_name="$1"
-  local tmpdir
+  local tmpdir hash
   tmpdir="$(mktemp -d)"
   download_remote_asset_to "$asset_name" "$tmpdir"
-  file_sha256 "$tmpdir/$asset_name"
+  hash="$(file_sha256 "$tmpdir/$asset_name")"
   rm -rf "$tmpdir"
+  if [[ -n "$published_checksums_path" ]]; then
+    release_publish__verify_against_published_checksums \
+      "$published_checksums_path" "$asset_name" "$hash" || \
+      fail "remote asset $asset_name fails published checksums.txt authenticity"
+  fi
+  printf '%s' "$hash"
 }
 
 declare -a upload_paths=()
-declare -a all_tar_names=("${local_tar_names[@]}")
 
 if [[ "$is_draft" == "true" ]]; then
   upload_paths=( "${local_tars[@]}" )
@@ -64,38 +86,57 @@ else
     if [[ -n "${remote_names[$base]:-}" ]]; then
       remote_hash="$(remote_asset_sha256 "$base")"
       local_hash="$(file_sha256 "$tar_path")"
-      [[ "$remote_hash" == "$local_hash" ]] || \
-        fail "refusing to overwrite published asset $base (checksum mismatch)"
-      ok "keeping published asset $base (checksum match)"
+      action="$(release_publish__published_collision_action "$local_hash" "$remote_hash")"
+      case "$action" in
+        keep) ok "keeping published asset $base (checksum match)" ;;
+        fail_mismatch)
+          fail "refusing to overwrite published asset $base (checksum mismatch)"
+          ;;
+      esac
     else
       upload_paths+=( "$tar_path" )
     fi
   done
-  for remote_name in "${!remote_names[@]}"; do
-    if [[ "$remote_name" == *.tar.gz ]]; then
-      if [[ ! " ${local_tar_names[*]} " =~ " ${remote_name} " ]]; then
-        all_tar_names+=( "$remote_name" )
-      fi
-    fi
-  done
-  mapfile -t all_tar_names < <(printf '%s\n' "${all_tar_names[@]}" | sort -u)
 fi
+
+remote_tar_csv=""
+for remote_name in "${!remote_names[@]}"; do
+  [[ "$remote_name" == *.tar.gz ]] || continue
+  if [[ -n "$remote_tar_csv" ]]; then
+    remote_tar_csv+=","
+  fi
+  remote_tar_csv+="$remote_name"
+done
+export RELEASE_PUBLISH_REMOTE_TAR_CSV="$remote_tar_csv"
+mapfile -t all_tar_names < <(release_publish__all_tar_names_for_checksums \
+  "$is_draft" "${local_tar_names[@]}")
 
 checksums_path="$ASSET_DIR/checksums.txt"
 write_checksum_line() {
   local name="$1"
   local local_path="$ASSET_DIR/$name"
+  local line hash
   if [[ -f "$local_path" ]]; then
-    (cd "$ASSET_DIR" && sha256sum "$name")
+    line="$(release_publish__checksum_line_basename "$local_path")"
   elif [[ -n "${remote_names[$name]:-}" ]]; then
-    local tmpdir
+    local tmpdir tmpfile
     tmpdir="$(mktemp -d)"
     download_remote_asset_to "$name" "$tmpdir"
-    (cd "$tmpdir" && sha256sum "$name")
+    tmpfile="$tmpdir/$name"
+    hash="$(file_sha256 "$tmpfile")"
+    if [[ -n "$published_checksums_path" ]]; then
+      release_publish__verify_against_published_checksums \
+        "$published_checksums_path" "$name" "$hash" || \
+        fail "remote asset $name fails published checksums.txt authenticity"
+    fi
+    line="$(release_publish__checksum_line_basename "$tmpfile")"
     rm -rf "$tmpdir"
   else
     fail "cannot checksum missing asset $name"
   fi
+  release_publish__checksum_line_valid "$line" || \
+    fail "internal checksum line format error for $name"
+  printf '%s\n' "$line"
 }
 
 {
@@ -105,7 +146,10 @@ write_checksum_line() {
 } >"$checksums_path"
 
 verify_dir="$(mktemp -d)"
-preverify_cleanup() { rm -rf "$verify_dir"; }
+preverify_cleanup() {
+  rm -rf "$verify_dir"
+  [[ -n "$published_checksums_dir" ]] && rm -rf "$published_checksums_dir"
+}
 trap preverify_cleanup EXIT
 
 for name in "${all_tar_names[@]}"; do
@@ -114,6 +158,11 @@ for name in "${all_tar_names[@]}"; do
     cp "$local_path" "$verify_dir/$name"
   elif [[ -n "${remote_names[$name]:-}" ]]; then
     download_remote_asset_to "$name" "$verify_dir"
+    if [[ -n "$published_checksums_path" ]]; then
+      release_publish__verify_against_published_checksums \
+        "$published_checksums_path" "$name" "$(file_sha256 "$verify_dir/$name")" || \
+        fail "pre-upload verify: $name vs published checksums.txt"
+    fi
   else
     fail "pre-upload verify missing tarball $name"
   fi

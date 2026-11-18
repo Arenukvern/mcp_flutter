@@ -3,6 +3,12 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
+## [Unreleased]
+
+### Bug Fixes
+
+* **Release:** replace mock-`gh` release e2e with fixture contract tests; verify recovery uploads against already-published `checksums.txt`; drop test-only runner retry backoff hook; strict decimal CLI port flags aligned with connection override parsing.
+
 ## [7.2.1](https://github.com/Arenukvern/mcp_flutter/compare/v7.2.0...v7.2.1) (2026-11-18)
 
 ### Bug Fixes
@@ -603,29 +609,6 @@
 * update video walkthroughs with improved titles and punctuation ([7c47074](https://github.com/Arenukvern/mcp_flutter/commit/7c47074b27a55cdd1f67a5c6b99a7085d7927801))
 * **wait_for:** mark P0 shipped in roadmap ([db5fa06](https://github.com/Arenukvern/mcp_flutter/commit/db5fa06fd05007a0781afbf2950d807d48ce3864))
 
-## [Unreleased]
-
-### Bug Fixes
-
-* **deps:** drop workspace `universal_automation_interface` `0.3.0` override; resolve `^0.4.0` from pub.dev (semantics `^0.5.0` train).
-
-### Features
-
-* Delegate `codegen sync` and `init intentcall-platform` to `intentcall_cli`; add `jaspr_web_example` with the three-gate CI recipe.
-* **focus_widget:** give a widget keyboard focus by ref — the semantic focus action first, the focus node inside its bounds otherwise — and prove where focus landed (`fmt_focus_widget`, CLI `exec --name focus_widget`)
-
-### Bug Fixes
-
-* **server:** coalesce identical overlapping Flutter discovery requests and terminate their process trees on Windows
-* **capture:** explain when inline screenshots move into image blocks
-* **press_key:** define `handled` as the main key-down dispatch result
-* **wait_for:** measure stable windows by elapsed wall time, reject impossible timeout budgets, and drive suspended desktop frames
-
-### Documentation
-
-* **skills:** point instance naming at a copyable `setAppIdentity` call
-
-
 ## [4.0.0-dev.8](https://github.com/Arenukvern/mcp_flutter/compare/v4.0.0-dev.7...v4.0.0-dev.8) (2026-07-31)
 
 
@@ -758,33 +741,6 @@
 * update .all-contributorsrc ([33c1495](https://github.com/Arenukvern/mcp_flutter/commit/33c1495584bf69603ea4521bb6ad3c32d6dd1157))
 * update README.md ([54bbf4d](https://github.com/Arenukvern/mcp_flutter/commit/54bbf4d6aaaf904fa6316987c2010550dc1f776d))
 * update README.md ([52fd2d5](https://github.com/Arenukvern/mcp_flutter/commit/52fd2d5a79e56740a8556655969c62fb89f813eb))
-
-## [Unreleased]
-
-### Added
-
-- `fmtk` short CLI alias for `flutter-mcp-toolkit`, including release artifacts and install script smoke checks.
-- Gating CI: `make check-intentcall-hosted-consumer` for hosted consumer proof, plus `make check-intentcall-sibling-matrix` / `.github/workflows/intentcall_eval.yml` for sibling upstream matrix regression proof.
-- `make macos-validate-runtime` helper (`tool/evals/run_macos_validate_runtime.sh`) for I5 macOS dogfood.
-- intentcall: `xsoulspace_lints` (`library.yaml` / `app.yaml`); `make analyze`; pre-release warnings on all packages ([intentcall/PRE_RELEASE.md](intentcall/PRE_RELEASE.md)); IntentCall consumer guide.
-- Phase 7 **7.1–7.3, 7.6**: `intentcall/` workspace; pub.dev metadata; hosted consumer docs; moved publish dry-run ownership to the IntentCall repository.
-- Phase 7 **7.1/7.2**: all `intentcall_*` packages started under `intentcall/packages/`; hosted consumer cutover now uses pub.dev packages.
-- `flutter_test_app` web dogfood: `WebMcpPublishAdapter` via `agent_web_mcp_dogfood.dart`; Xcode intentcall Codegen Run Script (ios/macos).
-- `flutter-mcp-toolkit init intentcall-platform` — idempotent Gradle, manifest, `index.html`, and codegen shell hooks with `--check` for CI.
-- `fmt_migrate_agent_entries` MCP tool (report-only default; `apply: true` to rewrite sources).
-- `intentcall_platform` thin Flutter plugin + `intentcallInvokeLinkListener` (`app_links`) for `intentcall://invoke/<qualifiedName>`.
-- CI / `make check-contracts`: `codegen sync --check` on `flutter_test_app`.
-- ADR [0008](decisions/0008_web_agent_invoke_js_only.mdx): web `/agent/invoke` Flutter route optional (JS + WebMCP sufficient).
-
-### Changed
-
-- Raised workspace Dart SDK floor to `>=3.12.0 <4.0.0` across packages and updated fixture expectations.
-- Added Flutter SDK floor `>=3.44.0 <4.0.0` for Flutter packages (`mcp_toolkit`, `flutter_test_app`) and bumped server Docker toolchain images/checks to `dart:3.12.0-sdk`.
-- **Breaking:** `mcp_server_dart/lib/flutter_mcp_core.dart` no longer promises compatibility for removed private session/state/snapshot internals. Downstream code should import `intentcall_session` for `IntentSessionManager`, `StateStore`, `StateLockManager`, `SafeFileWriter`, and `IntentSnapshotStore`; Flutter MCP keeps only its server-local `FlutterSessionConnector` adapter.
-- `ToolRegistration` / `ResourceRegistration` canonical types moved to `intentcall_core`; kernel re-exports (extract-friendly).
-- Dogfood harness paths use `--dart-define=INTENTCALL_HARNESS_ROOT` / `INTENTCALL_VISUAL_RECONSTRUCT_ROOT`.
-- `MigrateAgentEntriesMigrator` moved to `intentcall_core` (shared by CLI and MCP tool).
-- `intentcall_testing`: ecsly-style builder → `invokeWire` → `AgentResult.envelope` test.
 
 ## [3.1.0] - 2026-05-25
 

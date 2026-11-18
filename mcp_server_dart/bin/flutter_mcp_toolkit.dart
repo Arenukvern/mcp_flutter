@@ -7,6 +7,7 @@ import 'dart:io' as io;
 import 'package:args/args.dart';
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/cli_port_options.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/platform_view_hints.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/appintents_testing_command.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/codegen_init_command.dart';
@@ -110,7 +111,11 @@ Future<void> main(List<String> args) async {
 
   final connectionContext = ConnectionContext(
     defaultHost: parsed.option(_dartVmHost) ?? _defaultHost,
-    defaultPort: int.tryParse(parsed.option(_dartVmPort) ?? '') ?? _defaultPort,
+    defaultPort: cliPositivePort(
+      parsed.option(_dartVmPort),
+      fallback: _defaultPort,
+      flag: _dartVmPort,
+    ),
     logger: logger,
     discoverPorts: portScanner.scanForFlutterPorts,
     preferredTargetLabel: _nonEmptyOption(parsed.option(_preferTargetLabel)),
@@ -131,7 +136,11 @@ Future<void> main(List<String> args) async {
 
   final configuration = CoreRuntimeConfiguration(
     vmHost: parsed.option(_dartVmHost) ?? _defaultHost,
-    vmPort: int.tryParse(parsed.option(_dartVmPort) ?? '') ?? _defaultPort,
+    vmPort: cliPositivePort(
+      parsed.option(_dartVmPort),
+      fallback: _defaultPort,
+      flag: _dartVmPort,
+    ),
     resourcesSupported: parsed.flag(_resourcesSupported),
     imagesSupported: parsed.flag(_imagesSupported),
     dumpsSupported: parsed.flag(_dumpsSupported),
@@ -141,10 +150,11 @@ Future<void> main(List<String> args) async {
     flutterDevice: flutterDevice,
     stateRootDir: stateRoot,
     outputDir: outputDir,
-    webBrowserDebuggingPort: int.tryParse(
-      parsed.option(_webBrowserDebuggingPort) ?? '',
+    webBrowserDebuggingPort: cliOptionalPort(
+      parsed.option(_webBrowserDebuggingPort),
+      flag: _webBrowserDebuggingPort,
     ),
-    webPort: int.tryParse(parsed.option(_webPort) ?? ''),
+    webPort: cliOptionalPort(parsed.option(_webPort), flag: _webPort),
   );
 
   final executor = DefaultCoreCommandExecutor(
@@ -2812,8 +2822,12 @@ Future<int> _runWebmcpSubcommand(ArgResults command) async {
           : const <String, Object?>{};
       final rawExpected = sub.option('expect-result-value');
       return runWebmcpVerify(
-        cdpPort: int.tryParse(sub.option('cdp-port') ?? ''),
-        preferredWebPort: int.tryParse(sub.option('web-port') ?? '') ?? 8080,
+        cdpPort: cliOptionalPort(sub.option('cdp-port'), flag: 'cdp-port'),
+        preferredWebPort: cliPositivePort(
+          sub.option('web-port'),
+          fallback: 8080,
+          flag: 'web-port',
+        ),
         toolName: sub.option('tool-name'),
         toolArguments: toolArgs,
         expectResultField: sub.option('expect-result-field'),
