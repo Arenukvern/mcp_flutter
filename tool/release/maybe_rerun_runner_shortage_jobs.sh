@@ -70,7 +70,7 @@ while IFS= read -r job_line; do
   check_run_url="$(echo "$job_line" | jq -r '.check_run_url // empty')"
   annotations='[]'
   if [[ -n "$check_run_url" && "$check_run_url" != "null" ]]; then
-    annotations="$(gh api "${check_run_url%/}/annotations" --paginate 2>/dev/null || echo '[]')"
+    annotations="$(release_runner_retry__gh_api_annotations_json "$check_run_url")"
   fi
   job_with_ann="$(echo "$job_line" | jq -c --argjson ann "$annotations" '. + {annotations: $ann}')"
   enriched_jobs="$(jq -c --argjson j "$job_with_ann" '. + [$j]' <<<"$enriched_jobs")"
@@ -100,6 +100,7 @@ jq -n \
   --arg head_branch "$head_branch" \
   --arg created_at "$created_at" \
   --argjson run_id "$RUN_ID" \
+  --arg repo "$REPO" \
   --arg workflow_event "$workflow_event" \
   --argjson workflow_runs "$workflow_runs_json" \
   --argjson jobs "$enriched_jobs" \
@@ -111,6 +112,7 @@ jq -n \
     head_branch: $head_branch,
     created_at: $created_at,
     run_id: $run_id,
+    repo: $repo,
     workflow_event: $workflow_event,
     workflow_runs: $workflow_runs,
     jobs: $jobs,
@@ -119,7 +121,6 @@ jq -n \
   }' >"$state_file"
 
 plan="$(release_runner_retry__plan_from_state_file "$state_file")"
-rm -f "$state_file"
 
 [[ "$(echo "$plan" | jq -r '.ok')" == "true" ]] || fail "$(echo "$plan" | jq -r '.error')"
 
@@ -165,7 +166,8 @@ case "$decision" in
     sleep "$sleep_seconds"
     log ""
     log "**Rerunning failed jobs (single dispatch):** run $RUN_ID"
-    gh run rerun "$RUN_ID" --repo "$REPO" --failed
+    release_runner_retry__invoke_rerun_argv \
+      "$RUN_ID" "$REPO" release_runner_retry__cb_run_argv || fail "rerun dispatch failed"
     log ""
     log "**Rerun dispatched.** Dependent publish should resume once all build jobs succeed."
     ;;
@@ -173,3 +175,5 @@ case "$decision" in
     fail "unknown retry decision: $decision"
     ;;
 esac
+
+rm -f "$state_file"

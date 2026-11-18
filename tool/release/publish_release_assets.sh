@@ -62,7 +62,7 @@ release_publish__run_verify_and_upload() {
 
   if [[ "$dry_run" == "true" ]]; then
     release_publish__emit_plan_dry_run_trailer \
-      "$plan" "$asset_dir" "$verify_dir" "$remote_fixture_dir" \
+      "$plan" "$asset_dir" "$verify_dir" \
       "$tag_placeholder" "$repo_placeholder"
     release_publish__safe_cleanup "$verify_dir" ""
     return 0
@@ -71,7 +71,7 @@ release_publish__run_verify_and_upload() {
   release_publish__safe_cleanup "$verify_dir" ""
 
   release_publish__execute_upload_from_plan \
-    "$plan" "$asset_dir" "$gh_tag" "$gh_repo" "false"
+    "$plan" "$asset_dir" "$gh_tag" "$gh_repo"
 }
 
 if [[ "${1:-}" == --plan ]]; then

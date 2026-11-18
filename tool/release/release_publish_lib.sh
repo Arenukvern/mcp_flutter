@@ -113,59 +113,93 @@ release_publish__checksums_manifest_files_equal() {
 RELEASE_PUBLISH_PLAN_GH_TAG="${RELEASE_PUBLISH_PLAN_GH_TAG:-__contract_tag__}"
 RELEASE_PUBLISH_PLAN_GH_REPO="${RELEASE_PUBLISH_PLAN_GH_REPO:-__owner/repo__}"
 
-release_publish__emit_staging_command_lines() {
+release_publish__argv_to_line() {
+  local arg
+  for arg in "$@"; do
+    printf '%q ' "$arg"
+  done
+  printf '\n'
+}
+
+release_publish__cb_print_argv() {
+  local -n _cmd=$1
+  release_publish__argv_to_line "${_cmd[@]}"
+}
+
+release_publish__cb_run_argv() {
+  local -n _cmd=$1
+  "${_cmd[@]}"
+}
+
+release_publish__invoke_release_download_argv() {
+  local gh_tag="$1"
+  local gh_repo="$2"
+  local verify_dir="$3"
+  local pattern="$4"
+  local callback="$5"
+  local -a argv=(
+    gh release download "$gh_tag" --repo "$gh_repo" \
+      --dir "$verify_dir" --pattern "$pattern"
+  )
+  "$callback" argv
+}
+
+release_publish__invoke_each_staging_argv_from_plan() {
   local plan="$1"
   local asset_dir="$2"
   local verify_dir="$3"
   local gh_tag="$4"
   local gh_repo="$5"
+  local callback="$6"
   local name
   while IFS= read -r name; do
     [[ -n "$name" ]] || continue
     [[ -f "$asset_dir/$name" ]] && continue
-    printf 'gh release download %s --repo %s --dir %s --pattern %s\n' \
-      "$gh_tag" "$gh_repo" "$verify_dir" "$name"
+    release_publish__invoke_release_download_argv \
+      "$gh_tag" "$gh_repo" "$verify_dir" "$name" "$callback"
   done < <(echo "$plan" | jq -r '.checksum_tar_names[]?')
 }
 
-release_publish__emit_upload_command_lines() {
+release_publish__invoke_each_upload_argv_from_plan() {
   local plan="$1"
   local asset_dir="$2"
   local gh_tag="$3"
   local gh_repo="$4"
+  local callback="$5"
+
   local checksums_path="$asset_dir/checksums.txt"
   local action
   action="$(echo "$plan" | jq -r '.checksums_upload_action')"
+  local -a argv=()
+  local name
 
   if [[ "$action" == "clobber_with_draft" ]]; then
     local -a upload_paths=()
-    local name
     while IFS= read -r name; do
       [[ -n "$name" ]] || continue
       upload_paths+=( "$asset_dir/$name" )
     done < <(echo "$plan" | jq -r '.upload_local_names[]?')
     upload_paths+=( "$checksums_path" )
-    printf 'gh release upload %s --repo %s --clobber' "$gh_tag" "$gh_repo"
-    printf ' %q' "${upload_paths[@]}"
-    printf '\n'
+    argv=(gh release upload "$gh_tag" --repo "$gh_repo" --clobber "${upload_paths[@]}")
+    "$callback" argv
     return 0
   fi
 
-  local name
   while IFS= read -r name; do
     [[ -n "$name" ]] || continue
-    printf 'gh release upload %s --repo %s %q\n' \
-      "$gh_tag" "$gh_repo" "$asset_dir/$name"
+    argv=(gh release upload "$gh_tag" --repo "$gh_repo" "$asset_dir/$name")
+    "$callback" argv
   done < <(echo "$plan" | jq -r '.upload_local_names[]?')
 
   case "$action" in
     upload_new)
-      printf 'gh release upload %s --repo %s %q\n' \
-        "$gh_tag" "$gh_repo" "$checksums_path"
+      argv=(gh release upload "$gh_tag" --repo "$gh_repo" "$checksums_path")
+      "$callback" argv
       ;;
     upload_checksums_superset)
-      printf 'gh release upload %s --repo %s --clobber %q\n' \
-        "$gh_tag" "$gh_repo" "$checksums_path"
+      argv=(gh release upload "$gh_tag" --repo "$gh_repo" \
+        --clobber "$checksums_path")
+      "$callback" argv
       ;;
     keep_checksums) ;;
     *)
@@ -179,15 +213,15 @@ release_publish__emit_plan_dry_run_trailer() {
   local plan="$1"
   local asset_dir="$2"
   local verify_dir="$3"
-  local remote_fixture_dir="$4"
-  local gh_tag="$5"
-  local gh_repo="$6"
+  local gh_tag="$4"
+  local gh_repo="$5"
   local checksums_path="$asset_dir/checksums.txt"
   echo '---COMMANDS---'
-  release_publish__emit_staging_command_lines \
-    "$plan" "$asset_dir" "$verify_dir" "$gh_tag" "$gh_repo"
-  release_publish__emit_upload_command_lines \
-    "$plan" "$asset_dir" "$gh_tag" "$gh_repo"
+  release_publish__invoke_each_staging_argv_from_plan \
+    "$plan" "$asset_dir" "$verify_dir" "$gh_tag" "$gh_repo" \
+    release_publish__cb_print_argv
+  release_publish__invoke_each_upload_argv_from_plan \
+    "$plan" "$asset_dir" "$gh_tag" "$gh_repo" release_publish__cb_print_argv
   echo '---CHECKSUMS_PATH---'
   echo "$checksums_path"
   echo '---CHECKSUMS_BYTES_B64---'
@@ -416,10 +450,8 @@ release_publish__stage_verify_assets() {
     elif [[ -n "$remote_fixture_dir" && -f "$remote_fixture_dir/$name" ]]; then
       cp "$remote_fixture_dir/$name" "$verify_dir/$name"
     elif [[ -n "$gh_tag" && -n "$gh_repo" ]]; then
-      gh release download "$gh_tag" \
-        --repo "$gh_repo" \
-        --dir "$verify_dir" \
-        --pattern "$name"
+      release_publish__invoke_release_download_argv \
+        "$gh_tag" "$gh_repo" "$verify_dir" "$name" release_publish__cb_run_argv
     else
       echo "release_publish: missing staged asset $name" >&2
       return 1
@@ -450,63 +482,14 @@ release_publish__execute_upload_from_plan() {
   local asset_dir="$2"
   local gh_tag="${3:-}"
   local gh_repo="${4:-}"
-  local dry_run="${5:-false}"
 
   release_publish__plan_assert_ok "$plan" || return 1
-
-  local checksums_path="$asset_dir/checksums.txt"
-  local action
-  action="$(echo "$plan" | jq -r '.checksums_upload_action')"
-
-  if [[ "$dry_run" == "true" ]]; then
-    [[ -n "$gh_tag" ]] || gh_tag="$RELEASE_PUBLISH_PLAN_GH_TAG"
-    [[ -n "$gh_repo" ]] || gh_repo="$RELEASE_PUBLISH_PLAN_GH_REPO"
-    release_publish__emit_upload_command_lines \
-      "$plan" "$asset_dir" "$gh_tag" "$gh_repo"
-    return 0
-  fi
 
   [[ -n "$gh_tag" && -n "$gh_repo" ]] || {
     echo "release_publish: gh tag and repo required for upload" >&2
     return 1
   }
 
-  if [[ "$action" == "clobber_with_draft" ]]; then
-    local -a upload_paths=()
-    while IFS= read -r name; do
-      [[ -n "$name" ]] || continue
-      upload_paths+=( "$asset_dir/$name" )
-    done < <(echo "$plan" | jq -r '.upload_local_names[]?')
-    upload_paths+=( "$checksums_path" )
-    gh release upload "$gh_tag" \
-      --repo "$gh_repo" \
-      --clobber \
-      "${upload_paths[@]}"
-    return 0
-  fi
-
-  while IFS= read -r name; do
-    [[ -n "$name" ]] || continue
-    gh release upload "$gh_tag" \
-      --repo "$gh_repo" \
-      "$asset_dir/$name"
-  done < <(echo "$plan" | jq -r '.upload_local_names[]?')
-
-  case "$action" in
-    upload_new)
-      gh release upload "$gh_tag" --repo "$gh_repo" "$checksums_path"
-      ;;
-    upload_checksums_superset)
-      gh release upload "$gh_tag" \
-        --repo "$gh_repo" \
-        --clobber \
-        "$checksums_path"
-      ;;
-    keep_checksums)
-      ;;
-    *)
-      echo "release_publish: unknown checksums_upload_action: $action" >&2
-      return 1
-      ;;
-  esac
+  release_publish__invoke_each_upload_argv_from_plan \
+    "$plan" "$asset_dir" "$gh_tag" "$gh_repo" release_publish__cb_run_argv
 }

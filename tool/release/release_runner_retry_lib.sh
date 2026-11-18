@@ -192,29 +192,77 @@ release_runner_retry__decide() {
   rm -f "$state_tmp"
 }
 
-release_runner_retry__emit_plan_command_lines() {
+release_runner_retry__argv_to_line() {
+  local arg
+  for arg in "$@"; do
+    printf '%q ' "$arg"
+  done
+  printf '\n'
+}
+
+release_runner_retry__cb_print_argv() {
+  local -n _cmd=$1
+  release_runner_retry__argv_to_line "${_cmd[@]}"
+}
+
+release_runner_retry__cb_run_argv() {
+  local -n _cmd=$1
+  "${_cmd[@]}"
+}
+
+release_runner_retry__invoke_annotation_fetch_argv() {
+  local check_run_url="$1"
+  local callback="$2"
+  [[ -n "$check_run_url" && "$check_run_url" != "null" ]] || return 0
+  local -a argv=(gh api "${check_run_url%/}/annotations" --paginate)
+  "$callback" argv
+}
+
+release_runner_retry__gh_api_annotations_json() {
+  local check_run_url="$1"
+  [[ -n "$check_run_url" && "$check_run_url" != "null" ]] || {
+    echo '[]'
+    return 0
+  }
+  local -a argv=(gh api "${check_run_url%/}/annotations" --paginate)
+  "${argv[@]}" 2>/dev/null || echo '[]'
+}
+
+release_runner_retry__invoke_rerun_argv() {
+  local run_id="$1"
+  local repo="$2"
+  local callback="$3"
+  local -a argv=(gh run rerun "$run_id" --repo "$repo" --failed)
+  "$callback" argv
+}
+
+release_runner_retry__invoke_each_plan_exec_argv() {
   local state_file="$1"
   local plan="$2"
-  local repo run_id decision dispatch
-  repo="$(jq -r '.repo // "__owner/repo__"' "$state_file")"
-  run_id="$(jq -r '.run_id' "$state_file")"
-  decision="$(echo "$plan" | jq -r '.decision')"
-  dispatch="$(echo "$plan" | jq -r '.dispatch_rerun')"
+  local callback="$3"
   local check_run_url
   while IFS= read -r check_run_url; do
     [[ -n "$check_run_url" ]] || continue
-    printf 'gh api %s/annotations --paginate\n' "${check_run_url%/}"
+    release_runner_retry__invoke_annotation_fetch_argv \
+      "$check_run_url" "$callback"
   done < <(jq -r '.jobs[]? | .check_run_url // empty | select(length > 0)' "$state_file")
-  if [[ "$dispatch" == "true" ]]; then
-    printf 'gh run rerun %s --repo %s --failed\n' "$run_id" "$repo"
-  else
-    printf 'SKIP: decision=%s\n' "$decision"
+  if [[ "$(echo "$plan" | jq -r '.dispatch_rerun')" == "true" ]]; then
+    release_runner_retry__invoke_rerun_argv \
+      "$(jq -r '.run_id' "$state_file")" \
+      "$(jq -r '.repo // "__owner/repo__"' "$state_file")" \
+      "$callback"
   fi
 }
 
 release_runner_retry__emit_plan_dry_run_trailer() {
   local state_file="$1"
   local plan="$2"
+  local decision
+  decision="$(echo "$plan" | jq -r '.decision')"
   echo '---COMMANDS---'
-  release_runner_retry__emit_plan_command_lines "$state_file" "$plan"
+  release_runner_retry__invoke_each_plan_exec_argv \
+    "$state_file" "$plan" release_runner_retry__cb_print_argv
+  if [[ "$(echo "$plan" | jq -r '.dispatch_rerun')" != "true" ]]; then
+    printf 'SKIP: decision=%s\n' "$decision"
+  fi
 }
