@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and parse as `8181`; connection override errors include a truncated offending
   value in `details.actual`.
 
+## [7.2.1] - 2026-11-18
+
+### Changed
+
+- Align package version with the Flutter MCP Toolkit 7.2.1 release.
+
 ## [7.2.0] - 2026-11-17
 
 ### Changed
