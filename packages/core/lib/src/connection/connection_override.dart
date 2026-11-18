@@ -413,6 +413,9 @@ int? parseStrictPositiveDecimalPort(Object? raw) {
     return raw > 0 && raw <= kMaxTcpPort ? raw : null;
   }
   if (raw is num) {
+    if (!raw.isFinite) {
+      return null;
+    }
     if (raw != raw.toInt()) {
       return null;
     }
@@ -500,6 +503,7 @@ CoreResult _invalidConnectionField({
   details: {
     'field': field,
     'expected': expected,
+    'actual': actual == null ? null : '$actual',
     'actualType': actual == null ? 'null' : actual.runtimeType.toString(),
   },
 );

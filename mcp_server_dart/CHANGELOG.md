@@ -4,16 +4,22 @@ Release notes for the **repository train** are in the [root CHANGELOG.md](../CHA
 
 
 
-## [7.2.0] - 2026-11-17
+## [Unreleased]
 
 ### Fixed
 
 - Resource URI connection overrides pass `port` query values through strict
-  decimal parsing so invalid user input is reported with the original string.
+  decimal parsing; errors include the original typed value in `details.actual`.
 - Inspection handlers and the in-app toolkit treat `viewId: 0` as the first
   Flutter view rather than “absent”.
 
-## [7.1.0] - 2026-11-10
+## [7.2.0] - 2026-11-17
+
+### Changed
+
+- Align server package version with the Flutter MCP Toolkit 7.2.0 release.
+
+## [7.0.0] - 2026-10-03
 
 ### Added
 

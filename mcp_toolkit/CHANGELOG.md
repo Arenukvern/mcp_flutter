@@ -1,3 +1,10 @@
+# Unreleased (7.2.1)
+
+### Fixed
+
+- Service extension handlers treat `viewId: 0` as the first Flutter view rather
+  than “absent” when parsing coordinate integers from extension requests.
+
 # 7.2.0
 
 - Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit 7.2.0 release.

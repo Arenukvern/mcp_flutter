@@ -1,0 +1,14 @@
+{
+  "workflow_runs": [
+    {
+      "id": 100,
+      "head_branch": "v7.2.0",
+      "created_at": "2026-11-17T10:00:00Z"
+    },
+    {
+      "id": 200,
+      "head_branch": "v7.2.0",
+      "created_at": "2026-11-17T12:00:00Z"
+    }
+  ]
+}

@@ -5,6 +5,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- `parseStrictPositiveDecimalPort` rejects non-finite numeric ports before
+  `toInt()` and connection override errors include the offending value in
+  `details.actual` (including leading-zero decimal strings such as `08181`).
+
 ## [7.2.0] - 2026-11-17
 
 ### Changed
@@ -22,8 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Align package version with the Flutter MCP Toolkit 7.1.0 release.
-- Keep the package test constraint compatible with the pinned Flutter 3.44.2
-  `flutter_test` stack used by release PR checks.
 
 ## [7.0.2] - 2026-11-07
 
@@ -122,6 +128,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Align package version with the Flutter MCP Toolkit 4.0.0-dev train.
 
 ## [4.0.0-dev.1] - 2026-06-06
+
+### Changed
+
+- Keep the package test constraint compatible with the pinned Flutter 3.44.2
+  `flutter_test` stack used by release PR checks.
 
 ### Changed
 

@@ -11,10 +11,7 @@ int? optionalCoordinateIntFromRequest(
     return null;
   }
   final raw = parameters[key];
-  if (raw == null || raw.isEmpty) {
-    return null;
-  }
-  if (raw != raw.trim() || raw.isEmpty) {
+  if (raw == null || raw.isEmpty || raw != raw.trim()) {
     return null;
   }
   if (!RegExp(r'^[0-9]+$').hasMatch(raw)) {

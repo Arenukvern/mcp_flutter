@@ -156,6 +156,7 @@ void main() {
         );
         final details = result.error!.error?.details as Map<String, Object?>?;
         expect(details?['actualType'], equals('String'), reason: badPort);
+        expect(details?['actual'], equals(badPort), reason: badPort);
       }
     });
 
@@ -167,6 +168,27 @@ void main() {
       );
       expect(result.error, isNull);
       expect(result.preconnectCommand?.port, 8181);
+    });
+
+    test('accepts leading-zero decimal port strings (08181 -> 8181)', () {
+      final result = parseConnectionOverrideArguments(
+        arguments: {
+          'connection': {'mode': 'manual', 'host': '127.0.0.1', 'port': '08181'},
+        },
+      );
+      expect(result.error, isNull);
+      expect(result.preconnectCommand?.port, 8181);
+    });
+
+    test('rejects non-finite numeric ports', () {
+      final result = parseConnectionOverrideArguments(
+        arguments: {
+          'connection': {'port': double.infinity},
+        },
+      );
+      expect(result.error, isNotNull);
+      final details = result.error!.error?.details as Map<String, Object?>?;
+      expect(details?['actual'], 'Infinity');
     });
 
     test('accepts port 65535 and rejects 99999', () {

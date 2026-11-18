@@ -22,7 +22,7 @@ Use it in an `mcpServers` config:
         "-i",
         "--rm",
         "--network=host",
-        "ghcr.io/arenukvern/flutter-mcp-toolkit:7.2.0"
+        "ghcr.io/arenukvern/flutter-mcp-toolkit:7.2.0" # x-release-please-version
       ]
     }
   }

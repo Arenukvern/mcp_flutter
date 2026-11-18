@@ -7,10 +7,13 @@ REPO="${2:-}"
 RUN_ATTEMPT="${3:-1}"
 MAX_ATTEMPTS="${4:-3}"
 
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+# shellcheck source=runner_shortage_lib.sh
+source "$ROOT_DIR/tool/release/runner_shortage_lib.sh"
+
 SUMMARY="${GITHUB_STEP_SUMMARY:-/dev/stdout}"
-# GitHub: "The job was not acquired by Runner of type hosted even after multiple attempts"
-NOT_ACQUIRED_RE='not acquired by (a )?Runner'
-ZERO_STEP_MIN_WAIT_SECONDS=600
+NOT_ACQUIRED_RE="$NOT_ACQUIRED_RE_DEFAULT"
+ZERO_STEP_MIN_WAIT_SECONDS="$ZERO_STEP_MIN_WAIT_SECONDS_DEFAULT"
 
 log() {
   echo "$*" | tee -a "$SUMMARY"
@@ -39,6 +42,26 @@ if [[ "$RUN_ATTEMPT" -ge "$MAX_ATTEMPTS" ]]; then
   exit 0
 fi
 
+run_json="$(gh api "repos/$REPO/actions/runs/$RUN_ID")"
+head_branch="$(echo "$run_json" | jq -r '.head_branch // empty')"
+created_at="$(echo "$run_json" | jq -r '.created_at // empty')"
+
+if [[ -n "$head_branch" && -n "$created_at" ]]; then
+  workflow_id="$(gh api "repos/$REPO/actions/workflows" \
+    --jq '.workflows[] | select(.path | endswith("release.yml")) | .id' | head -n1)"
+  if [[ -n "$workflow_id" ]]; then
+    newer_count="$(gh api \
+      "repos/$REPO/actions/workflows/$workflow_id/runs?per_page=30" \
+      --jq --arg hb "$head_branch" --arg ts "$created_at" --argjson rid "$RUN_ID" \
+      '[.workflow_runs[] | select(.head_branch == $hb and .created_at > $ts and .id != $rid)] | length')"
+    if [[ "$newer_count" -gt 0 ]]; then
+      log ""
+      log "**No rerun:** superseded by a newer Release run for \`$head_branch\`."
+      exit 0
+    fi
+  fi
+fi
+
 jobs_json="$(gh api "repos/$REPO/actions/runs/$RUN_ID/jobs" --paginate)"
 
 job_has_not_acquired_annotation() {
@@ -46,24 +69,12 @@ job_has_not_acquired_annotation() {
   [[ -n "$check_run_url" && "$check_run_url" != "null" ]] || return 1
   local annotations
   annotations="$(gh api "${check_run_url%/}/annotations" --paginate 2>/dev/null || true)"
-  echo "$annotations" | jq -e --arg re "$NOT_ACQUIRED_RE" \
-    '[.[]? | select(.message | test($re; "i"))] | length > 0' >/dev/null
-}
-
-job_waited_at_least_seconds() {
-  local created_at="$1"
-  local completed_at="$2"
-  local min_seconds="$3"
-  [[ -n "$created_at" && -n "$completed_at" ]] || return 1
-  local created_epoch completed_epoch
-  created_epoch="$(date -d "$created_at" +%s 2>/dev/null || echo 0)"
-  completed_epoch="$(date -d "$completed_at" +%s 2>/dev/null || echo 0)"
-  [[ "$created_epoch" -gt 0 && "$completed_epoch" -ge "$created_epoch" ]] || return 1
-  [[ $((completed_epoch - created_epoch)) -ge "$min_seconds" ]]
+  runner_shortage__annotation_matches "$annotations" "$NOT_ACQUIRED_RE"
 }
 
 runner_shortage_detected=false
 real_failure_jobs=()
+unclassified_jobs=()
 
 while IFS= read -r job_line; do
   [[ -n "$job_line" ]] || continue
@@ -73,16 +84,19 @@ while IFS= read -r job_line; do
   runner_id="$(echo "$job_line" | jq -r '.runner_id')"
   step_count="$(echo "$job_line" | jq -r '.steps | length')"
   check_run_url="$(echo "$job_line" | jq -r '.check_run_url // empty')"
-  created_at="$(echo "$job_line" | jq -r '.created_at // empty')"
-  completed_at="$(echo "$job_line" | jq -r '.completed_at // empty')"
+  created_job="$(echo "$job_line" | jq -r '.created_at // empty')"
+  completed_job="$(echo "$job_line" | jq -r '.completed_at // empty')"
 
   if [[ "$conclusion" == "failure" ]]; then
     failed_steps="$(echo "$job_line" | jq -r \
       '[.steps[]? | select(.conclusion == "failure")] | length')"
     if [[ "$failed_steps" -gt 0 ]]; then
       real_failure_jobs+=("$job_name ($job_id)")
-      continue
+    else
+      log "- Unclassified: $job_name ($job_id) (failure, zero failed steps)"
+      unclassified_jobs+=("$job_name ($job_id)")
     fi
+    continue
   fi
 
   if [[ "$conclusion" != "cancelled" ]]; then
@@ -95,8 +109,9 @@ while IFS= read -r job_line; do
     continue
   fi
 
-  if [[ "$runner_id" == "0" && "$step_count" == "0" ]] && \
-    job_waited_at_least_seconds "$created_at" "$completed_at" "$ZERO_STEP_MIN_WAIT_SECONDS"; then
+  if runner_shortage__zero_step_shortage_candidate \
+    "$runner_id" "$step_count" "$created_job" "$completed_job" \
+    "$ZERO_STEP_MIN_WAIT_SECONDS"; then
     log "- Classified runner shortage (zero steps, waited >= ${ZERO_STEP_MIN_WAIT_SECONDS}s): $job_name ($job_id)"
     runner_shortage_detected=true
     continue
@@ -114,6 +129,12 @@ if [[ ${#real_failure_jobs[@]} -gt 0 ]]; then
   exit 0
 fi
 
+if [[ ${#unclassified_jobs[@]} -gt 0 && "$runner_shortage_detected" != true ]]; then
+  log ""
+  log "**No rerun:** unclassified failure jobs present."
+  exit 0
+fi
+
 if [[ "$runner_shortage_detected" != true ]]; then
   log ""
   log "**No rerun:** no runner-shortage cancellations detected."
@@ -122,7 +143,7 @@ fi
 
 sleep_seconds=$((120 * RUN_ATTEMPT))
 log ""
-log "Backing off ${sleep_seconds}s before rerun..."
+log "Backoff: waiting ${sleep_seconds}s (120s × run attempt $RUN_ATTEMPT) before rerun..."
 sleep "$sleep_seconds"
 
 log ""
