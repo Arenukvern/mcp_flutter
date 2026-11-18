@@ -2,63 +2,71 @@
 # Fail when a GitHub release already has expected binary asset names (no overwrite).
 set -euo pipefail
 
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=release_assets_conflict_lib.sh
+source "$ROOT_DIR/release_assets_conflict_lib.sh"
+
 fail() { echo "check_release_assets_conflict: $*" >&2; exit 1; }
 ok() { echo "check_release_assets_conflict: $*"; }
 
-TAG="${1:-}"
-VERSION="${2:-}"
-REPO="${GITHUB_REPOSITORY:-${3:-}}"
+check_release_assets_conflict__main() {
+  local TAG="${1:-}"
+  local VERSION="${2:-}"
+  local REPO="${GITHUB_REPOSITORY:-${3:-}}"
 
-[[ -n "$TAG" && -n "$VERSION" && -n "$REPO" ]] || \
-  fail "usage: GITHUB_REPOSITORY=owner/repo check_release_assets_conflict.sh <tag> <version>"
+  [[ -n "$TAG" && -n "$VERSION" && -n "$REPO" ]] || \
+    fail "usage: GITHUB_REPOSITORY=owner/repo check_release_assets_conflict.sh <tag> <version>"
 
-if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  fail "invalid tag format"
-fi
+  if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    fail "invalid tag format"
+  fi
 
-command -v gh >/dev/null 2>&1 || fail "gh CLI required"
+  if [[ "${RELEASE_CONFLICT_CONTRACT_NO_GH:-}" != 1 ]]; then
+    command -v gh >/dev/null 2>&1 || fail "gh CLI required"
+  fi
 
-expected=(
-  "flutter_mcp_${VERSION}_darwin-arm64.tar.gz"
-  "flutter_mcp_${VERSION}_linux-x64.tar.gz"
-  "checksums.txt"
-)
+  command -v jq >/dev/null 2>&1 || fail "jq required"
 
-json="$(gh release view "$TAG" --repo "$REPO" --json assets)"
-if ! command -v jq >/dev/null 2>&1; then
-  fail "jq required to parse gh release view output"
-fi
-if ! echo "$json" | jq -e '.assets | type == "array"' >/dev/null; then
-  fail "invalid gh release view JSON for $TAG on $REPO"
-fi
+  local json
+  json="$(release_conflict__fetch_release_view_json "$TAG" "$REPO")" || \
+    fail "gh release view failed for $TAG on $REPO"
 
-existing=()
-while IFS= read -r name; do
-  [[ -n "$name" ]] && existing+=("$name")
-done < <(echo "$json" | jq -r '.assets[].name')
+  local conflict_class
+  conflict_class="$(release_conflict__conflict_class_from_json "$json" "$VERSION")" || \
+    fail "invalid gh release view JSON for $TAG on $REPO"
 
-if [[ ${#existing[@]} -eq 0 ]]; then
-  ok "no conflicting assets on $TAG ($REPO)"
+  local -a conflicts=()
+  local c
+  while IFS= read -r c; do
+    [[ -n "$c" ]] && conflicts+=("$c")
+  done < <(release_conflict__conflict_names_from_json "$json" "$VERSION")
+
+  case "$conflict_class" in
+    none)
+      ok "no conflicting assets on $TAG ($REPO)"
+      ;;
+    partial)
+      ok "partial assets on $TAG ($REPO): ${conflicts[*]} (publish may clobber/fill gaps)"
+      ;;
+    full)
+      fail "release $TAG on $REPO already has all expected assets: ${conflicts[*]}. Delete assets manually or use a new tag."
+      ;;
+    *)
+      fail "unknown conflict class"
+      ;;
+  esac
+}
+
+if [[ "${1:-}" == --plan ]]; then
+  TAG="${2:-}"
+  REPO="${GITHUB_REPOSITORY:-${4:-}}"
+  [[ -n "$TAG" && -n "$REPO" ]] || \
+    fail "usage: GITHUB_REPOSITORY=owner/repo check_release_assets_conflict.sh --plan <tag> [version] [repo]"
+  release_conflict__invoke_release_view_argv \
+    "$TAG" "$REPO" release_conflict__cb_print_argv
   exit 0
 fi
 
-conflicts=()
-for name in "${expected[@]}"; do
-  for asset in "${existing[@]}"; do
-    if [[ "$asset" == "$name" ]]; then
-      conflicts+=("$name")
-    fi
-  done
-done
-
-if [[ ${#conflicts[@]} -eq 0 ]]; then
-  ok "no conflicting assets on $TAG ($REPO)"
-  exit 0
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  check_release_assets_conflict__main "$@"
 fi
-
-if [[ ${#conflicts[@]} -lt ${#expected[@]} ]]; then
-  ok "partial assets on $TAG ($REPO): ${conflicts[*]} (publish may clobber/fill gaps)"
-  exit 0
-fi
-
-fail "release $TAG on $REPO already has all expected assets: ${conflicts[*]}. Delete assets manually or use a new tag."
