@@ -19,7 +19,7 @@ Release notes for the **repository train** are in the [root CHANGELOG.md](../CHA
 
 - Align server package version with the Flutter MCP Toolkit 7.2.0 release.
 
-## [7.0.0] - 2026-10-03
+## [7.1.0] - 2026-11-10
 
 ### Added
 
@@ -39,6 +39,23 @@ Release notes for the **repository train** are in the [root CHANGELOG.md](../CHA
   shape) with the server binary resolved to an absolute path at init time
   (ZCode does not expand `${...}` templates in config-file MCP servers) plus
   all skills to `.agents/skills/`. Also included in `init all`.
+
+## [7.0.0] - 2026-10-03
+
+### Changed
+
+- Align server package version with the Flutter MCP Toolkit 7.0.0 release.
+
+### Added
+
+- Connection-lifetime subscription to the VM `Service` stream (custom
+  `reloadSources`/`hotRestart` services are now cached per connection
+  instead of per-command 1s waits).
+
+## [6.0.0] - 2026-10-02
+
+### Added
+
 - **External dev session delegation** (Dart dev session contract, spec v2):
   when a runner-session file exists (default
   `.flutter_mcp/runner-session.json`, configurable via
@@ -47,9 +64,6 @@ Release notes for the **repository train** are in the [root CHANGELOG.md](../CHA
   its loopback control port — the only compile-capable channel — and
   machine discovery is suppressed so a second attach session cannot kill
   the first. Results carry `changed`, `delegated`, and `runner` metadata.
-- Connection-lifetime subscription to the VM `Service` stream (custom
-  `reloadSources`/`hotRestart` services are now cached per connection
-  instead of per-command 1s waits).
 
 ### Changed
 

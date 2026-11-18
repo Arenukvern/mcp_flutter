@@ -493,6 +493,19 @@ int? parseStrictPositiveDecimalPort(Object? raw) {
   return (value: raw, error: null);
 }
 
+const int _kConnectionFieldActualMaxLen = 64;
+
+String? _connectionFieldActualDetail(Object? actual) {
+  if (actual == null) {
+    return null;
+  }
+  final rendered = '$actual';
+  if (rendered.length <= _kConnectionFieldActualMaxLen) {
+    return rendered;
+  }
+  return '${rendered.substring(0, _kConnectionFieldActualMaxLen)}...';
+}
+
 CoreResult _invalidConnectionField({
   required String field,
   required String expected,
@@ -503,7 +516,7 @@ CoreResult _invalidConnectionField({
   details: {
     'field': field,
     'expected': expected,
-    'actual': actual == null ? null : '$actual',
+    'actual': _connectionFieldActualDetail(actual),
     'actualType': actual == null ? 'null' : actual.runtimeType.toString(),
   },
 );

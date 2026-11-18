@@ -5,6 +5,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 FIXTURE="$ROOT_DIR/tool/contracts/fixtures/github_runner_not_acquired_annotation.json"
 MANUAL_CANCEL="$ROOT_DIR/tool/contracts/fixtures/release_job_manual_cancel_short.json"
+LONG_QUEUE="$ROOT_DIR/tool/contracts/fixtures/release_job_runner_shortage_long_queue.json"
 SUPERSEDED="$ROOT_DIR/tool/contracts/fixtures/release_superseded_runs.json"
 SCRIPT="$ROOT_DIR/tool/release/maybe_rerun_runner_shortage_jobs.sh"
 LIB="$ROOT_DIR/tool/release/runner_shortage_lib.sh"
@@ -96,6 +97,19 @@ if runner_shortage__zero_step_shortage_candidate \
   fail "missing timestamps must not match zero-step shortage"
 else
   ok "missing timestamps rejected"
+fi
+
+long_job="$(cat "$LONG_QUEUE")"
+long_runner="$(echo "$long_job" | jq -r '.runner_id')"
+long_steps="$(echo "$long_job" | jq -r '.steps | length')"
+long_created="$(echo "$long_job" | jq -r '.created_at')"
+long_completed="$(echo "$long_job" | jq -r '.completed_at')"
+
+if runner_shortage__zero_step_shortage_candidate \
+  "$long_runner" "$long_steps" "$long_created" "$long_completed" 600; then
+  ok "long zero-step queue classified as shortage"
+else
+  fail "long zero-step queue must match shortage"
 fi
 
 ok "runner retry decision fixtures OK"

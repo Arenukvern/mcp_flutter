@@ -82,21 +82,32 @@ else
 fi
 
 checksums_path="$ASSET_DIR/checksums.txt"
+write_checksum_line() {
+  local name="$1"
+  local local_path="$ASSET_DIR/$name"
+  if [[ -f "$local_path" ]]; then
+    (cd "$ASSET_DIR" && sha256sum "$name")
+  elif [[ -n "${remote_names[$name]:-}" ]]; then
+    local tmpdir
+    tmpdir="$(mktemp -d)"
+    download_remote_asset_to "$name" "$tmpdir"
+    (cd "$tmpdir" && sha256sum "$name")
+    rm -rf "$tmpdir"
+  else
+    fail "cannot checksum missing asset $name"
+  fi
+}
+
 {
   for name in "${all_tar_names[@]}"; do
-    local_path="$ASSET_DIR/$name"
-    if [[ -f "$local_path" ]]; then
-      sha256sum "$local_path"
-    elif [[ -n "${remote_names[$name]:-}" ]]; then
-      tmpdir="$(mktemp -d)"
-      download_remote_asset_to "$name" "$tmpdir"
-      sha256sum "$tmpdir/$name"
-      rm -rf "$tmpdir"
-    else
-      fail "cannot checksum missing asset $name"
-    fi
+    write_checksum_line "$name"
   done
 } >"$checksums_path"
+
+(
+  cd "$ASSET_DIR"
+  sha256sum -c checksums.txt
+) || fail "pre-upload checksum verification failed for $TAG"
 
 if [[ "$is_draft" == "true" ]]; then
   gh release upload "$TAG" \
@@ -124,20 +135,5 @@ else
     fi
   fi
 fi
-
-verify_dir="$(mktemp -d)"
-cleanup() { rm -rf "$verify_dir"; }
-trap cleanup EXIT
-
-gh release download "$TAG" \
-  --repo "$GITHUB_REPOSITORY" \
-  --dir "$verify_dir" \
-  --pattern '*.tar.gz' \
-  --pattern 'checksums.txt'
-
-(
-  cd "$verify_dir"
-  sha256sum -c checksums.txt
-) || fail "post-upload checksum verification failed for $TAG"
 
 ok "published ${#local_tar_names[@]} local tarball(s); draft=$is_draft; new_uploads=${#upload_paths[@]}"

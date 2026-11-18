@@ -180,6 +180,22 @@ void main() {
       expect(result.preconnectCommand?.port, 8181);
     });
 
+    test('truncates long details.actual values', () {
+      final longPort = '9' * 80;
+      final result = parseConnectionOverrideArguments(
+        arguments: {
+          'connection': {'port': longPort},
+        },
+      );
+      expect(result.error, isNotNull);
+      final details = result.error!.error?.details as Map<String, Object?>?;
+      final actual = details?['actual'] as String?;
+      expect(actual, isNotNull);
+      expect(actual!.length, equals(64 + 3));
+      expect(actual.endsWith('...'), isTrue);
+      expect(actual, startsWith('9' * 64));
+    });
+
     test('rejects non-finite numeric ports', () {
       final result = parseConnectionOverrideArguments(
         arguments: {
