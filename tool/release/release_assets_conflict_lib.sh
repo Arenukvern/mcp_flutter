@@ -26,6 +26,10 @@ release_conflict__cb_run_argv() {
   "${_cmd[@]}"
 }
 
+release_conflict__require_gh() {
+  command -v gh >/dev/null 2>&1
+}
+
 release_conflict__invoke_release_view_argv() {
   local tag="$1"
   local repo="$2"

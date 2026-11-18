@@ -3,10 +3,13 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+CONFLICT_LIB="$ROOT_DIR/tool/release/release_assets_conflict_lib.sh"
 CONFLICT_MAIN="$ROOT_DIR/tool/release/check_release_assets_conflict.sh"
 
-fail() { echo "test_release_recovery_flow: $*" >&2; exit 1; }
-ok() { echo "test_release_recovery_flow: $*"; }
+test_fail() { echo "test_release_recovery_flow: $*" >&2; exit 1; }
+test_ok() { echo "test_release_recovery_flow: $*"; }
+fail() { test_fail "$@"; }
+ok() { test_ok "$@"; }
 
 command -v jq >/dev/null 2>&1 || fail "jq required"
 
@@ -18,16 +21,45 @@ guard_no_contract_env_in_release_scripts() {
 }
 guard_no_contract_env_in_release_scripts
 
+# shellcheck source=../release/release_assets_conflict_lib.sh
+source "$CONFLICT_LIB"
+
+contract_assert_real_conflict_cb_run_argv() {
+  local -a argv=(false)
+  if release_conflict__cb_run_argv argv 2>/dev/null; then
+    fail "real release_conflict__cb_run_argv must propagate false exit"
+  fi
+  argv=(printf x)
+  local out
+  out="$(release_conflict__cb_run_argv argv)"
+  [[ "$out" == "x" ]] || fail "real release_conflict__cb_run_argv must run printf (got: $out)"
+  ok "real release_conflict__cb_run_argv executes argv"
+}
+contract_assert_real_conflict_cb_run_argv
+
 RECOVERY_CONFLICT_FIXTURE_JSON=''
 RECOVERY_CONFLICT_CB_FAIL=0
+
+recovery__gh_fail_cb() {
+  echo "simulated gh api failure" >&2
+  return 1
+}
 
 # shellcheck source=../release/check_release_assets_conflict.sh
 source "$CONFLICT_MAIN"
 
-release_conflict__cb_run_argv() {
+fail() { test_fail "$@"; }
+ok() { test_ok "$@"; }
+
+release_conflict__require_gh() { :; }
+
+release_conflict__fetch_release_view_json() {
+  local tag="$1"
+  local repo="$2"
   if [[ "${RECOVERY_CONFLICT_CB_FAIL:-}" == 1 ]]; then
-    echo "simulated gh api failure" >&2
-    return 1
+  release_conflict__invoke_release_view_argv \
+    "$tag" "$repo" recovery__gh_fail_cb
+    return $?
   fi
   if [[ -z "${RECOVERY_CONFLICT_FIXTURE_JSON:-}" ]]; then
     echo "test_release_recovery_flow: RECOVERY_CONFLICT_FIXTURE_JSON unset" >&2
@@ -35,6 +67,30 @@ release_conflict__cb_run_argv() {
   fi
   printf '%s' "$RECOVERY_CONFLICT_FIXTURE_JSON"
   return 0
+}
+
+EXPECTED_V702_ASSETS=(
+  "flutter_mcp_7.0.2_darwin-arm64.tar.gz"
+  "flutter_mcp_7.0.2_linux-x64.tar.gz"
+  "checksums.txt"
+)
+
+contract_assert_expected_assets_include_checksums() {
+  local -a names=()
+  release_conflict__load_expected_asset_names 7.0.2 names
+  [[ ${#names[@]} -eq 3 ]] || fail "expected asset list must have 3 entries (got ${#names[@]})"
+  local n found=false
+  for n in "${names[@]}"; do
+    [[ "$n" == "checksums.txt" ]] && found=true
+  done
+  [[ "$found" == true ]] || fail "expected asset list must include checksums.txt"
+  ok "expected asset names include checksums.txt"
+}
+contract_assert_expected_assets_include_checksums
+
+full_duplicate_fixture_json() {
+  jq -cn --argjson names "$(printf '%s\n' "${EXPECTED_V702_ASSETS[@]}" | jq -R . | jq -s .)" \
+    '{assets: [$names[] | {name: .}]}'
 }
 
 tmpdir="$(mktemp -d)"
@@ -75,19 +131,13 @@ fi
 
 RECOVERY_CONFLICT_FIXTURE_JSON='{"assets":[{"name":"flutter_mcp_7.0.2_linux-x64.tar.gz"}]}'
 RECOVERY_CONFLICT_CB_FAIL=0
-if check_release_assets_conflict__main v7.0.2 7.0.2; then
+if (check_release_assets_conflict__main v7.0.2 7.0.2); then
   ok "partial conflicting assets allow gap-fill recovery"
 else
   fail "partial assets should pass for clobber recovery"
 fi
 
-full_fixture_json() {
-  local -a expected=()
-  release_conflict__load_expected_asset_names "$1" expected
-  jq -cn --argjson names "$(printf '%s\n' "${expected[@]}" | jq -R . | jq -s .)" \
-    '{assets: [$names[] | {name: .}]}'
-}
-RECOVERY_CONFLICT_FIXTURE_JSON="$(full_fixture_json 7.0.2)"
+RECOVERY_CONFLICT_FIXTURE_JSON="$(full_duplicate_fixture_json)"
 if (check_release_assets_conflict__main v7.0.2 7.0.2); then
   fail "must fail when all expected assets already exist"
 else
@@ -96,7 +146,7 @@ fi
 
 RECOVERY_CONFLICT_FIXTURE_JSON='{"assets":[]}'
 RECOVERY_CONFLICT_CB_FAIL=0
-check_release_assets_conflict__main v7.0.2 7.0.2 \
+(check_release_assets_conflict__main v7.0.2 7.0.2) \
   || fail "empty assets should pass"
 ok "empty release assets pass"
 
@@ -111,23 +161,20 @@ grep -q 'gh release view failed' <<<"$gh_fail_out" || \
 ok "gh errors propagate"
 RECOVERY_CONFLICT_CB_FAIL=0
 
-stub_gh="$tmpdir/gh-stub"
-printf '#!/usr/bin/env bash\necho "gh stub must not run" >&2\nexit 1\n' >"$stub_gh"
-chmod +x "$stub_gh"
-SAFE_PATH="$tmpdir:/usr/sbin:/usr/bin:/sbin:/bin"
+NO_GH_PATH="/usr/sbin:/sbin:/bin"
 RECOVERY_CONFLICT_FIXTURE_JSON='{"assets":[]}'
-if ! PATH="$SAFE_PATH" check_release_assets_conflict__main v7.0.2 7.0.2; then
-  fail "in-process cb hook must not require real gh"
+if ! (PATH="$NO_GH_PATH" check_release_assets_conflict__main v7.0.2 7.0.2); then
+  fail "require_gh override must let main run with gh absent from PATH"
 fi
-ok "conflict check works with gh stub (real gh not invoked)"
+ok "conflict check passes with gh absent from PATH"
 
-plan_line="$(PATH="$SAFE_PATH" GITHUB_REPOSITORY=example/test \
-  check_release_assets_conflict__plan_main --plan v7.0.2 7.0.2)"
+plan_line="$( (PATH="$NO_GH_PATH" GITHUB_REPOSITORY=example/test \
+  check_release_assets_conflict__plan_main --plan v7.0.2 7.0.2) )"
 grep -qF 'gh release view v7.0.2 --repo example/test --json assets' <<<"$plan_line" || \
   fail "--plan must emit gh release view argv"
 ok "plan mode prints release view argv"
 
-if (PATH="$SAFE_PATH" GITHUB_REPOSITORY=example/test \
+if (PATH="$NO_GH_PATH" GITHUB_REPOSITORY=example/test \
   check_release_assets_conflict__plan_main --plan bad-tag 7.0.2 2>/dev/null); then
   fail "--plan must reject invalid tag format"
 fi

@@ -44,13 +44,13 @@ release_publish__merge_sorted_tar_names() {
 
 release_publish__checksum_tar_names() {
   local is_draft="$1"
-  shift
+  local remote_csv="${2:-}"
+  shift 2
   local -a local_names=("$@")
   if [[ "$is_draft" == "true" ]]; then
     release_publish__merge_sorted_tar_names "${local_names[@]}"
     return 0
   fi
-  local remote_csv="${RELEASE_PUBLISH_REMOTE_TAR_CSV:-}"
   local -a remote_only=()
   if [[ -n "$remote_csv" ]]; then
     local remote
@@ -309,9 +309,8 @@ release_publish__plan_from_state_file() {
     [[ -n "$remote_csv" ]] && remote_csv+=","
     remote_csv+="$name"
   done < <(jq -r '.remote_assets[]?.name // empty | select(length>0)' "$state_file")
-  export RELEASE_PUBLISH_REMOTE_TAR_CSV="$remote_csv"
   mapfile -t checksum_names < <(release_publish__checksum_tar_names \
-    "$is_draft" "${local_tars[@]}")
+    "$is_draft" "$remote_csv" "${local_tars[@]}")
 
   if [[ -n "$published_checksums" && "$is_draft" != "true" ]]; then
     local tmp_manifest

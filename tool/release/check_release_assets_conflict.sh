@@ -24,7 +24,7 @@ check_release_assets_conflict__main() {
 
   check_release_assets_conflict__assert_tag "$TAG"
 
-  command -v gh >/dev/null 2>&1 || fail "gh CLI required"
+  release_conflict__require_gh || fail "gh CLI required"
   command -v jq >/dev/null 2>&1 || fail "jq required"
 
   local json

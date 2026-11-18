@@ -6,10 +6,12 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 LIB="$ROOT_DIR/tool/release/release_publish_lib.sh"
 SCRIPT="$ROOT_DIR/tool/release/publish_release_assets.sh"
 
-fail() { echo "test_release_publish_plan: $*" >&2; exit 1; }
-ok() { echo "test_release_publish_plan: $*"; }
-contract_ok() { echo "test_release_publish_plan: $*"; }
-contract_fail() { echo "test_release_publish_plan: $*" >&2; exit 1; }
+test_fail() { echo "test_release_publish_plan: $*" >&2; exit 1; }
+test_ok() { echo "test_release_publish_plan: $*"; }
+fail() { test_fail "$@"; }
+ok() { test_ok "$@"; }
+contract_ok() { test_ok "$@"; }
+contract_fail() { test_fail "$@"; }
 
 command -v jq >/dev/null 2>&1 || fail "jq required"
 
@@ -23,6 +25,19 @@ guard_no_contract_env_in_release_scripts
 
 # shellcheck source=../release/release_publish_lib.sh
 source "$LIB"
+
+contract_assert_real_publish_cb_run_argv() {
+  local -a argv=(false)
+  if release_publish__cb_run_argv argv 2>/dev/null; then
+    fail "real release_publish__cb_run_argv must propagate false exit"
+  fi
+  argv=(printf x)
+  local out
+  out="$(release_publish__cb_run_argv argv)"
+  [[ "$out" == "x" ]] || fail "real release_publish__cb_run_argv must run printf (got: $out)"
+  ok "real release_publish__cb_run_argv executes argv"
+}
+contract_assert_real_publish_cb_run_argv
 
 CONTRACT_UPLOAD_LOG="$(mktemp)"
 PUBLISH_UPLOAD_CB_HOOKED=0
@@ -51,6 +66,9 @@ publish_plan_invoker() {
 
 # shellcheck source=../release/publish_release_assets.sh
 source "$SCRIPT"
+
+fail() { test_fail "$@"; }
+ok() { test_ok "$@"; }
 
 release_publish__cb_run_argv() { publish_upload_cb_record_ok "$@"; }
 PUBLISH_UPLOAD_CB_HOOKED=1
