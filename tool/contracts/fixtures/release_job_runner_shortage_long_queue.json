@@ -1,0 +1,10 @@
+{
+  "id": 9002,
+  "name": "build (darwin-arm64, macos-15)",
+  "conclusion": "cancelled",
+  "runner_id": 0,
+  "steps": [],
+  "created_at": "2026-11-17T10:00:00Z",
+  "completed_at": "2026-11-17T10:11:00Z",
+  "check_run_url": ""
+}

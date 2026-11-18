@@ -81,7 +81,8 @@
           "path": "mcp_server_dart/server.json",
           "jsonpath": "$.version"
         },
-        "docs/install/docker.mdx"
+        "docs/install/docker.mdx",
+        "mcp_server_dart/DOCKER.md"
       ]
     }
   }

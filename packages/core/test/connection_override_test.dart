@@ -141,6 +141,91 @@ void main() {
       expect(result.error!.error?.code, equals(CoreErrorCode.invalidCommand));
     });
 
+    test('rejects loose port string forms', () {
+      for (final badPort in ['+8181', ' 8181 ', '0x1F90', '8181.9']) {
+        final result = parseConnectionOverrideArguments(
+          arguments: {
+            'connection': {'port': badPort},
+          },
+        );
+        expect(result.error, isNotNull, reason: 'expected error for $badPort');
+        expect(
+          result.error!.error?.code,
+          equals(CoreErrorCode.invalidCommand),
+          reason: badPort,
+        );
+        final details = result.error!.error?.details as Map<String, Object?>?;
+        expect(details?['actualType'], equals('String'), reason: badPort);
+        expect(details?['actual'], equals(badPort), reason: badPort);
+      }
+    });
+
+    test('accepts strict decimal port strings', () {
+      final result = parseConnectionOverrideArguments(
+        arguments: {
+          'connection': {'mode': 'manual', 'host': '127.0.0.1', 'port': '8181'},
+        },
+      );
+      expect(result.error, isNull);
+      expect(result.preconnectCommand?.port, 8181);
+    });
+
+    test('accepts leading-zero decimal port strings (08181 -> 8181)', () {
+      final result = parseConnectionOverrideArguments(
+        arguments: {
+          'connection': {'mode': 'manual', 'host': '127.0.0.1', 'port': '08181'},
+        },
+      );
+      expect(result.error, isNull);
+      expect(result.preconnectCommand?.port, 8181);
+    });
+
+    test('truncates long details.actual values', () {
+      final longPort = '9' * 80;
+      final result = parseConnectionOverrideArguments(
+        arguments: {
+          'connection': {'port': longPort},
+        },
+      );
+      expect(result.error, isNotNull);
+      final details = result.error!.error?.details as Map<String, Object?>?;
+      final actual = details?['actual'] as String?;
+      expect(actual, isNotNull);
+      expect(actual!.length, equals(64 + 3));
+      expect(actual.endsWith('...'), isTrue);
+      expect(actual, startsWith('9' * 64));
+    });
+
+    test('rejects non-finite numeric ports', () {
+      final result = parseConnectionOverrideArguments(
+        arguments: {
+          'connection': {'port': double.infinity},
+        },
+      );
+      expect(result.error, isNotNull);
+      final details = result.error!.error?.details as Map<String, Object?>?;
+      expect(details?['actual'], 'Infinity');
+    });
+
+    test('accepts port 65535 and rejects 99999', () {
+      final ok = parseConnectionOverrideArguments(
+        arguments: {
+          'connection': {'port': '65535'},
+        },
+      );
+      expect(ok.error, isNull);
+      expect(ok.preconnectCommand?.port, 65535);
+
+      for (final bad in ['99999', 99999, 65536]) {
+        final result = parseConnectionOverrideArguments(
+          arguments: {
+            'connection': {'port': bad},
+          },
+        );
+        expect(result.error, isNotNull, reason: 'expected reject $bad');
+      }
+    });
+
     // 6. Mode out of enum — rejected.
     test('connection.mode: "galaxy" → structured error', () {
       final result = parseConnectionOverrideArguments(

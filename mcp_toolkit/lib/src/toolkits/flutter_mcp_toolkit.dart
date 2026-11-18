@@ -12,6 +12,7 @@ import '../mcp_toolkit_binding.dart';
 import '../services/error_monitor.dart';
 import '../services/screenshot_service.dart';
 import '../services/view_introspection_service.dart';
+import '../utils/coordinate_request_int.dart';
 import 'interaction_toolkit.dart';
 
 /// Returns [AgentCallEntry] values for the Flutter MCP Toolkit.
@@ -197,11 +198,11 @@ extension type const OnInspectWidgetAtPointEntry._(AgentCallEntry entry)
       handler: (parameters) {
         final x = jsonDecodeInt(parameters['x']).whenZeroUse(0);
         final y = jsonDecodeInt(parameters['y']).whenZeroUse(0);
-        final viewId = jsonDecodeInt(parameters['viewId']);
+        final viewId = optionalCoordinateIntFromRequest(parameters, 'viewId');
         final payload = ViewIntrospectionService.inspectWidgetAtPoint(
           x: x,
           y: y,
-          viewId: viewId == 0 ? null : viewId,
+          viewId: viewId,
         );
 
         return MCPCallResult(
@@ -236,11 +237,11 @@ extension type const OnSelectWidgetAtPointEntry._(AgentCallEntry entry)
         }
         final x = jsonDecodeInt(parameters['x']).whenZeroUse(0);
         final y = jsonDecodeInt(parameters['y']).whenZeroUse(0);
-        final viewId = jsonDecodeInt(parameters['viewId']);
+        final viewId = optionalCoordinateIntFromRequest(parameters, 'viewId');
         final payload = ViewIntrospectionService.inspectWidgetAtPoint(
           x: x,
           y: y,
-          viewId: viewId == 0 ? null : viewId,
+          viewId: viewId,
         );
 
         return MCPCallResult(

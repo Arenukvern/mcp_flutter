@@ -1,0 +1,37 @@
+name: Release runner retry
+
+on:
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  maybe-rerun:
+    if: >-
+      github.event.workflow_run.conclusion != 'success' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout tooling
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Decide and maybe rerun runner-shortage jobs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          bash tool/release/maybe_rerun_runner_shortage_jobs.sh \
+            "${{ github.event.workflow_run.id }}" \
+            "${{ github.repository }}" \
+            "${{ github.event.workflow_run.run_attempt }}" \
+            3

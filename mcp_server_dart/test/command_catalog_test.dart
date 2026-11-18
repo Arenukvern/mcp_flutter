@@ -370,6 +370,25 @@ void main() {
       expect(command.y, 0);
     });
 
+    test('inspect_widget_at_point keeps viewId 0', () {
+      final command = catalog.buildCommand('inspect_widget_at_point', {
+        'x': 1,
+        'y': 2,
+        'viewId': 0,
+      });
+      expect(command, isA<InspectWidgetAtPointCommand>());
+      expect((command as InspectWidgetAtPointCommand).viewId, 0);
+    });
+
+    test('inspect_widget_at_point omits viewId when absent', () {
+      final command = catalog.buildCommand('inspect_widget_at_point', {
+        'x': 1,
+        'y': 2,
+      });
+      expect(command, isA<InspectWidgetAtPointCommand>());
+      expect((command as InspectWidgetAtPointCommand).viewId, isNull);
+    });
+
     test('rejects get_view_details unknown keys via shared schema', () {
       expect(
         () => catalog.buildCommand('get_view_details', {'unexpected': true}),

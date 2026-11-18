@@ -56,4 +56,9 @@ if [[ ${#conflicts[@]} -eq 0 ]]; then
   exit 0
 fi
 
-fail "release $TAG on $REPO already has: ${conflicts[*]}. Delete assets manually or use a new tag — workflow does not overwrite."
+if [[ ${#conflicts[@]} -lt ${#expected[@]} ]]; then
+  ok "partial assets on $TAG ($REPO): ${conflicts[*]} (publish may clobber/fill gaps)"
+  exit 0
+fi
+
+fail "release $TAG on $REPO already has all expected assets: ${conflicts[*]}. Delete assets manually or use a new tag."

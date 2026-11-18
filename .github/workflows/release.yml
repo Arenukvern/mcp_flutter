@@ -190,10 +190,11 @@ jobs:
             "${{ needs.prepare.outputs.version }}"
 
       - name: Publish GitHub release assets
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ needs.prepare.outputs.release_tag }}
-          files: |
-            dist/release/*.tar.gz
-            dist/release/checksums.txt
-          fail_on_unmatched_files: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+        run: |
+          bash "${{ env.TOOLING_CHECKOUT_PATH }}/tool/release/publish_release_assets.sh" \
+            "$RELEASE_TAG" \
+            dist/release

@@ -132,8 +132,7 @@ Future<CoreResult?> applyConnectionOverrideFromResourceUri({
     // Query values are strings, so `port` must parse strictly as an integer
     // (rejecting fractional or non-finite values such as '8181.9' or '1e999').
     // Passing the raw string made the strict parser reject every URI port.
-    if (query.containsKey('port'))
-      'port': int.tryParse(query['port'] ?? '') ?? 0,
+    if (query.containsKey('port')) 'port': query['port'],
     if (query.containsKey('uri')) 'uri': query['uri'],
   };
 

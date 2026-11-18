@@ -1,11 +1,11 @@
 # Recover missing GitHub Release binaries
 
-Use when a tagged release exists but [`release.yml`](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release.yml) failed before attaching `flutter_mcp_<version>_<triple>.tar.gz` and `checksums.txt` (for example after an unsupported macOS runner image).
+Use when a tagged release exists but [`release.yml`](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release.yml) failed before attaching `flutter_mcp_<version>_<triple>.tar.gz` and `checksums.txt` (for example after a GitHub hosted macOS arm64 runner shortage that cancels `macos-15` build jobs with **zero steps**).
 
 ## Preconditions
 
 - The git tag (for example `v7.0.2`) and GitHub Release already exist from release-please.
-- The release must have **no** expected tarballs or `checksums.txt` yet (all three names absent). A **partially** populated release (for example only `linux-x64` uploaded) still fails the conflict guard and does not upload missing assets — delete the existing expected assets in the GitHub Release UI, then re-dispatch.
+- Partial publishes are supported: `publish_release_assets.sh` uploads only missing tarball names on **published** releases, verifies existing remote digests, and rebuilds `checksums.txt` to cover every tarball on the release.
 - Recovery does **not** create, move, or delete tags and does **not** republish pub.dev or MCP Registry packages.
 - **MCP Registry smoke CI** on release-please PRs is unrelated to tarball recovery: smoke builds use ephemeral sibling path overrides when pub.dev does not yet expose the bumped train; production registry publish remains hosted-only after `pub_publish`.
 
@@ -18,11 +18,21 @@ Use when a tagged release exists but [`release.yml`](https://github.com/Arenukve
 
 Build uses **tooling** scripts against **release-src** (`RELEASE_ROOT`). Historical tags (for example `v7.0.2`) may lack newer helpers; dispatch recovery still works because helpers come from `_tooling`.
 
+## Automatic runner-shortage retry
+
+[`release_runner_retry.yml`](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release_runner_retry.yml) runs on **Release** `workflow_run` completion when the triggering repo is canonical (not a fork). It inspects failed/cancelled jobs and **only** re-runs jobs that look like hosted-runner acquisition failures:
+
+- job cancelled with **zero steps**, `runner_id: 0`, and **at least 600s** between `created_at` and `completed_at` (short queues are treated as manual cancels), or
+- a check annotation containing GitHub’s “not acquired by Runner of type hosted” message (matched via `not acquired by (a )?Runner`).
+
+It skips when a **newer Release run** exists for the same tag ref, refuses to rerun when any job failed a real build/test step, logs **unclassified** jobs (failure with zero failed steps), and only then sleeps **120 seconds × `run_attempt`** before a single `gh run rerun --failed`. It caps at **three** total Release runs (`run_attempt >= 3`). Each decision is written to the job summary.
+
 ## Manual recovery (maintainers)
 
-1. Open **Actions → Release → Run workflow** on `main` (after runner/dispatch fix is merged).
-2. `release_tag`: existing tag (for example `v7.0.2`).
-3. The run checks out `release-src`, records `release_sha`, and uploads to that tag via explicit `tag_name`.
+1. **Re-run failed jobs** on the Release workflow run when only the macOS matrix job was cancelled and the linux artifact already succeeded (safe after the retry workflow hits its cap).
+2. Or open **Actions → Release → Run workflow** on `main` (after runner/dispatch fix is merged).
+3. `release_tag`: existing tag (for example `v7.0.2`).
+4. The run checks out `release-src`, records `release_sha`, and uploads to that tag via explicit `tag_name`. Draft releases use `--clobber`; published releases upload only missing assets and verify checksums before updating `checksums.txt`.
 
 **Not verified in CI:** a full end-to-end dispatch against `v7.0.2` until a maintainer runs it post-merge.
 

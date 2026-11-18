@@ -1,0 +1,14 @@
+[
+  {
+    "path": ".github",
+    "blob_href": "https://github.com",
+    "start_line": 1,
+    "end_line": 1,
+    "start_column": 1,
+    "end_column": 1,
+    "annotation_level": "failure",
+    "title": "",
+    "message": "The job was not acquired by Runner of type hosted even after multiple attempts",
+    "raw_details": ""
+  }
+]

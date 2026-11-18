@@ -147,6 +147,9 @@ entries.each do |path, entry|
   content = File.read(path)
   next if content.include?(version)
 
+  content = content.gsub(/\A## \[Unreleased\]\s*\n\s*### Changed\s*\n\s*\n(?=## \[)/m, '')
+  content = content.gsub(/\n## \[Unreleased\]\s*\n\s*### Changed\s*\n\s*\n(?=## \[)/m, "\n")
+
   updated =
     if path == 'mcp_toolkit/CHANGELOG.md'
       entry + content
