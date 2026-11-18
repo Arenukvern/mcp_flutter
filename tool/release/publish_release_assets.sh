@@ -71,8 +71,10 @@ release_publish__run_verify_and_upload() {
   release_publish__safe_cleanup "$verify_dir" ""
 
   release_publish__execute_upload_from_plan \
-    "$plan" "$asset_dir" "$gh_tag" "$gh_repo"
+    "$plan" "$asset_dir" "$gh_tag" "$gh_repo" || return 1
 }
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
 
 if [[ "${1:-}" == --plan ]]; then
   state_file="${2:-}"
@@ -209,3 +211,5 @@ published_checksums_dir=""
 
 upload_count="$(echo "$plan" | jq '[.upload_local_names[]? | select(. != "")] | length')"
 ok "published ${#local_tar_names[@]} local tarball(s); draft=$is_draft; new_uploads=$upload_count"
+
+fi

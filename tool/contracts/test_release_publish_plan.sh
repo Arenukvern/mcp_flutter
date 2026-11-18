@@ -327,4 +327,73 @@ not_super_plan="$(release_publish__plan_from_state_file "$state_not_super")"
 bash "$SCRIPT" --plan "$state_not_super" >/dev/null 2>&1 && fail "script must refuse non-superset"
 ok "checksums not strict superset"
 
+TEST_UPLOAD_CB_CALLS=()
+release_publish__test_cb_fail_on_darwin() {
+  # shellcheck disable=SC2034
+  local -n _cmd=$1
+  TEST_UPLOAD_CB_CALLS+=( "$(release_publish__argv_to_line "${_cmd[@]}")" )
+  if [[ "${_cmd[*]}" == *"$darwin_name"* && "${_cmd[*]}" != *checksums.txt* ]]; then
+    return 1
+  fi
+  return 0
+}
+
+state_pub_upload="$(mktemp)"
+write_state false "" "$linux_h" "" "$linux_name $darwin_name" false >"$state_pub_upload"
+plan_pub_upload="$(release_publish__plan_from_state_file "$state_pub_upload")"
+printf '%s\n' "${plan_pub_upload%$'\n'}" >"$asset_dir/checksums.txt"
+release_publish__invoke_each_upload_argv_from_plan \
+  "$plan_pub_upload" "$asset_dir" "v7.2.1" "o/r" \
+  release_publish__test_cb_fail_on_darwin 2>/dev/null && \
+  fail "published upload must fail when darwin tarball upload fails"
+checksum_uploaded=false
+for line in "${TEST_UPLOAD_CB_CALLS[@]}"; do
+  [[ "$line" == *checksums.txt* ]] && checksum_uploaded=true
+done
+[[ "$checksum_uploaded" == false ]] || \
+  fail "checksums.txt must not upload after tarball failure"
+ok "published upload fails closed on tarball callback error"
+
+TEST_UPLOAD_CB_CALLS=()
+release_publish__test_cb_fail_draft_clobber() {
+  # shellcheck disable=SC2034
+  local -n _cmd=$1
+  TEST_UPLOAD_CB_CALLS+=( "$(release_publish__argv_to_line "${_cmd[@]}")" )
+  return 1
+}
+state_draft_upload="$(mktemp)"
+write_state true "" "$linux_h" "" "$linux_name $darwin_name" false >"$state_draft_upload"
+plan_draft_upload="$(release_publish__plan_from_state_file "$state_draft_upload")"
+[[ "$(echo "$plan_draft_upload" | jq -r '.checksums_upload_action')" == \
+  "clobber_with_draft" ]] || fail "draft must plan clobber_with_draft"
+printf '%s\n' "${plan_draft_upload%$'\n'}" >"$asset_dir/checksums.txt"
+release_publish__invoke_each_upload_argv_from_plan \
+  "$plan_draft_upload" "$asset_dir" "v7.2.1" "o/r" \
+  release_publish__test_cb_fail_draft_clobber 2>/dev/null && \
+  fail "draft clobber upload must fail when callback fails"
+ok "draft upload fails closed on callback error"
+
+# shellcheck source=../release/publish_release_assets.sh
+contract_ok_msg="test_release_publish_plan"
+source "$SCRIPT"
+ok() { echo "${contract_ok_msg}: $*"; }
+fail() { echo "${contract_ok_msg}: $*" >&2; exit 1; }
+release_publish__cb_run_argv_contract() {
+  # shellcheck disable=SC2034
+  local -n _cmd=$1
+  if [[ "${_cmd[*]}" == *"$darwin_name"* && "${_cmd[*]}" != *checksums.txt* ]]; then
+    return 1
+  fi
+  return 0
+}
+release_publish__cb_run_argv() { release_publish__cb_run_argv_contract "$@"; }
+publish_snippet_out=""
+if release_publish__run_verify_and_upload \
+  "$plan_pub_upload" "$asset_dir" "" "" "v7.2.1" "o/r" "false" \
+  >/dev/null 2>&1; then
+  publish_snippet_out="publish_release_assets: published stub"
+fi
+[[ -z "$publish_snippet_out" ]] || \
+  fail "must not reach published success path after upload failure"
+
 ok "release publish plan contracts OK"

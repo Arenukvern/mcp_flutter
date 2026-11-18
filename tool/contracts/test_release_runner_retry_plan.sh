@@ -103,6 +103,14 @@ grep -q 'release_runner_retry__plan_from_state_file' "$SCRIPT" || \
   fail "production script must call shared plan"
 grep -q 'check_run_url' "$SCRIPT" || \
   fail "production script must fetch annotations via check_run_url"
+if sed -n '/release_runner_retry__gh_api_annotations_json/,/^}/p' "$RETRY_LIB" | \
+  grep -q 'local -a argv=(gh api'; then
+  fail "gh_api_annotations_json must route through invoke_annotation_fetch_argv"
+fi
+if sed -n '/rerun)/,/;;/p' "$SCRIPT" | grep -q 'invoke_rerun'; then
+  fail "rerun case must not dispatch; use dispatch_rerun"
+fi
+grep -q 'dispatch_rerun' "$SCRIPT" || fail "production script must gate rerun on dispatch_rerun"
 
 short_job="$(jq -c '.annotations=[]' "$MANUAL_CANCEL")"
 state_short="$(mktemp)"

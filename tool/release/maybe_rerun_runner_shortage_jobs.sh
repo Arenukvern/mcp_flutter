@@ -94,6 +94,7 @@ while IFS= read -r job_line; do
 done < <(echo "$jobs_json" | jq -c '.jobs[]?')
 
 state_file="$(mktemp)"
+trap 'rm -f "$state_file"' EXIT
 jq -n \
   --argjson run_attempt "$RUN_ATTEMPT" \
   --argjson max_attempts "$MAX_ATTEMPTS" \
@@ -160,20 +161,24 @@ case "$decision" in
     exit 0
     ;;
   rerun)
-    sleep_seconds="$(echo "$plan" | jq -r '.sleep_seconds')"
-    log ""
-    log "Backoff: waiting ${sleep_seconds}s (120s × run attempt $RUN_ATTEMPT) before rerun..."
-    sleep "$sleep_seconds"
-    log ""
-    log "**Rerunning failed jobs (single dispatch):** run $RUN_ID"
-    release_runner_retry__invoke_rerun_argv \
-      "$RUN_ID" "$REPO" release_runner_retry__cb_run_argv || fail "rerun dispatch failed"
-    log ""
-    log "**Rerun dispatched.** Dependent publish should resume once all build jobs succeed."
     ;;
   *)
     fail "unknown retry decision: $decision"
     ;;
 esac
 
+if [[ "$(echo "$plan" | jq -r '.dispatch_rerun')" == "true" ]]; then
+  sleep_seconds="$(echo "$plan" | jq -r '.sleep_seconds')"
+  log ""
+  log "Backoff: waiting ${sleep_seconds}s (120s × run attempt $RUN_ATTEMPT) before rerun..."
+  sleep "$sleep_seconds"
+  log ""
+  log "**Rerunning failed jobs (single dispatch):** run $RUN_ID"
+  release_runner_retry__invoke_rerun_argv \
+    "$RUN_ID" "$REPO" release_runner_retry__cb_run_argv || fail "rerun dispatch failed"
+  log ""
+  log "**Rerun dispatched.** Dependent publish should resume once all build jobs succeed."
+fi
+
 rm -f "$state_file"
+trap - EXIT

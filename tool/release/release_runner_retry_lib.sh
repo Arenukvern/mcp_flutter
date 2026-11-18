@@ -193,21 +193,34 @@ release_runner_retry__decide() {
 }
 
 release_runner_retry__argv_to_line() {
-  local arg
+  local arg first=true
   for arg in "$@"; do
-    printf '%q ' "$arg"
+    if [[ "$first" == true ]]; then
+      printf '%q' "$arg"
+      first=false
+    else
+      printf ' %q' "$arg"
+    fi
   done
   printf '\n'
 }
 
 release_runner_retry__cb_print_argv() {
+  # shellcheck disable=SC2034
   local -n _cmd=$1
   release_runner_retry__argv_to_line "${_cmd[@]}"
 }
 
 release_runner_retry__cb_run_argv() {
+  # shellcheck disable=SC2034
   local -n _cmd=$1
   "${_cmd[@]}"
+}
+
+release_runner_retry__cb_run_argv_quiet() {
+  # shellcheck disable=SC2034
+  local -n _cmd=$1
+  "${_cmd[@]}" 2>/dev/null
 }
 
 release_runner_retry__invoke_annotation_fetch_argv() {
@@ -215,7 +228,7 @@ release_runner_retry__invoke_annotation_fetch_argv() {
   local callback="$2"
   [[ -n "$check_run_url" && "$check_run_url" != "null" ]] || return 0
   local -a argv=(gh api "${check_run_url%/}/annotations" --paginate)
-  "$callback" argv
+  "$callback" argv || return 1
 }
 
 release_runner_retry__gh_api_annotations_json() {
@@ -224,8 +237,8 @@ release_runner_retry__gh_api_annotations_json() {
     echo '[]'
     return 0
   }
-  local -a argv=(gh api "${check_run_url%/}/annotations" --paginate)
-  "${argv[@]}" 2>/dev/null || echo '[]'
+  release_runner_retry__invoke_annotation_fetch_argv \
+    "$check_run_url" release_runner_retry__cb_run_argv_quiet || echo '[]'
 }
 
 release_runner_retry__invoke_rerun_argv() {
@@ -233,7 +246,7 @@ release_runner_retry__invoke_rerun_argv() {
   local repo="$2"
   local callback="$3"
   local -a argv=(gh run rerun "$run_id" --repo "$repo" --failed)
-  "$callback" argv
+  "$callback" argv || return 1
 }
 
 release_runner_retry__invoke_each_plan_exec_argv() {
@@ -244,13 +257,13 @@ release_runner_retry__invoke_each_plan_exec_argv() {
   while IFS= read -r check_run_url; do
     [[ -n "$check_run_url" ]] || continue
     release_runner_retry__invoke_annotation_fetch_argv \
-      "$check_run_url" "$callback"
+      "$check_run_url" "$callback" || return 1
   done < <(jq -r '.jobs[]? | .check_run_url // empty | select(length > 0)' "$state_file")
   if [[ "$(echo "$plan" | jq -r '.dispatch_rerun')" == "true" ]]; then
     release_runner_retry__invoke_rerun_argv \
       "$(jq -r '.run_id' "$state_file")" \
       "$(jq -r '.repo // "__owner/repo__"' "$state_file")" \
-      "$callback"
+      "$callback" || return 1
   fi
 }
 

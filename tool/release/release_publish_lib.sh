@@ -114,19 +114,26 @@ RELEASE_PUBLISH_PLAN_GH_TAG="${RELEASE_PUBLISH_PLAN_GH_TAG:-__contract_tag__}"
 RELEASE_PUBLISH_PLAN_GH_REPO="${RELEASE_PUBLISH_PLAN_GH_REPO:-__owner/repo__}"
 
 release_publish__argv_to_line() {
-  local arg
+  local arg first=true
   for arg in "$@"; do
-    printf '%q ' "$arg"
+    if [[ "$first" == true ]]; then
+      printf '%q' "$arg"
+      first=false
+    else
+      printf ' %q' "$arg"
+    fi
   done
   printf '\n'
 }
 
 release_publish__cb_print_argv() {
+  # shellcheck disable=SC2034
   local -n _cmd=$1
   release_publish__argv_to_line "${_cmd[@]}"
 }
 
 release_publish__cb_run_argv() {
+  # shellcheck disable=SC2034
   local -n _cmd=$1
   "${_cmd[@]}"
 }
@@ -141,7 +148,7 @@ release_publish__invoke_release_download_argv() {
     gh release download "$gh_tag" --repo "$gh_repo" \
       --dir "$verify_dir" --pattern "$pattern"
   )
-  "$callback" argv
+  "$callback" argv || return 1
 }
 
 release_publish__invoke_each_staging_argv_from_plan() {
@@ -156,7 +163,7 @@ release_publish__invoke_each_staging_argv_from_plan() {
     [[ -n "$name" ]] || continue
     [[ -f "$asset_dir/$name" ]] && continue
     release_publish__invoke_release_download_argv \
-      "$gh_tag" "$gh_repo" "$verify_dir" "$name" "$callback"
+      "$gh_tag" "$gh_repo" "$verify_dir" "$name" "$callback" || return 1
   done < <(echo "$plan" | jq -r '.checksum_tar_names[]?')
 }
 
@@ -181,25 +188,23 @@ release_publish__invoke_each_upload_argv_from_plan() {
     done < <(echo "$plan" | jq -r '.upload_local_names[]?')
     upload_paths+=( "$checksums_path" )
     argv=(gh release upload "$gh_tag" --repo "$gh_repo" --clobber "${upload_paths[@]}")
-    "$callback" argv
-    return 0
-  fi
-
+    "$callback" argv || return 1
+  else
   while IFS= read -r name; do
     [[ -n "$name" ]] || continue
     argv=(gh release upload "$gh_tag" --repo "$gh_repo" "$asset_dir/$name")
-    "$callback" argv
+    "$callback" argv || return 1
   done < <(echo "$plan" | jq -r '.upload_local_names[]?')
 
   case "$action" in
     upload_new)
       argv=(gh release upload "$gh_tag" --repo "$gh_repo" "$checksums_path")
-      "$callback" argv
+      "$callback" argv || return 1
       ;;
     upload_checksums_superset)
       argv=(gh release upload "$gh_tag" --repo "$gh_repo" \
         --clobber "$checksums_path")
-      "$callback" argv
+      "$callback" argv || return 1
       ;;
     keep_checksums) ;;
     *)
@@ -207,6 +212,7 @@ release_publish__invoke_each_upload_argv_from_plan() {
       return 1
       ;;
   esac
+  fi
 }
 
 release_publish__emit_plan_dry_run_trailer() {
@@ -451,7 +457,8 @@ release_publish__stage_verify_assets() {
       cp "$remote_fixture_dir/$name" "$verify_dir/$name"
     elif [[ -n "$gh_tag" && -n "$gh_repo" ]]; then
       release_publish__invoke_release_download_argv \
-        "$gh_tag" "$gh_repo" "$verify_dir" "$name" release_publish__cb_run_argv
+        "$gh_tag" "$gh_repo" "$verify_dir" "$name" release_publish__cb_run_argv \
+        || return 1
     else
       echo "release_publish: missing staged asset $name" >&2
       return 1
@@ -491,5 +498,6 @@ release_publish__execute_upload_from_plan() {
   }
 
   release_publish__invoke_each_upload_argv_from_plan \
-    "$plan" "$asset_dir" "$gh_tag" "$gh_repo" release_publish__cb_run_argv
+    "$plan" "$asset_dir" "$gh_tag" "$gh_repo" release_publish__cb_run_argv \
+    || return 1
 }
