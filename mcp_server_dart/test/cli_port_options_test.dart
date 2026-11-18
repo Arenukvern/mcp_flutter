@@ -4,7 +4,36 @@ import 'dart:io';
 import 'package:flutter_mcp_toolkit_server/src/cli/cli_port_options.dart';
 import 'package:test/test.dart';
 
+Future<ProcessResult> _runCli(String statePath, List<String> args) {
+  return Process.run(
+    'dart',
+    [
+      'run',
+      'bin/flutter_mcp_toolkit.dart',
+      '--state-file',
+      statePath,
+      ...args,
+    ],
+    workingDirectory: Directory.current.path,
+  );
+}
+
 void main() {
+  late Directory tempDir;
+  late String statePath;
+
+  setUp(() {
+    tempDir = Directory.systemTemp.createTempSync('cli-port-test-');
+    statePath = '${tempDir.path}/state.json';
+    File(statePath).writeAsStringSync('{}');
+  });
+
+  tearDown(() {
+    if (tempDir.existsSync()) {
+      tempDir.deleteSync(recursive: true);
+    }
+  });
+
   group('cliPositivePort', () {
     test('empty uses fallback', () {
       expect(cliPositivePort(null, fallback: 8181, flag: 'dart-vm-port'), 8181);
@@ -42,20 +71,12 @@ void main() {
   });
 
   group('flutter-mcp-toolkit CLI exit 64', () {
-    Future<ProcessResult> runBadPort(String port) => Process.run(
-          'dart',
-          [
-            'run',
-            'mcp_server_dart/bin/flutter_mcp_toolkit.dart',
-            'exec',
-            '--name=noop',
-            '--dart-vm-port=$port',
-          ],
-          workingDirectory: '/agent/repos/mcp_flutter',
-        );
-
     test('invalid dart-vm-port returns JSON envelope', () async {
-      final result = await runBadPort('65536');
+      final result = await _runCli(statePath, [
+        'exec',
+        '--name=noop',
+        '--dart-vm-port=65536',
+      ]);
       expect(result.exitCode, 64);
       final decoded = jsonDecode(result.stdout as String) as Map<String, Object?>;
       expect(decoded['ok'], false);
@@ -65,7 +86,11 @@ void main() {
 
     test('rejects leading-zero and signed ports with exit 64', () async {
       for (final port in ['0', '+8181', '08181']) {
-        final result = await runBadPort(port);
+        final result = await _runCli(statePath, [
+          'exec',
+          '--name=noop',
+          '--dart-vm-port=$port',
+        ]);
         expect(result.exitCode, 64, reason: port);
         final decoded = jsonDecode(result.stdout as String) as Map<String, Object?>;
         expect(decoded['ok'], false);
