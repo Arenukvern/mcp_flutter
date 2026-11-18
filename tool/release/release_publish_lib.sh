@@ -97,9 +97,107 @@ release_publish__checksums_strict_superset() {
   done <"$old_file"
 }
 
+release_publish__normalize_manifest_text() {
+  local content="$1"
+  printf '%s\n' "${content%$'\n'}"
+}
+
+release_publish__checksums_manifest_files_equal() {
+  local old_file="$1"
+  local new_file="$2"
+  cmp -s \
+    <(grep -v '^[[:space:]]*$' "$old_file" | sort) \
+    <(grep -v '^[[:space:]]*$' "$new_file" | sort)
+}
+
+RELEASE_PUBLISH_PLAN_GH_TAG="${RELEASE_PUBLISH_PLAN_GH_TAG:-__contract_tag__}"
+RELEASE_PUBLISH_PLAN_GH_REPO="${RELEASE_PUBLISH_PLAN_GH_REPO:-__owner/repo__}"
+
+release_publish__emit_staging_command_lines() {
+  local plan="$1"
+  local asset_dir="$2"
+  local verify_dir="$3"
+  local gh_tag="$4"
+  local gh_repo="$5"
+  local name
+  while IFS= read -r name; do
+    [[ -n "$name" ]] || continue
+    [[ -f "$asset_dir/$name" ]] && continue
+    printf 'gh release download %s --repo %s --dir %s --pattern %s\n' \
+      "$gh_tag" "$gh_repo" "$verify_dir" "$name"
+  done < <(echo "$plan" | jq -r '.checksum_tar_names[]?')
+}
+
+release_publish__emit_upload_command_lines() {
+  local plan="$1"
+  local asset_dir="$2"
+  local gh_tag="$3"
+  local gh_repo="$4"
+  local checksums_path="$asset_dir/checksums.txt"
+  local action
+  action="$(echo "$plan" | jq -r '.checksums_upload_action')"
+
+  if [[ "$action" == "clobber_with_draft" ]]; then
+    local -a upload_paths=()
+    local name
+    while IFS= read -r name; do
+      [[ -n "$name" ]] || continue
+      upload_paths+=( "$asset_dir/$name" )
+    done < <(echo "$plan" | jq -r '.upload_local_names[]?')
+    upload_paths+=( "$checksums_path" )
+    printf 'gh release upload %s --repo %s --clobber' "$gh_tag" "$gh_repo"
+    printf ' %q' "${upload_paths[@]}"
+    printf '\n'
+    return 0
+  fi
+
+  local name
+  while IFS= read -r name; do
+    [[ -n "$name" ]] || continue
+    printf 'gh release upload %s --repo %s %q\n' \
+      "$gh_tag" "$gh_repo" "$asset_dir/$name"
+  done < <(echo "$plan" | jq -r '.upload_local_names[]?')
+
+  case "$action" in
+    upload_new)
+      printf 'gh release upload %s --repo %s %q\n' \
+        "$gh_tag" "$gh_repo" "$checksums_path"
+      ;;
+    upload_checksums_superset)
+      printf 'gh release upload %s --repo %s --clobber %q\n' \
+        "$gh_tag" "$gh_repo" "$checksums_path"
+      ;;
+    keep_checksums) ;;
+    *)
+      echo "release_publish: unknown checksums_upload_action: $action" >&2
+      return 1
+      ;;
+  esac
+}
+
+release_publish__emit_plan_dry_run_trailer() {
+  local plan="$1"
+  local asset_dir="$2"
+  local verify_dir="$3"
+  local remote_fixture_dir="$4"
+  local gh_tag="$5"
+  local gh_repo="$6"
+  local checksums_path="$asset_dir/checksums.txt"
+  echo '---COMMANDS---'
+  release_publish__emit_staging_command_lines \
+    "$plan" "$asset_dir" "$verify_dir" "$gh_tag" "$gh_repo"
+  release_publish__emit_upload_command_lines \
+    "$plan" "$asset_dir" "$gh_tag" "$gh_repo"
+  echo '---CHECKSUMS_PATH---'
+  echo "$checksums_path"
+  echo '---CHECKSUMS_BYTES_B64---'
+  base64 -w0 <"$checksums_path"
+  echo
+}
+
 release_publish__plan_emit_error() {
   local msg="$1"
-  jq -n --arg e "$msg" '{ok: false, error: $e}'
+  jq -cn --arg e "$msg" '{ok: false, error: $e}'
 }
 
 # Build publish plan JSON from state file (schema documented in test_release_publish_plan.sh).
@@ -120,7 +218,8 @@ release_publish__plan_from_state_file() {
 
   local published_checksums
   published_checksums="$(jq -r '.published_checksums // empty' "$state_file")"
-  if [[ "$(jq -r '.published_checksums_asset_present // false' "$state_file")" == "true" ]] && \
+  if [[ "$is_draft" != "true" ]] && \
+    [[ "$(jq -r '.published_checksums_asset_present // false' "$state_file")" == "true" ]] && \
     [[ -z "${published_checksums//[[:space:]]/}" ]]; then
     release_publish__plan_emit_error "published checksums.txt is empty (invalid)"
     return 0
@@ -224,7 +323,7 @@ release_publish__plan_from_state_file() {
       printf '%s' "$checksums_body" >"$tmp_new"
       printf '%s' "$published_checksums" >"$tmp_old"
       if release_publish__checksums_strict_superset "$tmp_old" "$tmp_new"; then
-        if cmp -s "$tmp_old" "$tmp_new"; then
+        if release_publish__checksums_manifest_files_equal "$tmp_old" "$tmp_new"; then
           checksums_action="keep_checksums"
         else
           checksums_action="upload_checksums_superset"
@@ -248,7 +347,7 @@ release_publish__plan_from_state_file() {
     fi
   fi
 
-  jq -n \
+  jq -cn \
     --argjson draft "$is_draft" \
     --arg checksums "$checksums_body" \
     --arg checksums_action "$checksums_action" \
@@ -280,7 +379,7 @@ release_publish__verify_checksums_in_dir() {
   printf '%s' "$checksums_body" >"$asset_dir/checksums.txt"
   (
     cd "$asset_dir" || return 1
-    sha256sum -c checksums.txt
+    sha256sum -c checksums.txt >&2
   )
 }
 
@@ -360,7 +459,10 @@ release_publish__execute_upload_from_plan() {
   action="$(echo "$plan" | jq -r '.checksums_upload_action')"
 
   if [[ "$dry_run" == "true" ]]; then
-    release_publish__upload_spec_from_plan "$plan"
+    [[ -n "$gh_tag" ]] || gh_tag="$RELEASE_PUBLISH_PLAN_GH_TAG"
+    [[ -n "$gh_repo" ]] || gh_repo="$RELEASE_PUBLISH_PLAN_GH_REPO"
+    release_publish__emit_upload_command_lines \
+      "$plan" "$asset_dir" "$gh_tag" "$gh_repo"
     return 0
   fi
 

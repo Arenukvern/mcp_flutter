@@ -7,7 +7,7 @@
 
 ### ⚠ BREAKING CHANGES
 
-* **cli:** global port flags (`--dart-vm-port`, `--web-browser-debugging-port`, `--web-port`, and CDP-related CLI options) now reject leading-zero decimals (`08181`), signed (`+8181`), hex (`0x1F`), whitespace-padded, and out-of-range values with exit **64** and a JSON envelope; **7.2.1** accepted some of these forms for `--dart-vm-port`.
+* **cli:** global port flags (`--dart-vm-port`, `--web-browser-debugging-port`, `--web-port`, and CDP-related CLI options) now reject leading-zero decimals (`08181`), signed (`+8181`), hex (`0x1F`), whitespace-padded, and out-of-range values with exit **64** and a JSON envelope; **7.2.1** used `int.tryParse` and **accepted** `08181`, hex, `+`, and whitespace on **every** CLI port flag.
 * **core:** `parseStrictPositiveDecimalPort` rejects leading-zero decimal strings (e.g. `08181`) everywhere connection overrides and resource URIs are parsed.
 
 ### Bug Fixes
@@ -709,22 +709,6 @@
 
 * **release:** exercise release token for 4.0.0-dev.3 ([142e2b4](https://github.com/Arenukvern/mcp_flutter/commit/142e2b4bb2677b19d0c8859e11907a3fac1bcc44))
 
-## [4.0.0-dev.1](https://github.com/Arenukvern/mcp_flutter/compare/v4.0.0.0-dev.0...v4.0.0-dev.1) (2026-06-17)
-
-
-### Added
-
-* `fmt_migrate_agent_entries` MCP tool (report-only default; `apply: true` to rewrite sources).
-
-### Changed
-
-* Raised workspace Dart SDK floor to `>=3.12.0 <4.0.0`; Flutter SDK floor `>=3.44.0 <4.0.0` for Flutter packages; Docker toolchain `dart:3.12.0-sdk`.
-* **Breaking:** `mcp_server_dart/lib/flutter_mcp_core.dart` no longer promises compatibility for removed private session/state/snapshot internals; use `intentcall_session` for `IntentSessionManager`, `StateStore`, `StateLockManager`, `SafeFileWriter`, and `IntentSnapshotStore`.
-* `ToolRegistration` / `ResourceRegistration` canonical types moved to `intentcall_core`; kernel re-exports.
-* Dogfood harness paths use `--dart-define=INTENTCALL_HARNESS_ROOT` / `INTENTCALL_VISUAL_RECONSTRUCT_ROOT`.
-* `MigrateAgentEntriesMigrator` moved to `intentcall_core` (shared by CLI and MCP tool).
-* `intentcall_testing`: ecsly-style builder → `invokeWire` → `AgentResult.envelope` test.
-
 ## [4.0.0-dev.2](https://github.com/Arenukvern/mcp_flutter/compare/v4.0.0-dev.1...v4.0.0-dev.2) (2026-06-17)
 
 
@@ -761,6 +745,22 @@
 * refresh direct steward proof summaries ([638b970](https://github.com/Arenukvern/mcp_flutter/commit/638b970b538484f36ba27f77a08bb396b8e08255))
 * refresh steward h5 proof summary ([d74a524](https://github.com/Arenukvern/mcp_flutter/commit/d74a5247b4602f2a49bd0e33dcb4fd593f1825d0))
 * update GitNexus project details and enhance harness engineering lifecycle documentation ([9245d8f](https://github.com/Arenukvern/mcp_flutter/commit/9245d8fa2d7d1789b7d5cf4cf3392834877e8774))
+
+## [4.0.0-dev.1](https://github.com/Arenukvern/mcp_flutter/compare/v3.1.1...v4.0.0-dev.1) (2026-06-06)
+
+
+### Added
+
+* `fmt_migrate_agent_entries` MCP tool (report-only default; `apply: true` to rewrite sources).
+
+### Changed
+
+* Raised workspace Dart SDK floor to `>=3.12.0 <4.0.0`; Flutter SDK floor `>=3.44.0 <4.0.0` for Flutter packages; Docker toolchain `dart:3.12.0-sdk`.
+* **Breaking:** `mcp_server_dart/lib/flutter_mcp_core.dart` no longer promises compatibility for removed private session/state/snapshot internals; use `intentcall_session` for `IntentSessionManager`, `StateStore`, `StateLockManager`, `SafeFileWriter`, and `IntentSnapshotStore`.
+* `ToolRegistration` / `ResourceRegistration` canonical types moved to `intentcall_core`; kernel re-exports.
+* Dogfood harness paths use `--dart-define=INTENTCALL_HARNESS_ROOT` / `INTENTCALL_VISUAL_RECONSTRUCT_ROOT`.
+* `MigrateAgentEntriesMigrator` moved to `intentcall_core` (shared by CLI and MCP tool).
+* `intentcall_testing`: ecsly-style builder → `invokeWire` → `AgentResult.envelope` test.
 
 ## [3.1.1](https://github.com/Arenukvern/mcp_flutter/compare/v3.1.0...v3.1.1) (2026-06-05)
 

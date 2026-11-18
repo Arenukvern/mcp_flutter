@@ -25,6 +25,7 @@ if [[ "${1:-}" == --plan ]]; then
   plan="$(release_runner_retry__plan_from_state_file "$state_file")"
   echo "$plan"
   [[ "$(echo "$plan" | jq -r '.ok')" == "true" ]] || fail "$(echo "$plan" | jq -r '.error')"
+  release_runner_retry__emit_plan_dry_run_trailer "$state_file" "$plan"
   exit 0
 fi
 

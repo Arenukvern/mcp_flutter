@@ -5,6 +5,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- **BREAKING:** `parseStrictPositiveDecimalPort` rejects leading-zero decimal
+  strings (e.g. `08181`) and other non-canonical forms; **7.2.1** accepted
+  leading-zero decimals such as `08181`.
+
 ## [7.2.1] - 2026-11-18
 
 ### Fixed
@@ -13,9 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `core/visual_capture/platform_view_hints.dart`
   ([#173](https://github.com/Arenukvern/mcp_flutter/pull/173)).
 - `parseStrictPositiveDecimalPort` rejects non-finite numeric ports before
-  `toInt()`, leading-zero decimals (`08181`), and other non-canonical forms;
-  connection override errors include a truncated offending value in
-  `details.actual`.
+  `toInt()`; leading-zero decimal port strings (e.g. `08181`) are **accepted**
+  and parse as `8181`; connection override errors include a truncated offending
+  value in `details.actual`.
 
 ### Changed
 
