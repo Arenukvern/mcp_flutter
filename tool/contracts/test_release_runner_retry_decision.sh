@@ -55,13 +55,16 @@ else
   ok "run_attempt 2 still eligible"
 fi
 
-if ! grep -q 'gh run rerun.*--failed' "$SCRIPT"; then
-  fail "script must use single gh run rerun --failed"
+if ! grep -q 'release_runner_retry__invoke_rerun_argv' "$SCRIPT"; then
+  fail "production script must dispatch via release_runner_retry__invoke_rerun_argv"
 fi
-ok "single --failed rerun present"
+if ! grep -qE 'gh run rerun.*--failed' "$RETRY_LIB"; then
+  fail "retry lib must build single gh run rerun --failed argv"
+fi
+ok "single --failed rerun via shared argv builder"
 
-if grep -q 'gh run rerun.*--job' "$SCRIPT"; then
-  fail "script must not loop per-job reruns"
+if grep -qE 'gh run rerun.*--job' "$SCRIPT" "$RETRY_LIB"; then
+  fail "must not loop per-job reruns"
 fi
 ok "no per-job rerun loop"
 
