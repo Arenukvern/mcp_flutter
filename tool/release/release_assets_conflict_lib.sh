@@ -35,35 +35,11 @@ release_conflict__invoke_release_view_argv() {
   "$callback" argv || return 1
 }
 
-release_conflict__contract_view_cb() {
-  if [[ "${RELEASE_CONFLICT_CONTRACT_NO_GH:-}" != 1 ]]; then
-    echo "release_conflict: contract cb without RELEASE_CONFLICT_CONTRACT_NO_GH" >&2
-    return 1
-  fi
-  if [[ "${RELEASE_CONFLICT_CONTRACT_CB_FAIL:-}" == 1 ]]; then
-    echo "simulated gh api failure" >&2
-    return 1
-  fi
-  if [[ -z "${RELEASE_CONFLICT_CONTRACT_FIXTURE:-}" ]]; then
-    echo "release_conflict: RELEASE_CONFLICT_CONTRACT_FIXTURE required in contract mode" >&2
-    return 1
-  fi
-  printf '%s' "$RELEASE_CONFLICT_CONTRACT_FIXTURE"
-  return 0
-}
-
 release_conflict__fetch_release_view_json() {
   local tag="$1"
   local repo="$2"
-  local json
-  if [[ "${RELEASE_CONFLICT_CONTRACT_NO_GH:-}" == 1 ]]; then
-    json="$(release_conflict__invoke_release_view_argv \
-      "$tag" "$repo" release_conflict__contract_view_cb)" || return 1
-  else
-    json="$(release_conflict__invoke_release_view_argv \
-      "$tag" "$repo" release_conflict__cb_run_argv)" || return 1
-  fi
-  printf '%s' "$json"
+  release_conflict__invoke_release_view_argv \
+    "$tag" "$repo" release_conflict__cb_run_argv
 }
 
 release_conflict__expected_asset_names() {
@@ -72,6 +48,16 @@ release_conflict__expected_asset_names() {
     "flutter_mcp_${version}_darwin-arm64.tar.gz" \
     "flutter_mcp_${version}_linux-x64.tar.gz" \
     "checksums.txt"
+}
+
+release_conflict__load_expected_asset_names() {
+  local version="$1"
+  local -n _names_ref=$2
+  _names_ref=()
+  local line
+  while IFS= read -r line; do
+    [[ -n "$line" ]] && _names_ref+=("$line")
+  done < <(release_conflict__expected_asset_names "$version")
 }
 
 # stdout: conflict class — none | partial | full
@@ -94,11 +80,8 @@ release_conflict__conflict_class_from_json() {
     return 0
   fi
 
-  local expected=(
-    "flutter_mcp_${version}_darwin-arm64.tar.gz"
-    "flutter_mcp_${version}_linux-x64.tar.gz"
-    "checksums.txt"
-  )
+  local -a expected=()
+  release_conflict__load_expected_asset_names "$version" expected
 
   local -a conflicts=()
   local asset
@@ -125,11 +108,8 @@ release_conflict__conflict_class_from_json() {
 release_conflict__conflict_names_from_json() {
   local json="$1"
   local version="$2"
-  local expected=(
-    "flutter_mcp_${version}_darwin-arm64.tar.gz"
-    "flutter_mcp_${version}_linux-x64.tar.gz"
-    "checksums.txt"
-  )
+  local -a expected=()
+  release_conflict__load_expected_asset_names "$version" expected
   local -a existing=()
   local -a conflicts=()
   local name asset n

@@ -12,35 +12,48 @@ contract_ok() { echo "test_release_publish_plan: $*"; }
 contract_fail() { echo "test_release_publish_plan: $*" >&2; exit 1; }
 
 command -v jq >/dev/null 2>&1 || fail "jq required"
+
+guard_no_contract_env_in_release_scripts() {
+  local hits
+  hits="$(grep -rnE 'CONTRACT_NO_GH|CONTRACT_FIXTURE|CONTRACT_UPLOAD|CONTRACT_CB_FAIL|RELEASE_.*_CONTRACT' \
+    "$ROOT_DIR/tool/release" 2>/dev/null || true)"
+  [[ -z "$hits" ]] || fail "tool/release must not read contract test env: $hits"
+}
+guard_no_contract_env_in_release_scripts
+
 # shellcheck source=../release/release_publish_lib.sh
 source "$LIB"
 
 CONTRACT_UPLOAD_LOG="$(mktemp)"
-export RELEASE_PUBLISH_CONTRACT_NO_GH=1
-export RELEASE_PUBLISH_CONTRACT_UPLOAD_LOG="$CONTRACT_UPLOAD_LOG"
+PUBLISH_UPLOAD_CB_HOOKED=0
+
+publish_upload_cb_record_ok() {
+  # shellcheck disable=SC2034
+  local -n _cmd=$1
+  {
+    release_publish__argv_to_line "${_cmd[@]}"
+    printf '\n'
+  } >>"$CONTRACT_UPLOAD_LOG"
+  return 0
+}
 
 contract_upload_log_clear() { : >"$CONTRACT_UPLOAD_LOG"; }
 
 contract_require_upload_cb() {
-  [[ "${RELEASE_PUBLISH_CONTRACT_NO_GH:-}" == 1 ]] || \
-    fail "RELEASE_PUBLISH_CONTRACT_NO_GH must be set for publish plan contracts"
-  [[ -n "${RELEASE_PUBLISH_CONTRACT_UPLOAD_LOG:-}" ]] || \
-    fail "RELEASE_PUBLISH_CONTRACT_UPLOAD_LOG must be set for publish plan contracts"
+  [[ "${PUBLISH_UPLOAD_CB_HOOKED:-}" == 1 ]] || \
+    fail "release_publish__cb_run_argv test hook must be installed"
 }
 
 publish_plan_invoker() {
   contract_require_upload_cb
-  RELEASE_PUBLISH_CONTRACT_NO_GH=1 \
-    RELEASE_PUBLISH_CONTRACT_UPLOAD_LOG="$CONTRACT_UPLOAD_LOG" \
-    bash "$SCRIPT" "$@"
+  (publish_release_assets__main "$@")
 }
 
 # shellcheck source=../release/publish_release_assets.sh
 source "$SCRIPT"
-test_fail() { echo "test_release_publish_plan: $*" >&2; exit 1; }
-test_ok() { echo "test_release_publish_plan: $*"; }
-fail() { test_fail "$@"; }
-ok() { test_ok "$@"; }
+
+release_publish__cb_run_argv() { publish_upload_cb_record_ok "$@"; }
+PUBLISH_UPLOAD_CB_HOOKED=1
 
 tmpdir="$(mktemp -d)"
 cleanup() { rm -rf "$tmpdir" "$CONTRACT_UPLOAD_LOG"; }
@@ -431,7 +444,7 @@ rm -rf "$asset_dir/checksums.txt"
 contract_ok "run_verify_and_upload fails closed when checksums write fails"
 
 contract_cb_fail_on_darwin() {
-  release_publish__contract_upload_cb_record_ok "$@" || return 1
+  publish_upload_cb_record_ok "$@" || return 1
   # shellcheck disable=SC2034
   local -n _cmd=$1
   if [[ "${_cmd[*]}" == *"$darwin_name"* && "${_cmd[*]}" != *checksums.txt* ]]; then

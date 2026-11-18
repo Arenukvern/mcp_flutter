@@ -2,12 +2,17 @@
 # Fail when a GitHub release already has expected binary asset names (no overwrite).
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RELEASE_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=release_assets_conflict_lib.sh
-source "$ROOT_DIR/release_assets_conflict_lib.sh"
+source "$RELEASE_SCRIPT_DIR/release_assets_conflict_lib.sh"
 
 fail() { echo "check_release_assets_conflict: $*" >&2; exit 1; }
 ok() { echo "check_release_assets_conflict: $*"; }
+
+check_release_assets_conflict__assert_tag() {
+  local tag="$1"
+  [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail "invalid tag format"
+}
 
 check_release_assets_conflict__main() {
   local TAG="${1:-}"
@@ -17,14 +22,9 @@ check_release_assets_conflict__main() {
   [[ -n "$TAG" && -n "$VERSION" && -n "$REPO" ]] || \
     fail "usage: GITHUB_REPOSITORY=owner/repo check_release_assets_conflict.sh <tag> <version>"
 
-  if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-    fail "invalid tag format"
-  fi
+  check_release_assets_conflict__assert_tag "$TAG"
 
-  if [[ "${RELEASE_CONFLICT_CONTRACT_NO_GH:-}" != 1 ]]; then
-    command -v gh >/dev/null 2>&1 || fail "gh CLI required"
-  fi
-
+  command -v gh >/dev/null 2>&1 || fail "gh CLI required"
   command -v jq >/dev/null 2>&1 || fail "jq required"
 
   local json
@@ -57,16 +57,20 @@ check_release_assets_conflict__main() {
   esac
 }
 
-if [[ "${1:-}" == --plan ]]; then
-  TAG="${2:-}"
-  REPO="${GITHUB_REPOSITORY:-${4:-}}"
+check_release_assets_conflict__plan_main() {
+  local TAG="${2:-}"
+  local REPO="${GITHUB_REPOSITORY:-${4:-}}"
   [[ -n "$TAG" && -n "$REPO" ]] || \
     fail "usage: GITHUB_REPOSITORY=owner/repo check_release_assets_conflict.sh --plan <tag> [version] [repo]"
+  check_release_assets_conflict__assert_tag "$TAG"
   release_conflict__invoke_release_view_argv \
     "$TAG" "$REPO" release_conflict__cb_print_argv
-  exit 0
-fi
+}
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  if [[ "${1:-}" == --plan ]]; then
+    check_release_assets_conflict__plan_main "$@"
+    exit 0
+  fi
   check_release_assets_conflict__main "$@"
 fi

@@ -132,29 +132,7 @@ release_publish__cb_print_argv() {
   release_publish__argv_to_line "${_cmd[@]}"
 }
 
-release_publish__contract_upload_cb_record_ok() {
-  # shellcheck disable=SC2034
-  local -n _cmd=$1
-  if [[ "${RELEASE_PUBLISH_CONTRACT_NO_GH:-}" != 1 ]]; then
-    echo "release_publish: contract upload cb called without RELEASE_PUBLISH_CONTRACT_NO_GH" >&2
-    return 1
-  fi
-  if [[ -z "${RELEASE_PUBLISH_CONTRACT_UPLOAD_LOG:-}" ]]; then
-    echo "release_publish: contract mode requires RELEASE_PUBLISH_CONTRACT_UPLOAD_LOG" >&2
-    return 1
-  fi
-  {
-    release_publish__argv_to_line "${_cmd[@]}"
-    printf '\n'
-  } >>"${RELEASE_PUBLISH_CONTRACT_UPLOAD_LOG}"
-  return 0
-}
-
 release_publish__cb_run_argv() {
-  if [[ "${RELEASE_PUBLISH_CONTRACT_NO_GH:-}" == 1 ]]; then
-    release_publish__contract_upload_cb_record_ok "$@"
-    return $?
-  fi
   # shellcheck disable=SC2034
   local -n _cmd=$1
   "${_cmd[@]}"
