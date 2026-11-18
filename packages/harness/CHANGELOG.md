@@ -3,6 +3,13 @@
 All notable changes to this package are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [7.2.1] - 2026-11-18
+
+### Changed
+
+- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit 7.2.1 release.
 
 ## [7.2.0] - 2026-11-17
 
@@ -66,7 +73,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   actions on the instrumented tier + a catch-all) onto `main` and pins the
   versions that actually exist. `universal_automation_conformance` dev
   dependency follows at `^0.3.0`.
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 

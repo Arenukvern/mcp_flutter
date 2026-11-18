@@ -1,5 +1,17 @@
 # Changelog
 
+## [7.2.1] - 2026-11-18
+
+### Fixed
+
+- Inspection handlers treat an explicit `viewId: 0` as the first Flutter view
+  rather than absent
+  ([#175](https://github.com/Arenukvern/mcp_flutter/pull/175)).
+
+### Changed
+
+- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit 7.2.1 release.
+
 ## [7.2.0] - 2026-11-17
 
 ### Changed

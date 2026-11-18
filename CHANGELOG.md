@@ -3,6 +3,19 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
+## [7.2.1](https://github.com/Arenukvern/mcp_flutter/compare/v7.2.0...v7.2.1) (2026-11-18)
+
+### Bug Fixes
+
+* **Kuljeet Singh ([@KuljeetSinghXDA](https://github.com/KuljeetSinghXDA)):** pair `captureHints` warnings with the capture state the app declared ([#173](https://github.com/Arenukvern/mcp_flutter/pull/173)); strict decimal `port` parsing for resource URI and nested tool `connection` overrides ([#174](https://github.com/Arenukvern/mcp_flutter/pull/174)); keep explicit `viewId: 0` ([#175](https://github.com/Arenukvern/mcp_flutter/pull/175))
+* **Parity ([#189](https://github.com/Arenukvern/mcp_flutter/pull/189)):** complete Kuljeet connection/viewId wiring across server, core, and `mcp_toolkit`; truncated `details.actual` on invalid connection fields
+* **Release ([#189](https://github.com/Arenukvern/mcp_flutter/pull/189)):** automatic retry when hosted macOS runners cancel with zero steps; clobber-safe published uploads; basename `checksums.txt`; partial-recovery pre-upload `sha256sum -c` stages local and re-downloaded remote tarballs in a temp `verify_dir` (remote-only lines check release self-consistency on second download, not authenticity against a prior `checksums.txt`); mock-`gh` release tooling e2e contracts
+
+### Documentation
+
+* Credit **Kuljeet Singh** in README all-contributors ([#187](https://github.com/Arenukvern/mcp_flutter/pull/187))
+* Release binary recovery and Docker/release-please version markers for 7.2.1 ([#189](https://github.com/Arenukvern/mcp_flutter/pull/189))
+
 ## [7.2.0](https://github.com/Arenukvern/mcp_flutter/compare/v7.1.1...v7.2.0) (2026-11-17)
 
 ### Features
