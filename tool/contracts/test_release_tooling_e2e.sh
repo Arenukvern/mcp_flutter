@@ -46,10 +46,18 @@ assert_checksums_format() {
   done <"$checksums"
   local archive="flutter_mcp_7.2.1_linux-x64.tar.gz"
   grep -q " ${archive}\$" "$checksums" || fail "install.sh-style grep miss for $archive"
-  (
-    cd "$asset_dir"
-    sha256sum -c checksums.txt
-  ) || fail "sha256sum -c failed in asset dir"
+  local can_verify_local=true
+  while IFS= read -r line; do
+    [[ -n "$line" ]] || continue
+    local archive="${line##* }"
+    [[ -f "$asset_dir/$archive" ]] || can_verify_local=false
+  done <"$checksums"
+  if [[ "$can_verify_local" == true ]]; then
+    (
+      cd "$asset_dir"
+      sha256sum -c checksums.txt
+    ) || fail "sha256sum -c failed in asset dir"
+  fi
 }
 
 # --- publish: empty published release ---
@@ -83,6 +91,26 @@ bash "$ROOT_DIR/tool/release/publish_release_assets.sh" "$tag" "$asset_dir" \
   || fail "publish draft"
 assert_checksums_format "$asset_dir"
 ok "publish draft clobber"
+
+# --- publish: remote-only tarball union (linux remote, darwin local) ---
+tag="v7.2.1-remote-only"
+asset_dir="$tmpdir/dist-remote-only"
+rm -rf "$asset_dir"
+mkdir -p "$asset_dir"
+echo "remote-linux" >"$tmpdir/remote-linux.tgz.content"
+darwin="$asset_dir/flutter_mcp_7.2.1_darwin-arm64.tar.gz"
+echo "payload-darwin-remote-only" >"$darwin"
+mkdir -p "$MOCK_STATE/assets/$tag"
+cp "$tmpdir/remote-linux.tgz.content" \
+  "$MOCK_STATE/assets/$tag/flutter_mcp_7.2.1_linux-x64.tar.gz"
+echo flutter_mcp_7.2.1_linux-x64.tar.gz >"$MOCK_STATE/assets/$tag/names.txt"
+rm -f "$MOCK_STATE/draft_$tag"
+bash "$ROOT_DIR/tool/release/publish_release_assets.sh" "$tag" "$asset_dir" \
+  || fail "publish with remote-only linux"
+assert_checksums_format "$asset_dir"
+grep -q "flutter_mcp_7.2.1_linux-x64.tar.gz" "$asset_dir/checksums.txt" || \
+  fail "remote-only tarball must appear in checksums"
+ok "publish partial with remote-only tarball in checksums"
 
 # --- publish: checksum mismatch on published asset must fail ---
 tag="v7.2.1-mismatch"

@@ -4,12 +4,12 @@ Release notes for the **repository train** are in the [root CHANGELOG.md](../CHA
 
 
 
-## [Unreleased]
+## [7.2.1] - 2026-11-18
 
 ### Fixed
 
 - Resource URI connection overrides pass `port` query values through strict
-  decimal parsing; errors include the original typed value in `details.actual`.
+  decimal parsing; errors include a truncated offending value in `details.actual`.
 - Inspection handlers and the in-app toolkit treat `viewId: 0` as the first
   Flutter view rather than “absent”.
 

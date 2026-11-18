@@ -104,10 +104,27 @@ write_checksum_line() {
   done
 } >"$checksums_path"
 
+verify_dir="$(mktemp -d)"
+preverify_cleanup() { rm -rf "$verify_dir"; }
+trap preverify_cleanup EXIT
+
+for name in "${all_tar_names[@]}"; do
+  local_path="$ASSET_DIR/$name"
+  if [[ -f "$local_path" ]]; then
+    cp "$local_path" "$verify_dir/$name"
+  elif [[ -n "${remote_names[$name]:-}" ]]; then
+    download_remote_asset_to "$name" "$verify_dir"
+  else
+    fail "pre-upload verify missing tarball $name"
+  fi
+done
+cp "$checksums_path" "$verify_dir/checksums.txt"
 (
-  cd "$ASSET_DIR"
+  cd "$verify_dir"
   sha256sum -c checksums.txt
 ) || fail "pre-upload checksum verification failed for $TAG"
+preverify_cleanup
+trap - EXIT
 
 if [[ "$is_draft" == "true" ]]; then
   gh release upload "$TAG" \

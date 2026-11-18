@@ -5,7 +5,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # Changelog
 
-## [Unreleased]
+## [7.2.1] - 2026-11-18
 
 ### Fixed
 
@@ -13,8 +13,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `toInt()`; leading-zero decimal port strings (e.g. `08181`) are **accepted**
   and parse as `8181`; connection override errors include a truncated offending
   value in `details.actual`.
-
-## [7.2.1] - 2026-11-18
 
 ### Changed
 

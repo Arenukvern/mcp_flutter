@@ -5,24 +5,16 @@
 
 ## [7.2.1](https://github.com/Arenukvern/mcp_flutter/compare/v7.2.0...v7.2.1) (2026-11-18)
 
-
 ### Bug Fixes
 
-* 7.2.1 follow-up — CI health, Kuljeet parity, release runner retry ([2a1890e](https://github.com/Arenukvern/mcp_flutter/commit/2a1890e317b45fb925edb8e9ab217fbfe608108f))
-* address [#189](https://github.com/Arenukvern/mcp_flutter/issues/189) review on runner retry and publish verify ([02000a8](https://github.com/Arenukvern/mcp_flutter/commit/02000a8513e75b1e8a7256e88714a91258c7ee61))
-* **capabilities:** keep an explicit viewId of 0 in inspect_widget_at_point ([46e5d9d](https://github.com/Arenukvern/mcp_flutter/commit/46e5d9de69eabaa7dc1a0e860f932811842f87cf))
-* **core:** pair captureHints warnings with the state the app declared ([82958c7](https://github.com/Arenukvern/mcp_flutter/commit/82958c74bd87b1a4a9d99a20c5517bb71d77eec9))
-* finish Kuljeet viewId/port parity for 7.2.1 ([4a6706b](https://github.com/Arenukvern/mcp_flutter/commit/4a6706b4e53c363ab123c7b385c8c0f69763062d))
-* **release:** basename checksums, gh jq filter, tooling e2e ([9029687](https://github.com/Arenukvern/mcp_flutter/commit/90296877f190fa37dc0825f0adc70785d5e5f3cd))
-* **release:** clobber-safe publish and runner retry round 2 ([4afd59c](https://github.com/Arenukvern/mcp_flutter/commit/4afd59cd28d9220d8c48fd9e88ea760463ac8309))
-* **server:** decode the resource-URI port before the strict connection parser ([d9facf1](https://github.com/Arenukvern/mcp_flutter/commit/d9facf177464ed19bf4a9e6eb47241d8f53d9d41))
-
+* **Connection (Kuljeet Singh — [@KuljeetSinghXDA](https://github.com/KuljeetSinghXDA)):** strict decimal `port` parsing for resource URI and nested tool `connection` overrides; explicit `viewId: 0`; invalid field errors include truncated `details.actual` ([#189](https://github.com/Arenukvern/mcp_flutter/pull/189); closes [#173](https://github.com/Arenukvern/mcp_flutter/issues/173)–[#175](https://github.com/Arenukvern/mcp_flutter/issues/175))
+* **Release:** automatic retry when hosted macOS runners cancel with zero steps; clobber-safe published uploads (SHA-256 verify, basename `checksums.txt`, pre-upload `-c`); mock-`gh` release tooling e2e contracts ([#189](https://github.com/Arenukvern/mcp_flutter/pull/189))
+* **Core:** pair `captureHints` warnings with the capture state the app declared ([#189](https://github.com/Arenukvern/mcp_flutter/pull/189))
 
 ### Documentation
 
-* add KuljeetSinghXDA as a contributor for code, maintenance, and bug ([db59ad3](https://github.com/Arenukvern/mcp_flutter/commit/db59ad32680b0b911e2263578c818035c972c43f))
-* update .all-contributorsrc ([46d77d7](https://github.com/Arenukvern/mcp_flutter/commit/46d77d7528de4489356abc5219d7ca746148e4d4))
-* update README.md ([37336fc](https://github.com/Arenukvern/mcp_flutter/commit/37336fc8ebe824ce27e0b7cb4aedd8065d5e1df5))
+* Credit **Kuljeet Singh** in README all-contributors ([#189](https://github.com/Arenukvern/mcp_flutter/pull/189))
+* Release binary recovery and Docker/release-please version markers for 7.2.1 ([#189](https://github.com/Arenukvern/mcp_flutter/pull/189))
 
 ## [7.2.0](https://github.com/Arenukvern/mcp_flutter/compare/v7.1.1...v7.2.0) (2026-11-17)
 
