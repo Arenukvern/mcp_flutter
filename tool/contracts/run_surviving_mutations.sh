@@ -15,7 +15,10 @@ cp tool/release/release_publish_lib.sh \
   tool/release/maybe_rerun_runner_shortage_jobs.sh \
   "$BACKUP_DIR/"
 
-restore() { cp "$BACKUP_DIR/"*.sh tool/release/; }
+restore() {
+  cp "$BACKUP_DIR/"*.sh tool/release/
+}
+
 trap restore EXIT
 
 run_both() {
@@ -33,48 +36,40 @@ expect_red() {
   return 0
 }
 
-apply_mutation() {
-  local name="$1"
-  shift
-  restore
-  "$@"
-  expect_red "$name"
-}
-
 fail=0
 run_both && echo "BASELINE: GREEN" || { echo "BASELINE: RED"; exit 1; }
 
-apply_mutation skip_strict_superset \
-  sed -i '/\[\[ -f "\$old_file" && -f "\$new_file" \]\]/a\  return 0' tool/release/release_publish_lib.sh \
-  || fail=1
+restore
+sed -i '/\[\[ -f "\$old_file" && -f "\$new_file" \]\]/a\  return 0' tool/release/release_publish_lib.sh
+expect_red "skip_strict_superset" || fail=1
 
-apply_mutation force_clobber_on_published \
-  sed -i 's/checksums_action="upload_new"/checksums_action="clobber_with_draft"/' tool/release/release_publish_lib.sh \
-  || fail=1
+restore
+sed -i 's/checksums_action="upload_new"/checksums_action="clobber_with_draft"/' tool/release/release_publish_lib.sh
+expect_red "force_clobber_on_published" || fail=1
 
-apply_mutation write_checksums_full_paths \
-  sed -i 's/checksums_body+="$(release_publish__checksum_line_from_parts "\$hash" "\$n")"/checksums_body+="$(release_publish__checksum_line_from_parts "\$hash" "\$asset_dir\/\$n")"/' tool/release/release_publish_lib.sh \
-  || fail=1
+restore
+sed -i 's/checksums_body+="$(release_publish__checksum_line_from_parts "\$hash" "\$n")"/checksums_body+="$(release_publish__checksum_line_from_parts "\$hash" "\$asset_dir\/\$n")"/' tool/release/release_publish_lib.sh
+expect_red "write_checksums_full_paths" || fail=1
 
-apply_mutation clobber_published_tarballs \
-  sed -i "s/printf 'gh release upload %s --repo %s %q\\\\n'/printf 'gh release upload %s --repo %s --clobber %q\\\\n'/" tool/release/release_publish_lib.sh \
-  || fail=1
+restore
+sed -i "s/printf 'gh release upload %s --repo %s %q\\\\n'/printf 'gh release upload %s --repo %s --clobber %q\\\\n'/" tool/release/release_publish_lib.sh
+expect_red "clobber_published_tarballs" || fail=1
 
-apply_mutation upload_all_tarballs_in_dir \
-  sed -i "s/'.upload_local_names\[\]?/'*'/" tool/release/release_publish_lib.sh \
-  || fail=1
+restore
+sed -i "s/'.upload_local_names\[\]?/'*'/" tool/release/release_publish_lib.sh
+expect_red "upload_all_tarballs_in_dir" || fail=1
 
-apply_mutation annotation_not_check_run_url \
-  sed -i "s/printf 'gh api %s\/annotations/printf 'gh api repos\/__owner\/repo__\/actions\/jobs\/0\/annotations/" tool/release/release_runner_retry_lib.sh \
-  || fail=1
+restore
+sed -i "s/printf 'gh api %s\/annotations/printf 'gh api repos\/__owner\/repo__\/actions\/jobs\/0\/annotations/" tool/release/release_runner_retry_lib.sh
+expect_red "annotation_not_check_run_url" || fail=1
 
-apply_mutation retry_always_rerun \
-  sed -i '/printf '\''SKIP: decision=%s\\n'\'' "\$decision"/i\  printf '\''gh run rerun %s --repo %s --failed\\n'\'' "$run_id" "$repo"' tool/release/release_runner_retry_lib.sh \
-  || fail=1
+restore
+sed -i '/printf '\''SKIP: decision=%s\\n'\'' "\$decision"/i\  printf '\''gh run rerun %s --repo %s --failed\\n'\'' "$run_id" "$repo"' tool/release/release_runner_retry_lib.sh
+expect_red "retry_always_rerun" || fail=1
 
-apply_mutation classify_job_drift \
-  sed -i 's/release_runner_retry__classify_job/echo ignore #/' tool/release/release_runner_retry_lib.sh \
-  || fail=1
+restore
+sed -i 's/release_runner_retry__classify_job/echo ignore #/' tool/release/release_runner_retry_lib.sh
+expect_red "classify_job_drift" || fail=1
 
 restore
 exit "$fail"
