@@ -102,7 +102,7 @@ release_publish__plan_emit_error() {
   jq -n --arg e "$msg" '{ok: false, error: $e}'
 }
 
-# Build publish plan JSON from state file. See tool/contracts/fixtures/release_publish/*.json
+# Build publish plan JSON from state file (schema documented in test_release_publish_plan.sh).
 release_publish__plan_from_state_file() {
   local state_file="$1"
   [[ -f "$state_file" ]] || {
@@ -120,6 +120,11 @@ release_publish__plan_from_state_file() {
 
   local published_checksums
   published_checksums="$(jq -r '.published_checksums // empty' "$state_file")"
+  if [[ "$(jq -r '.published_checksums_asset_present // false' "$state_file")" == "true" ]] && \
+    [[ -z "${published_checksums//[[:space:]]/}" ]]; then
+    release_publish__plan_emit_error "published checksums.txt is empty (invalid)"
+    return 0
+  fi
   if [[ -n "$published_checksums" ]]; then
   local line
   while IFS= read -r line || [[ -n "$line" ]]; do
@@ -269,6 +274,7 @@ release_publish__verify_checksums_in_dir() {
   while IFS= read -r line || [[ -n "$line" ]]; do
     [[ -z "$line" ]] && continue
     n="${line##* }"
+    [[ "$n" == */* ]] && return 1
     [[ -f "$asset_dir/$n" ]] || return 1
   done <<<"$checksums_body"
   printf '%s' "$checksums_body" >"$asset_dir/checksums.txt"
@@ -276,4 +282,129 @@ release_publish__verify_checksums_in_dir() {
     cd "$asset_dir" || return 1
     sha256sum -c checksums.txt
   )
+}
+
+release_publish__plan_assert_ok() {
+  local plan="$1"
+  local err_msg
+  [[ "$(echo "$plan" | jq -r '.ok')" == "true" ]] || {
+    err_msg="$(echo "$plan" | jq -r '.error // "plan rejected"')"
+    echo "release_publish: $err_msg" >&2
+    return 1
+  }
+}
+
+release_publish__write_checksums_file() {
+  local checksums_path="$1"
+  local checksums_body="$2"
+  printf '%s\n' "${checksums_body%$'\n'}" >"$checksums_path"
+}
+
+release_publish__stage_verify_assets() {
+  local plan="$1"
+  local asset_dir="$2"
+  local verify_dir="$3"
+  local remote_fixture_dir="${4:-}"
+  local published_checksums_file="${5:-}"
+  local gh_tag="${6:-}"
+  local gh_repo="${7:-}"
+
+  local name
+  while IFS= read -r name; do
+    [[ -n "$name" ]] || continue
+    if [[ -f "$asset_dir/$name" ]]; then
+      cp "$asset_dir/$name" "$verify_dir/$name"
+    elif [[ -n "$remote_fixture_dir" && -f "$remote_fixture_dir/$name" ]]; then
+      cp "$remote_fixture_dir/$name" "$verify_dir/$name"
+    elif [[ -n "$gh_tag" && -n "$gh_repo" ]]; then
+      gh release download "$gh_tag" \
+        --repo "$gh_repo" \
+        --dir "$verify_dir" \
+        --pattern "$name"
+    else
+      echo "release_publish: missing staged asset $name" >&2
+      return 1
+    fi
+    if [[ -n "$published_checksums_file" && -f "$published_checksums_file" ]] && \
+      [[ "$name" == *.tar.gz ]]; then
+      local listed_hash
+      listed_hash="$(release_publish__hash_for_basename_in_checksums \
+        "$published_checksums_file" "$name" || true)"
+      if [[ -n "$listed_hash" ]]; then
+        release_publish__verify_listed_remote_hash \
+          "$published_checksums_file" "$name" \
+          "$(sha256sum "$verify_dir/$name" | awk '{print $1}')" || return 1
+      fi
+    fi
+  done < <(echo "$plan" | jq -r '.checksum_tar_names[]?')
+}
+
+release_publish__upload_spec_from_plan() {
+  local plan="$1"
+  echo "$plan" | jq -c \
+    '{upload_local_names: [.upload_local_names[]? | select(length>0)],
+      checksums_upload_action: .checksums_upload_action}'
+}
+
+release_publish__execute_upload_from_plan() {
+  local plan="$1"
+  local asset_dir="$2"
+  local gh_tag="${3:-}"
+  local gh_repo="${4:-}"
+  local dry_run="${5:-false}"
+
+  release_publish__plan_assert_ok "$plan" || return 1
+
+  local checksums_path="$asset_dir/checksums.txt"
+  local action
+  action="$(echo "$plan" | jq -r '.checksums_upload_action')"
+
+  if [[ "$dry_run" == "true" ]]; then
+    release_publish__upload_spec_from_plan "$plan"
+    return 0
+  fi
+
+  [[ -n "$gh_tag" && -n "$gh_repo" ]] || {
+    echo "release_publish: gh tag and repo required for upload" >&2
+    return 1
+  }
+
+  if [[ "$action" == "clobber_with_draft" ]]; then
+    local -a upload_paths=()
+    while IFS= read -r name; do
+      [[ -n "$name" ]] || continue
+      upload_paths+=( "$asset_dir/$name" )
+    done < <(echo "$plan" | jq -r '.upload_local_names[]?')
+    upload_paths+=( "$checksums_path" )
+    gh release upload "$gh_tag" \
+      --repo "$gh_repo" \
+      --clobber \
+      "${upload_paths[@]}"
+    return 0
+  fi
+
+  while IFS= read -r name; do
+    [[ -n "$name" ]] || continue
+    gh release upload "$gh_tag" \
+      --repo "$gh_repo" \
+      "$asset_dir/$name"
+  done < <(echo "$plan" | jq -r '.upload_local_names[]?')
+
+  case "$action" in
+    upload_new)
+      gh release upload "$gh_tag" --repo "$gh_repo" "$checksums_path"
+      ;;
+    upload_checksums_superset)
+      gh release upload "$gh_tag" \
+        --repo "$gh_repo" \
+        --clobber \
+        "$checksums_path"
+      ;;
+    keep_checksums)
+      ;;
+    *)
+      echo "release_publish: unknown checksums_upload_action: $action" >&2
+      return 1
+      ;;
+  esac
 }

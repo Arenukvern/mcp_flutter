@@ -19,9 +19,6 @@ int cliPositivePort(
   if (value == null || value.isEmpty) {
     return fallback;
   }
-  if (RegExp(r'^0[0-9]+$').hasMatch(value)) {
-    throw CliPortUsageException(flag, value);
-  }
   final parsed = parseStrictPositiveDecimalPort(value);
   if (parsed == null) {
     throw CliPortUsageException(flag, value);
@@ -32,9 +29,6 @@ int cliPositivePort(
 int? cliOptionalPort(String? value, {required String flag}) {
   if (value == null || value.isEmpty) {
     return null;
-  }
-  if (RegExp(r'^0[0-9]+$').hasMatch(value)) {
-    throw CliPortUsageException(flag, value);
   }
   final parsed = parseStrictPositiveDecimalPort(value);
   if (parsed == null) {

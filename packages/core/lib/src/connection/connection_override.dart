@@ -434,11 +434,11 @@ int? parseStrictPositiveDecimalPort(Object? raw) {
         raw.startsWith('0X')) {
       return null;
     }
-    if (!RegExp(r'^[0-9]+$').hasMatch(raw)) {
+    if (!RegExp(r'^[1-9][0-9]*$').hasMatch(raw)) {
       return null;
     }
     final value = int.tryParse(raw);
-    if (value == null || value <= 0 || value > kMaxTcpPort) {
+    if (value == null || value > kMaxTcpPort) {
       return null;
     }
     return value;

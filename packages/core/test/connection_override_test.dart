@@ -170,14 +170,13 @@ void main() {
       expect(result.preconnectCommand?.port, 8181);
     });
 
-    test('accepts leading-zero decimal port strings (08181 -> 8181)', () {
+    test('rejects leading-zero decimal port strings (08181)', () {
       final result = parseConnectionOverrideArguments(
         arguments: {
           'connection': {'mode': 'manual', 'host': '127.0.0.1', 'port': '08181'},
         },
       );
-      expect(result.error, isNull);
-      expect(result.preconnectCommand?.port, 8181);
+      expect(result.error, isNotNull);
     });
 
     test('truncates long details.actual values', () {

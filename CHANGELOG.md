@@ -5,10 +5,14 @@
 
 ## [Unreleased]
 
+### ⚠ BREAKING CHANGES
+
+* **cli:** global port flags (`--dart-vm-port`, `--web-browser-debugging-port`, `--web-port`, and CDP-related CLI options) now reject leading-zero decimals (`08181`), signed (`+8181`), hex (`0x1F`), whitespace-padded, and out-of-range values with exit **64** and a JSON envelope; **7.2.1** accepted some of these forms for `--dart-vm-port`.
+* **core:** `parseStrictPositiveDecimalPort` rejects leading-zero decimal strings (e.g. `08181`) everywhere connection overrides and resource URIs are parsed.
+
 ### Bug Fixes
 
-* **Release:** plan-mode contract tests drive real `publish_release_assets.sh` / `maybe_rerun_runner_shortage_jobs.sh` decisions via shared libs (no mock `gh`); fail-closed published `checksums.txt` manifest checks; strict superset before clobbering `checksums.txt` on published releases.
-* **cli:** invalid `--dart-vm-port` / web port flags exit **64** with a JSON envelope (reject `0`, out-of-range, signed, hex, whitespace, and leading-zero decimals).
+* **Release:** plan-driven `publish_release_assets.sh` verify/upload; fail-closed published `checksums.txt`; strict superset before clobbering `checksums.txt` on published releases.
 
 ## [7.2.1](https://github.com/Arenukvern/mcp_flutter/compare/v7.2.0...v7.2.1) (2026-11-18)
 
@@ -220,7 +224,7 @@
 * flutter MCP harness — ToolkitDriver, IntentDriverRouter, showcase consolidation ([4fc4c27](https://github.com/Arenukvern/mcp_flutter/commit/4fc4c2770168f26f27fc360b32bd9804f962f1e4))
 * flutter MCP harness — ToolkitDriver, IntentDriverRouter, showcase consolidation ([#146](https://github.com/Arenukvern/mcp_flutter/issues/146)) ([4fc4c27](https://github.com/Arenukvern/mcp_flutter/commit/4fc4c2770168f26f27fc360b32bd9804f962f1e4))
 * Delegate `codegen sync` and `init intentcall-platform` to `intentcall_cli`; add `jaspr_web_example` with the three-gate CI recipe.
-* **focus_widget:** give a widget keyboard focus by ref and prove it ([7028e44](https://github.com/Arenukvern/mcp_flutter/commit/7028e4453b14d4e963a20a05f6b8ec73fe999361))
+* **`fmt_focus_widget`:** give a widget keyboard focus by ref and prove it ([7028e44](https://github.com/Arenukvern/mcp_flutter/commit/7028e4453b14d4e963a20a05f6b8ec73fe999361))
 * **harness:** add FlutterRunTarget and Dart showcase launcher ([dc4c0ce](https://github.com/Arenukvern/mcp_flutter/commit/dc4c0ce589bba770ff93c128b52ae502b9108436))
 * **harness:** add IntentDriverRouter for hint-routed driver invocation ([cb0059d](https://github.com/Arenukvern/mcp_flutter/commit/cb0059d2ed79ab5b033785e3e8cdb5678ebb5da3))
 * **harness:** ChromeAppTarget anti-backgrounding flags; complete the automation-catalog action surface ([55127f9](https://github.com/Arenukvern/mcp_flutter/commit/55127f9554566d3f869a76cad185f1e3c5a67048))
@@ -705,6 +709,22 @@
 
 * **release:** exercise release token for 4.0.0-dev.3 ([142e2b4](https://github.com/Arenukvern/mcp_flutter/commit/142e2b4bb2677b19d0c8859e11907a3fac1bcc44))
 
+## [4.0.0-dev.1](https://github.com/Arenukvern/mcp_flutter/compare/v4.0.0.0-dev.0...v4.0.0-dev.1) (2026-06-17)
+
+
+### Added
+
+* `fmt_migrate_agent_entries` MCP tool (report-only default; `apply: true` to rewrite sources).
+
+### Changed
+
+* Raised workspace Dart SDK floor to `>=3.12.0 <4.0.0`; Flutter SDK floor `>=3.44.0 <4.0.0` for Flutter packages; Docker toolchain `dart:3.12.0-sdk`.
+* **Breaking:** `mcp_server_dart/lib/flutter_mcp_core.dart` no longer promises compatibility for removed private session/state/snapshot internals; use `intentcall_session` for `IntentSessionManager`, `StateStore`, `StateLockManager`, `SafeFileWriter`, and `IntentSnapshotStore`.
+* `ToolRegistration` / `ResourceRegistration` canonical types moved to `intentcall_core`; kernel re-exports.
+* Dogfood harness paths use `--dart-define=INTENTCALL_HARNESS_ROOT` / `INTENTCALL_VISUAL_RECONSTRUCT_ROOT`.
+* `MigrateAgentEntriesMigrator` moved to `intentcall_core` (shared by CLI and MCP tool).
+* `intentcall_testing`: ecsly-style builder → `invokeWire` → `AgentResult.envelope` test.
+
 ## [4.0.0-dev.2](https://github.com/Arenukvern/mcp_flutter/compare/v4.0.0-dev.1...v4.0.0-dev.2) (2026-06-17)
 
 
@@ -716,20 +736,11 @@
 * Phase 7 **7.1/7.2**: `intentcall_*` packages under `intentcall/packages/`.
 * `flutter_test_app` web dogfood: `WebMcpPublishAdapter`; Xcode intentcall Codegen Run Script (ios/macos).
 * `flutter-mcp-toolkit init intentcall-platform` — idempotent Gradle, manifest, `index.html`, and codegen shell hooks with `--check` for CI.
-* `fmt_migrate_agent_entries` MCP tool (report-only default; `apply: true` to rewrite sources).
 * `intentcall_platform` thin Flutter plugin + `intentcallInvokeLinkListener` (`app_links`) for `intentcall://invoke/<qualifiedName>`.
 * CI / `make check-contracts`: `codegen sync --check` on `flutter_test_app`.
 * ADR [0008](decisions/0008_web_agent_invoke_js_only.mdx): web `/agent/invoke` Flutter route optional (JS + WebMCP sufficient).
 * add steward hosted dependency gate ([3b91408](https://github.com/Arenukvern/mcp_flutter/commit/3b91408f266480d7822df409c2efbfc34f45e99f))
 
-### Changed
-
-* Raised workspace Dart SDK floor to `>=3.12.0 <4.0.0`; Flutter SDK floor `>=3.44.0 <4.0.0` for Flutter packages; Docker toolchain `dart:3.12.0-sdk`.
-* **Breaking:** `mcp_server_dart/lib/flutter_mcp_core.dart` no longer promises compatibility for removed private session/state/snapshot internals; use `intentcall_session` for `IntentSessionManager`, `StateStore`, `StateLockManager`, `SafeFileWriter`, and `IntentSnapshotStore`.
-* `ToolRegistration` / `ResourceRegistration` canonical types moved to `intentcall_core`; kernel re-exports.
-* Dogfood harness paths use `--dart-define=INTENTCALL_HARNESS_ROOT` / `INTENTCALL_VISUAL_RECONSTRUCT_ROOT`.
-* `MigrateAgentEntriesMigrator` moved to `intentcall_core` (shared by CLI and MCP tool).
-* `intentcall_testing`: ecsly-style builder → `invokeWire` → `AgentResult.envelope` test.
 * promote hosted dependency steward gate ([82868e8](https://github.com/Arenukvern/mcp_flutter/commit/82868e83145fd9c56dbd45f677c42ea39b60e4ce))
 
 

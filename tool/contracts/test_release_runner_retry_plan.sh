@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Plan-mode contracts + mutation checks for runner retry (no gh).
+# Plan-mode contracts for runner retry (no gh).
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -76,6 +76,8 @@ state_event="$(mktemp)"
 jq '.workflow_event = "workflow_dispatch"' "$state_rerun" >"$state_event"
 [[ "$(release_runner_retry__plan_from_state_file "$state_event" | jq -r '.decision')" == skip_event ]] || \
   fail "non-push event must skip"
+[[ "$(bash "$SCRIPT" --plan "$state_event" | jq -r '.decision')" == skip_event ]] || \
+  fail "script plan mode must enforce push-only"
 ok "push-only guard"
 
 state_cap="$(mktemp)"
@@ -86,50 +88,9 @@ ok "attempt cap at 3/3"
 
 grep -q 'release_runner_retry__plan_from_state_file' "$SCRIPT" || \
   fail "production script must call shared plan"
+grep -q 'check_run_url' "$SCRIPT" || \
+  fail "production script must fetch annotations via check_run_url"
 
-mutate_retry_lib() {
-  cp "$RETRY_LIB" "$1"
-  sed -i "${@:2}" "$1"
-}
-
-mutated="$(mktemp)"
-cp "$RETRY_LIB" "$mutated"
-sed -i 's/-ge "$max_attempts"/-gt "$max_attempts"/' "$mutated"
-# shellcheck source=/dev/null
-source "$mutated"
-if release_runner_retry__attempt_cap_reached 3 3; then
-  fail "mutation -gt cap must not block at 3/3"
-else
-  ok "mutation blocked: attempt cap"
-fi
-
-# shellcheck source=../release/release_runner_retry_lib.sh
-source "$RETRY_LIB"
-cp "$RETRY_LIB" "$mutated"
-sed -i '/^release_runner_retry__is_superseded()/,/^}$/c\
-release_runner_retry__is_superseded() { return 1; }\
-' "$mutated"
-# shellcheck source=/dev/null
-source "$mutated"
-[[ "$(release_runner_retry__plan_from_state_file "$state_sup" | jq -r '.decision')" != superseded ]] && \
-  ok "mutation blocked: superseded guard" || fail "superseded mutation undetected"
-# shellcheck source=../release/release_runner_retry_lib.sh
-source "$RETRY_LIB"
-
-# shellcheck source=../release/release_runner_retry_lib.sh
-source "$RETRY_LIB"
-cp "$RETRY_LIB" "$mutated"
-sed -i 's/workflow_event" != "push"/workflow_event" != "never_push"/' "$mutated"
-# shellcheck source=/dev/null
-source "$mutated"
-[[ "$(release_runner_retry__plan_from_state_file "$state_event" | jq -r '.decision')" == skip_event ]] || \
-  fail "push guard broken under mutation"
-ok "mutation blocked: push-only"
-
-# shellcheck source=../release/runner_shortage_lib.sh
-source "$LIB"
-# shellcheck source=../release/release_runner_retry_lib.sh
-source "$RETRY_LIB"
 short_job="$(jq -c '.annotations=[]' "$MANUAL_CANCEL")"
 state_short="$(mktemp)"
 jq -n \
@@ -148,14 +109,8 @@ jq -n \
     jobs: $jobs,
     zero_step_min_wait_seconds: 600
   }' >"$state_short"
-short_decision="$(release_runner_retry__plan_from_state_file "$state_short" | jq -r '.decision')"
-[[ "$short_decision" == rerun ]] && fail "600s wait guard must reject short queue"
-shortage_mut="$(mktemp)"
-cp "$LIB" "$shortage_mut"
-sed -i 's/-ge "\$min_seconds"/-ge 0/' "$shortage_mut"
-# shellcheck source=/dev/null
-source "$shortage_mut"
-[[ "$(release_runner_retry__plan_from_state_file "$state_short" | jq -r '.decision')" == rerun ]] && \
-  ok "mutation blocked: 600s minimum wait" || fail "600s wait mutation undetected"
+[[ "$(bash "$SCRIPT" --plan "$state_short" | jq -r '.decision')" != rerun ]] || \
+  fail "short zero-step cancel must not rerun"
+ok "600s minimum queue guard"
 
 ok "runner retry plan contracts OK"

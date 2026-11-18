@@ -61,8 +61,11 @@ fi
 jobs_json="$(gh api "repos/$REPO/actions/runs/$RUN_ID/jobs" --paginate)"
 
 enriched_jobs='[]'
+real_failure_jobs=()
 while IFS= read -r job_line; do
   [[ -n "$job_line" ]] || continue
+  job_id="$(echo "$job_line" | jq -r '.id')"
+  job_name="$(echo "$job_line" | jq -r '.name')"
   check_run_url="$(echo "$job_line" | jq -r '.check_run_url // empty')"
   annotations='[]'
   if [[ -n "$check_run_url" && "$check_run_url" != "null" ]]; then
@@ -70,6 +73,23 @@ while IFS= read -r job_line; do
   fi
   job_with_ann="$(echo "$job_line" | jq -c --argjson ann "$annotations" '. + {annotations: $ann}')"
   enriched_jobs="$(jq -c --argjson j "$job_with_ann" '. + [$j]' <<<"$enriched_jobs")"
+
+  job_class="$(release_runner_retry__classify_job \
+    "$job_with_ann" "$NOT_ACQUIRED_RE_DEFAULT" "$ZERO_STEP_MIN_WAIT_SECONDS_DEFAULT")"
+  case "$job_class" in
+    unclassified)
+      log "- Unclassified: $job_name ($job_id) (failure, zero failed steps)"
+      ;;
+    shortage_annotation)
+      log "- Classified runner shortage (annotation): $job_name ($job_id)"
+      ;;
+    shortage_zero)
+      log "- Classified runner shortage (zero steps, waited >= ${ZERO_STEP_MIN_WAIT_SECONDS_DEFAULT}s): $job_name ($job_id)"
+      ;;
+    real_failure)
+      real_failure_jobs+=("$job_name ($job_id)")
+      ;;
+  esac
 done < <(echo "$jobs_json" | jq -c '.jobs[]?')
 
 state_file="$(mktemp)"
@@ -121,7 +141,10 @@ case "$decision" in
     ;;
   real_failure)
     log ""
-    log "**No rerun:** real build/test failures or non-shortage cancellations."
+    log "**No rerun:** real build/test failures or non-shortage cancellations:"
+    for name in "${real_failure_jobs[@]}"; do
+      log "- $name"
+    done
     exit 0
     ;;
   unclassified)

@@ -29,6 +29,52 @@ release_runner_retry__attempt_cap_reached() {
   [[ "$run_attempt" -ge "$max_attempts" ]]
 }
 
+# Emits: ignore | real_failure | unclassified | shortage_annotation | shortage_zero
+release_runner_retry__classify_job() {
+  local job_line="$1"
+  local not_acquired_re="$2"
+  local min_wait="$3"
+  local conclusion runner_id step_count created_job completed_job ann
+
+  conclusion="$(echo "$job_line" | jq -r '.conclusion')"
+
+  if [[ "$conclusion" == "failure" ]]; then
+    local failed_steps
+    failed_steps="$(echo "$job_line" | jq -r \
+      '[.steps[]? | select(.conclusion == "failure")] | length')"
+    if [[ "$failed_steps" -gt 0 ]]; then
+      echo real_failure
+      return 0
+    fi
+    echo unclassified
+    return 0
+  fi
+
+  [[ "$conclusion" == "cancelled" ]] || {
+    echo ignore
+    return 0
+  }
+
+  runner_id="$(echo "$job_line" | jq -r '.runner_id')"
+  step_count="$(echo "$job_line" | jq -r '.steps | length')"
+  created_job="$(echo "$job_line" | jq -r '.created_at // empty')"
+  completed_job="$(echo "$job_line" | jq -r '.completed_at // empty')"
+  ann="$(echo "$job_line" | jq -c '.annotations // []')"
+
+  if runner_shortage__annotation_matches "$ann" "$not_acquired_re"; then
+    echo shortage_annotation
+    return 0
+  fi
+
+  if runner_shortage__zero_step_shortage_candidate \
+    "$runner_id" "$step_count" "$created_job" "$completed_job" "$min_wait"; then
+    echo shortage_zero
+    return 0
+  fi
+
+  echo real_failure
+}
+
 release_runner_retry__plan_emit() {
   local decision="$1"
   local sleep_seconds="$2"

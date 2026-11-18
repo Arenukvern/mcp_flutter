@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Publish release tarballs: draft releases use --clobber; published releases fill gaps only.
+# Publish release tarballs using a shared upload plan (draft clobber vs published gap-fill).
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -21,25 +21,71 @@ release_publish__safe_cleanup() {
   return 0
 }
 
+file_sha256() {
+  sha256sum "$1" | awk '{print $1}'
+}
+
+release_publish__run_verify_and_upload() {
+  local plan="$1"
+  local asset_dir="$2"
+  local remote_fixture_dir="${3:-}"
+  local published_checksums_file="${4:-}"
+  local gh_tag="${5:-}"
+  local gh_repo="${6:-}"
+  local dry_run="${7:-false}"
+
+  release_publish__plan_assert_ok "$plan" || return 1
+
+  local checksums_body
+  checksums_body="$(echo "$plan" | jq -r '.checksums_body')"
+  local verify_dir
+  verify_dir="$(mktemp -d)"
+
+  release_publish__stage_verify_assets \
+    "$plan" "$asset_dir" "$verify_dir" \
+    "$remote_fixture_dir" "$published_checksums_file" \
+    "$gh_tag" "$gh_repo" || {
+      release_publish__safe_cleanup "$verify_dir" ""
+      return 1
+    }
+
+  release_publish__verify_checksums_in_dir "$verify_dir" "$checksums_body" || {
+    release_publish__safe_cleanup "$verify_dir" ""
+    return 1
+  }
+
+  release_publish__safe_cleanup "$verify_dir" ""
+
+  local checksums_path="$asset_dir/checksums.txt"
+  release_publish__write_checksums_file "$checksums_path" "$checksums_body"
+
+  release_publish__execute_upload_from_plan \
+    "$plan" "$asset_dir" "$gh_tag" "$gh_repo" "$dry_run"
+}
+
 if [[ "${1:-}" == --plan ]]; then
   state_file="${2:-}"
   [[ -f "$state_file" ]] || fail "usage: publish_release_assets.sh --plan <state.json>"
   asset_dir="$(jq -r '.asset_dir' "$state_file")"
   [[ -d "$asset_dir" ]] || fail "asset_dir missing in state"
+  remote_fixture_dir="$(jq -r '.remote_fixture_dir // empty' "$state_file")"
+
   plan="$(release_publish__plan_from_state_file "$state_file")"
   echo "$plan"
-  plan_ok="$(echo "$plan" | jq -r '.ok')"
-  [[ "$plan_ok" == "true" ]] || fail "$(echo "$plan" | jq -r '.error')"
-  checksums_body="$(echo "$plan" | jq -r '.checksums_body')"
-  verify_dir="$(mktemp -d)"
-  while IFS= read -r name; do
-    [[ -n "$name" ]] || continue
-    cp "$asset_dir/$name" "$verify_dir/$name" 2>/dev/null || \
-      fail "plan verify missing $name in asset_dir"
-  done < <(echo "$plan" | jq -r '.checksum_tar_names[]?')
-  release_publish__verify_checksums_in_dir "$verify_dir" "$checksums_body" || \
-    fail "plan mode sha256sum -c failed"
-  release_publish__safe_cleanup "$verify_dir" ""
+  release_publish__plan_assert_ok "$plan" || fail "$(echo "$plan" | jq -r '.error')"
+
+  published_manifest=""
+  pub_manifest_tmp=""
+  if [[ -n "$(jq -r '.published_checksums // empty' "$state_file")" ]]; then
+    pub_manifest_tmp="$(mktemp)"
+    jq -r '.published_checksums' "$state_file" >"$pub_manifest_tmp"
+    published_manifest="$pub_manifest_tmp"
+  fi
+
+  release_publish__run_verify_and_upload \
+    "$plan" "$asset_dir" "$remote_fixture_dir" "$published_manifest" \
+    "" "" "true" || fail "plan mode verify failed"
+  [[ -n "$pub_manifest_tmp" ]] && rm -f "$pub_manifest_tmp"
   ok "plan mode OK"
   exit 0
 fi
@@ -56,10 +102,6 @@ shopt -s nullglob
 local_tars=( "$ASSET_DIR"/*.tar.gz )
 [[ ${#local_tars[@]} -gt 0 ]] || fail "no local *.tar.gz in $ASSET_DIR"
 
-file_sha256() {
-  sha256sum "$1" | awk '{print $1}'
-}
-
 release_json="$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,assets)"
 is_draft="$(echo "$release_json" | jq -r '.isDraft')"
 
@@ -68,15 +110,20 @@ mapfile -t local_tar_names < <(
 )
 
 remote_assets_json="$(echo "$release_json" | jq -c '[.assets[] | {name: .name}]')"
+checksums_asset_present="$(echo "$release_json" | jq \
+  '[(.assets[]?.name // "")] | index("checksums.txt") != null')"
+
 published_checksums=""
 published_checksums_dir=""
-if [[ "$is_draft" != "true" ]] && \
-  echo "$release_json" | jq -e '.assets[] | select(.name=="checksums.txt")' >/dev/null; then
+if [[ "$is_draft" != "true" && "$checksums_asset_present" == "true" ]]; then
   published_checksums_dir="$(mktemp -d)"
   gh release download "$TAG" \
     --repo "$GITHUB_REPOSITORY" \
     --dir "$published_checksums_dir" \
     --pattern checksums.txt
+  if [[ ! -s "$published_checksums_dir/checksums.txt" ]]; then
+    fail "published checksums.txt is empty (invalid)"
+  fi
   published_checksums="$(cat "$published_checksums_dir/checksums.txt")"
   release_publish__validate_checksums_manifest "$published_checksums_dir/checksums.txt" || \
     fail "published checksums.txt has invalid lines"
@@ -113,6 +160,7 @@ done
 state_file="$(mktemp)"
 jq -n \
   --argjson is_draft "$(echo "$release_json" | jq '.isDraft')" \
+  --argjson published_checksums_asset_present "$checksums_asset_present" \
   --arg asset_dir "$ASSET_DIR" \
   --arg published_checksums "$published_checksums" \
   --argjson local_tars "$(printf '%s\n' "${local_tar_names[@]}" | jq -R . | jq -s .)" \
@@ -121,6 +169,7 @@ jq -n \
   --argjson remote_hashes "$remote_hashes_json" \
   '{
     is_draft: $is_draft,
+    published_checksums_asset_present: $published_checksums_asset_present,
     asset_dir: $asset_dir,
     published_checksums: (if $published_checksums=="" then null else $published_checksums end),
     local_tars: $local_tars,
@@ -131,77 +180,20 @@ jq -n \
 
 plan="$(release_publish__plan_from_state_file "$state_file")"
 rm -f "$state_file"
-plan_ok="$(echo "$plan" | jq -r '.ok')"
-[[ "$plan_ok" == "true" ]] || fail "$(echo "$plan" | jq -r '.error')"
+release_publish__plan_assert_ok "$plan" || fail "$(echo "$plan" | jq -r '.error')"
 
-checksums_body="$(echo "$plan" | jq -r '.checksums_body')"
-checksums_path="$ASSET_DIR/checksums.txt"
-printf '%s' "$checksums_body" >"$checksums_path"
+pub_manifest_file=""
+if [[ -n "$published_checksums_dir" && -f "$published_checksums_dir/checksums.txt" ]]; then
+  pub_manifest_file="$published_checksums_dir/checksums.txt"
+fi
 
-verify_dir="$(mktemp -d)"
-trap 'release_publish__safe_cleanup "$verify_dir" "$published_checksums_dir"' EXIT
-
-while IFS= read -r name; do
-  [[ -n "$name" ]] || continue
-  if [[ -f "$ASSET_DIR/$name" ]]; then
-    cp "$ASSET_DIR/$name" "$verify_dir/$name"
-  else
-    gh release download "$TAG" \
-      --repo "$GITHUB_REPOSITORY" \
-      --dir "$verify_dir" \
-      --pattern "$name"
-    if [[ -n "$published_checksums" && "$name" == *.tar.gz ]]; then
-      release_publish__verify_listed_remote_hash \
-        "$published_checksums_dir/checksums.txt" "$name" \
-        "$(file_sha256 "$verify_dir/$name")" || \
-        fail "pre-upload verify: $name vs published checksums.txt"
-    fi
-  fi
-done < <(echo "$plan" | jq -r '.checksum_tar_names[]?')
-
-release_publish__verify_checksums_in_dir "$verify_dir" "$checksums_body" || \
-  fail "pre-upload checksum verification failed for $TAG"
-release_publish__safe_cleanup "$verify_dir" "$published_checksums_dir"
+trap 'release_publish__safe_cleanup "" "$published_checksums_dir"' EXIT
+release_publish__run_verify_and_upload \
+  "$plan" "$ASSET_DIR" "" "$pub_manifest_file" \
+  "$TAG" "$GITHUB_REPOSITORY" "false" || fail "publish verify/upload failed"
+release_publish__safe_cleanup "" "$published_checksums_dir"
 trap - EXIT
 published_checksums_dir=""
 
-if [[ "$is_draft" == "true" ]]; then
-  gh release upload "$TAG" \
-    --repo "$GITHUB_REPOSITORY" \
-    --clobber \
-    "${local_tars[@]}" "$checksums_path"
-else
-  while IFS= read -r name; do
-    [[ -n "$name" ]] || continue
-    gh release upload "$TAG" \
-      --repo "$GITHUB_REPOSITORY" \
-      "$ASSET_DIR/$name"
-  done < <(echo "$plan" | jq -r '.upload_local_names[]?')
-
-  case "$(echo "$plan" | jq -r '.checksums_upload_action')" in
-    upload_new|upload_checksums_superset)
-      if [[ "$(echo "$plan" | jq -r '.checksums_upload_action')" == upload_checksums_superset ]]; then
-        gh release upload "$TAG" \
-          --repo "$GITHUB_REPOSITORY" \
-          --clobber \
-          "$checksums_path"
-      else
-        gh release upload "$TAG" \
-          --repo "$GITHUB_REPOSITORY" \
-          "$checksums_path"
-      fi
-      ;;
-    clobber_with_draft)
-      gh release upload "$TAG" \
-        --repo "$GITHUB_REPOSITORY" \
-        --clobber \
-        "${local_tars[@]}" "$checksums_path"
-      ;;
-    keep_checksums)
-      ok "keeping published checksums.txt"
-      ;;
-  esac
-fi
-
-upload_count="$(echo "$plan" | jq -r '.upload_local_names | length')"
+upload_count="$(echo "$plan" | jq '[.upload_local_names[]? | select(. != "")] | length')"
 ok "published ${#local_tar_names[@]} local tarball(s); draft=$is_draft; new_uploads=$upload_count"
