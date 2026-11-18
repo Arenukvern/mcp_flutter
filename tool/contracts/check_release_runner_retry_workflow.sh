@@ -15,8 +15,8 @@ ok() { echo "check_release_runner_retry_workflow: $*"; }
 if ! grep -q 'workflows: \[Release\]' "$WF"; then
   fail "workflow must trigger on Release completion"
 fi
-if ! grep -q 'repository.full_name == github.repository' "$WF"; then
-  fail "workflow must refuse fork/upstream mismatches"
+if ! grep -q 'head_repository.full_name == github.repository' "$WF"; then
+  fail "workflow must refuse fork PRs via head_repository"
 fi
 if ! grep -q 'actions: write' "$WF"; then
   fail "workflow must request actions: write"

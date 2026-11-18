@@ -406,16 +406,18 @@ Map<String, Object?> _selectorArgsFromConnectCommand(
 }
 
 /// Parses a strict decimal positive port (no sign prefix, hex, or whitespace).
+const int kMaxTcpPort = 65535;
+
 int? parseStrictPositiveDecimalPort(Object? raw) {
   if (raw is int) {
-    return raw > 0 ? raw : null;
+    return raw > 0 && raw <= kMaxTcpPort ? raw : null;
   }
   if (raw is num) {
     if (raw != raw.toInt()) {
       return null;
     }
     final value = raw.toInt();
-    return value > 0 ? value : null;
+    return value > 0 && value <= kMaxTcpPort ? value : null;
   }
   if (raw is String) {
     if (raw.isEmpty) {
@@ -433,7 +435,7 @@ int? parseStrictPositiveDecimalPort(Object? raw) {
       return null;
     }
     final value = int.tryParse(raw);
-    if (value == null || value <= 0) {
+    if (value == null || value <= 0 || value > kMaxTcpPort) {
       return null;
     }
     return value;

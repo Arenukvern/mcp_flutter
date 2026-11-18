@@ -169,6 +169,25 @@ void main() {
       expect(result.preconnectCommand?.port, 8181);
     });
 
+    test('accepts port 65535 and rejects 99999', () {
+      final ok = parseConnectionOverrideArguments(
+        arguments: {
+          'connection': {'port': '65535'},
+        },
+      );
+      expect(ok.error, isNull);
+      expect(ok.preconnectCommand?.port, 65535);
+
+      for (final bad in ['99999', 99999, 65536]) {
+        final result = parseConnectionOverrideArguments(
+          arguments: {
+            'connection': {'port': bad},
+          },
+        );
+        expect(result.error, isNotNull, reason: 'expected reject $bad');
+      }
+    });
+
     // 6. Mode out of enum — rejected.
     test('connection.mode: "galaxy" → structured error', () {
       final result = parseConnectionOverrideArguments(

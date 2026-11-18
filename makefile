@@ -22,6 +22,7 @@ check-contracts:
 	bash tool/contracts/test_skill_asset_sync_idempotence.sh && \
 	bash tool/contracts/check_release_workflow.sh && \
 	bash tool/contracts/check_release_runner_retry_workflow.sh && \
+	bash tool/contracts/test_release_runner_retry_decision.sh && \
 	bash tool/contracts/test_resolve_release_tag.sh && \
 	bash tool/contracts/test_release_recovery_flow.sh && \
 	bash tool/contracts/test_publish_pub_packages_oidc.sh && \
