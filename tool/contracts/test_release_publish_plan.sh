@@ -15,8 +15,35 @@ command -v jq >/dev/null 2>&1 || fail "jq required"
 # shellcheck source=../release/release_publish_lib.sh
 source "$LIB"
 
+CONTRACT_UPLOAD_LOG="$(mktemp)"
+export RELEASE_PUBLISH_CONTRACT_NO_GH=1
+export RELEASE_PUBLISH_CONTRACT_UPLOAD_LOG="$CONTRACT_UPLOAD_LOG"
+
+contract_upload_log_clear() { : >"$CONTRACT_UPLOAD_LOG"; }
+
+contract_require_upload_cb() {
+  [[ "${RELEASE_PUBLISH_CONTRACT_NO_GH:-}" == 1 ]] || \
+    fail "RELEASE_PUBLISH_CONTRACT_NO_GH must be set for publish plan contracts"
+  [[ -n "${RELEASE_PUBLISH_CONTRACT_UPLOAD_LOG:-}" ]] || \
+    fail "RELEASE_PUBLISH_CONTRACT_UPLOAD_LOG must be set for publish plan contracts"
+}
+
+publish_plan_invoker() {
+  contract_require_upload_cb
+  RELEASE_PUBLISH_CONTRACT_NO_GH=1 \
+    RELEASE_PUBLISH_CONTRACT_UPLOAD_LOG="$CONTRACT_UPLOAD_LOG" \
+    bash "$SCRIPT" "$@"
+}
+
+# shellcheck source=../release/publish_release_assets.sh
+source "$SCRIPT"
+test_fail() { echo "test_release_publish_plan: $*" >&2; exit 1; }
+test_ok() { echo "test_release_publish_plan: $*"; }
+fail() { test_fail "$@"; }
+ok() { test_ok "$@"; }
+
 tmpdir="$(mktemp -d)"
-cleanup() { rm -rf "$tmpdir"; }
+cleanup() { rm -rf "$tmpdir" "$CONTRACT_UPLOAD_LOG"; }
 trap cleanup EXIT
 
 asset_dir="$tmpdir/dist"
@@ -105,7 +132,7 @@ ok "checksum_line_valid garbage guard"
 
 state_draft="$(mktemp)"
 write_state true >"$state_draft"
-draft_out="$(bash "$SCRIPT" --plan "$state_draft" 2>&1)" || fail "draft plan mode must succeed"
+draft_out="$(publish_plan_invoker --plan "$state_draft" 2>&1)" || fail "draft plan mode must succeed"
 plan_draft="$(echo "$draft_out" | head -1)"
 [[ "$(echo "$plan_draft" | jq -r '.upload_local_names | length')" -eq 2 ]] || \
   fail "draft must upload all local tars"
@@ -121,7 +148,7 @@ plan_draft_chk="$(release_publish__plan_from_state_file "$state_draft_chk")"
 [[ "$(echo "$plan_draft_chk" | jq -r '.ok')" == "true" ]] || fail "draft with remote checksums must plan"
 [[ "$(echo "$plan_draft_chk" | jq -r '.checksums_upload_action')" == "clobber_with_draft" ]] || \
   fail "draft with checksums.txt must clobber"
-bash "$SCRIPT" --plan "$state_draft_chk" >/dev/null || fail "draft+checksums plan mode"
+publish_plan_invoker --plan "$state_draft_chk" >/dev/null || fail "draft+checksums plan mode"
 ok "draft with existing checksums.txt"
 
 state_pub="$(mktemp)"
@@ -129,7 +156,7 @@ write_state false "" "$linux_h" >"$state_pub"
 plan_pub="$(release_publish__plan_from_state_file "$state_pub")"
 [[ "$(echo "$plan_pub" | jq -r '.upload_local_names | length')" -eq 1 ]] || \
   fail "published must only upload missing darwin"
-pub_out="$(bash "$SCRIPT" --plan "$state_pub" 2>&1)" || fail "published partial plan mode"
+pub_out="$(publish_plan_invoker --plan "$state_pub" 2>&1)" || fail "published partial plan mode"
 grep -q '/' "$asset_dir/checksums.txt" && fail "checksums.txt must list basename paths only"
 upload_n="$(echo "$pub_out" | head -1 | jq '[.upload_local_names[]?] | length')"
 pub_cmds="$(plan_cmds_from_output "$pub_out")"
@@ -152,7 +179,7 @@ if release_publish__plan_from_state_file "$state_bad" | jq -e '.ok == false' >/d
 else
   fail "must reject remote hash mismatch"
 fi
-bash "$SCRIPT" --plan "$state_bad" >/dev/null 2>&1 && fail "script must refuse ok:false plan"
+publish_plan_invoker --plan "$state_bad" >/dev/null 2>&1 && fail "script must refuse ok:false plan"
 ok "script refuses ok:false plan"
 
 pub_manifest="$linux_h  $linux_name"
@@ -198,7 +225,7 @@ if release_publish__plan_from_state_file "$state_unlisted" | jq -e '.ok == false
 else
   fail "must reject unlisted remote asset"
 fi
-bash "$SCRIPT" --plan "$state_unlisted" >/dev/null 2>&1 && fail "script must refuse unlisted remote"
+publish_plan_invoker --plan "$state_unlisted" >/dev/null 2>&1 && fail "script must refuse unlisted remote"
 ok "script refuses unlisted remote"
 
 rm -f "$linux"
@@ -227,7 +254,7 @@ plan_remote="$(release_publish__plan_from_state_file "$state_remote_only")"
   fail "checksum manifest must union remote-only tarball"
 [[ "$(echo "$plan_remote" | jq -r '.checksums_upload_action')" != "clobber_with_draft" ]] || \
   fail "published partial must not clobber tarballs"
-bash "$SCRIPT" --plan "$state_remote_only" >/dev/null || \
+publish_plan_invoker --plan "$state_remote_only" >/dev/null || \
   fail "remote-only fixture verify must succeed via remote_fixture_dir"
 ok "plan mode remote download branch"
 
@@ -249,7 +276,7 @@ jq -n \
     local_hashes: {($linux_name): $linux_h, ($darwin_name): $darwin_h},
     remote_hashes: {($linux_name): $linux_h}
   }' >"$state_bad_line"
-bash "$SCRIPT" --plan "$state_bad_line" >/dev/null 2>&1 && fail "invalid checksum line must fail"
+publish_plan_invoker --plan "$state_bad_line" >/dev/null 2>&1 && fail "invalid checksum line must fail"
 ok "invalid checksum manifest line"
 
 grep -q 'release_publish__plan_from_state_file' "$SCRIPT" || \
@@ -275,7 +302,7 @@ write_state false "$manifest_keep" "$linux_h" "" \
 plan_keep="$(release_publish__plan_from_state_file "$state_keep")"
 [[ "$(echo "$plan_keep" | jq -r '.checksums_upload_action')" == "keep_checksums" ]] || \
   fail "identical manifest must keep_checksums"
-keep_out="$(bash "$SCRIPT" --plan "$state_keep" 2>&1)" || fail "keep fixture plan mode"
+keep_out="$(publish_plan_invoker --plan "$state_keep" 2>&1)" || fail "keep fixture plan mode"
 keep_cmds="$(plan_cmds_from_output "$keep_out")"
 grep -q 'checksums.txt' <<<"$keep_cmds" && fail "keep_checksums must not upload checksums.txt"
 expected_keep="$(mktemp)"
@@ -293,7 +320,7 @@ write_state false "$(linux_only_manifest)" "$linux_h" "" \
 plan_sup="$(release_publish__plan_from_state_file "$state_superset")"
 [[ "$(echo "$plan_sup" | jq -r '.checksums_upload_action')" == "upload_checksums_superset" ]] || \
   fail "strict superset must upload_checksums_superset"
-sup_out="$(bash "$SCRIPT" --plan "$state_superset" 2>&1)" || fail "superset plan mode"
+sup_out="$(publish_plan_invoker --plan "$state_superset" 2>&1)" || fail "superset plan mode"
 sup_cmds="$(plan_cmds_from_output "$sup_out")"
 grep -Eq -- '--clobber .*checksums\.txt' <<<"$sup_cmds" || \
   fail "superset must clobber checksums only"
@@ -326,7 +353,7 @@ not_super_plan="$(release_publish__plan_from_state_file "$state_not_super")"
   fail "non-superset manifest must fail"
 [[ "$(echo "$not_super_plan" | jq -r '.checksums_upload_action // empty')" != \
   "upload_checksums_superset" ]] || fail "non-superset must not plan superset upload"
-bash "$SCRIPT" --plan "$state_not_super" >/dev/null 2>&1 && fail "script must refuse non-superset"
+publish_plan_invoker --plan "$state_not_super" >/dev/null 2>&1 && fail "script must refuse non-superset"
 ok "checksums not strict superset"
 
 TEST_UPLOAD_CB_CALLS=()
@@ -391,17 +418,20 @@ release_publish__write_checksums_file "$asset_dir/checksums.txt" \
 rm -rf "$asset_dir/checksums.txt"
 contract_ok "write_checksums_file fails closed on bad path"
 
-# shellcheck source=../release/publish_release_assets.sh
-source "$SCRIPT"
+contract_require_upload_cb
+contract_upload_log_clear
 rm -f "$asset_dir/checksums.txt"
 mkdir -p "$asset_dir/checksums.txt"
 release_publish__run_verify_and_upload \
   "$plan_pub_upload" "$asset_dir" "" "" "v7.2.1" "o/r" "false" \
   >/dev/null 2>&1 && contract_fail "run_verify_and_upload must fail when checksums write fails"
+[[ -s "$CONTRACT_UPLOAD_LOG" ]] && \
+  contract_fail "uploads must not run when checksums write fails (log): $(cat "$CONTRACT_UPLOAD_LOG")"
 rm -rf "$asset_dir/checksums.txt"
 contract_ok "run_verify_and_upload fails closed when checksums write fails"
 
-release_publish__cb_run_argv_contract() {
+contract_cb_fail_on_darwin() {
+  release_publish__contract_upload_cb_record_ok "$@" || return 1
   # shellcheck disable=SC2034
   local -n _cmd=$1
   if [[ "${_cmd[*]}" == *"$darwin_name"* && "${_cmd[*]}" != *checksums.txt* ]]; then
@@ -409,8 +439,9 @@ release_publish__cb_run_argv_contract() {
   fi
   return 0
 }
-release_publish__cb_run_argv() { release_publish__cb_run_argv_contract "$@"; }
+release_publish__cb_run_argv() { contract_cb_fail_on_darwin "$@"; }
 write_plan_checksums_fixture "$plan_pub_upload"
+contract_require_upload_cb
 publish_snippet_out=""
 if release_publish__run_verify_and_upload \
   "$plan_pub_upload" "$asset_dir" "" "" "v7.2.1" "o/r" "false" \
