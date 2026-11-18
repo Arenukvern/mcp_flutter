@@ -54,13 +54,24 @@ release_publish__run_verify_and_upload() {
     return 1
   }
 
-  release_publish__safe_cleanup "$verify_dir" ""
+  local tag_placeholder="${gh_tag:-$RELEASE_PUBLISH_PLAN_GH_TAG}"
+  local repo_placeholder="${gh_repo:-$RELEASE_PUBLISH_PLAN_GH_REPO}"
 
   local checksums_path="$asset_dir/checksums.txt"
   release_publish__write_checksums_file "$checksums_path" "$checksums_body"
 
+  if [[ "$dry_run" == "true" ]]; then
+    release_publish__emit_plan_dry_run_trailer \
+      "$plan" "$asset_dir" "$verify_dir" "$remote_fixture_dir" \
+      "$tag_placeholder" "$repo_placeholder"
+    release_publish__safe_cleanup "$verify_dir" ""
+    return 0
+  fi
+
+  release_publish__safe_cleanup "$verify_dir" ""
+
   release_publish__execute_upload_from_plan \
-    "$plan" "$asset_dir" "$gh_tag" "$gh_repo" "$dry_run"
+    "$plan" "$asset_dir" "$gh_tag" "$gh_repo" "false"
 }
 
 if [[ "${1:-}" == --plan ]]; then
@@ -160,7 +171,8 @@ done
 state_file="$(mktemp)"
 jq -n \
   --argjson is_draft "$(echo "$release_json" | jq '.isDraft')" \
-  --argjson published_checksums_asset_present "$checksums_asset_present" \
+  --argjson published_checksums_asset_present \
+    "$(if [[ "$is_draft" == "true" ]]; then echo false; else echo "$checksums_asset_present"; fi)" \
   --arg asset_dir "$ASSET_DIR" \
   --arg published_checksums "$published_checksums" \
   --argjson local_tars "$(printf '%s\n' "${local_tar_names[@]}" | jq -R . | jq -s .)" \

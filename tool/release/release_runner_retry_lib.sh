@@ -79,7 +79,7 @@ release_runner_retry__plan_emit() {
   local decision="$1"
   local sleep_seconds="$2"
   local dispatch="$3"
-  jq -n \
+  jq -cn \
     --arg decision "$decision" \
     --argjson sleep "$sleep_seconds" \
     --argjson dispatch "$dispatch" \
@@ -87,7 +87,7 @@ release_runner_retry__plan_emit() {
 }
 
 release_runner_retry__plan_error() {
-  jq -n --arg e "$1" '{ok: false, error: $e}'
+  jq -cn --arg e "$1" '{ok: false, error: $e}'
 }
 
 # Classify using jobs that already carry `annotations` arrays (production fetches via gh).
@@ -135,42 +135,15 @@ release_runner_retry__plan_from_state_file() {
 
   while IFS= read -r job_line; do
     [[ -n "$job_line" ]] || continue
-    local conclusion
-    conclusion="$(echo "$job_line" | jq -r '.conclusion')"
-
-    if [[ "$conclusion" == "failure" ]]; then
-      local failed_steps
-      failed_steps="$(echo "$job_line" | jq -r \
-        '[.steps[]? | select(.conclusion == "failure")] | length')"
-      if [[ "$failed_steps" -gt 0 ]]; then
-        real_failure_count=$((real_failure_count + 1))
-      else
-        unclassified_count=$((unclassified_count + 1))
-      fi
-      continue
-    fi
-
-    [[ "$conclusion" == "cancelled" ]] || continue
-
-    local runner_id step_count created_job completed_job ann
-    runner_id="$(echo "$job_line" | jq -r '.runner_id')"
-    step_count="$(echo "$job_line" | jq -r '.steps | length')"
-    created_job="$(echo "$job_line" | jq -r '.created_at // empty')"
-    completed_job="$(echo "$job_line" | jq -r '.completed_at // empty')"
-    ann="$(echo "$job_line" | jq -c '.annotations // []')"
-
-    if runner_shortage__annotation_matches "$ann" "$not_acquired_re"; then
-      runner_shortage_detected=true
-      continue
-    fi
-
-    if runner_shortage__zero_step_shortage_candidate \
-      "$runner_id" "$step_count" "$created_job" "$completed_job" "$min_wait"; then
-      runner_shortage_detected=true
-      continue
-    fi
-
-    real_failure_count=$((real_failure_count + 1))
+    local job_class
+    job_class="$(release_runner_retry__classify_job \
+      "$job_line" "$not_acquired_re" "$min_wait")"
+    case "$job_class" in
+      real_failure) real_failure_count=$((real_failure_count + 1)) ;;
+      unclassified) unclassified_count=$((unclassified_count + 1)) ;;
+      shortage_annotation | shortage_zero) runner_shortage_detected=true ;;
+      ignore) ;;
+    esac
   done < <(jq -c '.jobs[]?' "$state_file")
 
   if [[ "$real_failure_count" -gt 0 ]]; then
@@ -193,7 +166,7 @@ release_runner_retry__plan_from_state_file() {
 release_runner_retry__decide() {
   local state_tmp
   state_tmp="$(mktemp)"
-  jq -n \
+  jq -cn \
     --argjson run_attempt "$1" \
     --argjson max_attempts "$2" \
     --argjson workflow_runs "$3" \
@@ -217,4 +190,31 @@ release_runner_retry__decide() {
     }' >"$state_tmp"
   release_runner_retry__plan_from_state_file "$state_tmp" | jq -r '.decision // empty'
   rm -f "$state_tmp"
+}
+
+release_runner_retry__emit_plan_command_lines() {
+  local state_file="$1"
+  local plan="$2"
+  local repo run_id decision dispatch
+  repo="$(jq -r '.repo // "__owner/repo__"' "$state_file")"
+  run_id="$(jq -r '.run_id' "$state_file")"
+  decision="$(echo "$plan" | jq -r '.decision')"
+  dispatch="$(echo "$plan" | jq -r '.dispatch_rerun')"
+  local check_run_url
+  while IFS= read -r check_run_url; do
+    [[ -n "$check_run_url" ]] || continue
+    printf 'gh api %s/annotations --paginate\n' "${check_run_url%/}"
+  done < <(jq -r '.jobs[]? | .check_run_url // empty | select(length > 0)' "$state_file")
+  if [[ "$dispatch" == "true" ]]; then
+    printf 'gh run rerun %s --repo %s --failed\n' "$run_id" "$repo"
+  else
+    printf 'SKIP: decision=%s\n' "$decision"
+  fi
+}
+
+release_runner_retry__emit_plan_dry_run_trailer() {
+  local state_file="$1"
+  local plan="$2"
+  echo '---COMMANDS---'
+  release_runner_retry__emit_plan_command_lines "$state_file" "$plan"
 }

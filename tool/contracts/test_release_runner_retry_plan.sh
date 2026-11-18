@@ -20,15 +20,22 @@ source "$LIB"
 # shellcheck source=../release/release_runner_retry_lib.sh
 source "$RETRY_LIB"
 
-long_job="$(jq -c --argjson ann "$(cat "$ANNOTATION")" \
-  '. + {annotations: $ann}' "$LONG_QUEUE")"
 state_rerun="$(mktemp)"
+long_job_with_url="$(jq -c '.check_run_url = "https://api.github.com/repos/o/r/check-runs/42"' "$LONG_QUEUE")"
+long_job="$(jq -c --argjson ann "$(cat "$ANNOTATION")" \
+  '. + {annotations: $ann}' <<<"$long_job_with_url")"
+
+retry_cmds_section() {
+  awk '/^---COMMANDS---$/{p=1;next} p' <<<"$1"
+}
+
 jq -n \
   --argjson run_attempt 2 \
   --argjson max_attempts 3 \
   --arg hb "v7.2.1" \
   --arg ts "2026-11-17T09:00:00Z" \
   --argjson run_id 102 \
+  --arg repo "Arenukvern/mcp_flutter" \
   --argjson wf "$(cat "$SUPERSEDED")" \
   --argjson jobs "$(jq -n --argjson j "$long_job" '[$j]')" \
   '{
@@ -37,16 +44,22 @@ jq -n \
     head_branch: $hb,
     created_at: $ts,
     run_id: $run_id,
+    repo: $repo,
     workflow_event: "push",
     workflow_runs: $wf,
     jobs: $jobs,
     zero_step_min_wait_seconds: 600
   }' >"$state_rerun"
 
-bash "$SCRIPT" --plan "$state_rerun" >/dev/null || fail "plan mode must succeed"
-[[ "$(bash "$SCRIPT" --plan "$state_rerun" | jq -r '.decision')" == rerun ]] || \
+rerun_out="$(bash "$SCRIPT" --plan "$state_rerun" 2>&1)" || fail "plan mode must succeed"
+retry_cmds="$(retry_cmds_section "$rerun_out")"
+grep -qF 'gh api https://api.github.com/repos/o/r/check-runs/42/annotations' <<<"$retry_cmds" || \
+  fail "plan must emit check_run_url annotation fetch"
+grep -q 'gh run rerun 102 --repo Arenukvern/mcp_flutter --failed' <<<"$retry_cmds" || \
+  fail "rerun decision must emit gh run rerun"
+[[ "$(echo "$rerun_out" | head -1 | jq -r '.decision')" == rerun ]] || \
   fail "must decide rerun"
-[[ "$(bash "$SCRIPT" --plan "$state_rerun" | jq -r '.sleep_seconds')" -eq 240 ]] || \
+[[ "$(echo "$rerun_out" | head -1 | jq -r '.sleep_seconds')" -eq 240 ]] || \
   fail "backoff must be 120×attempt"
 ok "plan mode rerun with annotations"
 
@@ -76,7 +89,7 @@ state_event="$(mktemp)"
 jq '.workflow_event = "workflow_dispatch"' "$state_rerun" >"$state_event"
 [[ "$(release_runner_retry__plan_from_state_file "$state_event" | jq -r '.decision')" == skip_event ]] || \
   fail "non-push event must skip"
-[[ "$(bash "$SCRIPT" --plan "$state_event" | jq -r '.decision')" == skip_event ]] || \
+[[ "$(bash "$SCRIPT" --plan "$state_event" 2>&1 | head -1 | jq -r '.decision')" == skip_event ]] || \
   fail "script plan mode must enforce push-only"
 ok "push-only guard"
 
@@ -109,8 +122,19 @@ jq -n \
     jobs: $jobs,
     zero_step_min_wait_seconds: 600
   }' >"$state_short"
-[[ "$(bash "$SCRIPT" --plan "$state_short" | jq -r '.decision')" != rerun ]] || \
+short_out="$(bash "$SCRIPT" --plan "$state_short" 2>&1)"
+[[ "$(echo "$short_out" | head -1 | jq -r '.decision')" != rerun ]] || \
   fail "short zero-step cancel must not rerun"
+short_cmds="$(retry_cmds_section "$short_out")"
+grep -q 'SKIP: decision=' <<<"$short_cmds" || fail "skip decision must emit SKIP command"
+grep -q 'gh run rerun' <<<"$short_cmds" && fail "skip must not emit rerun"
 ok "600s minimum queue guard"
+
+grep -q 'release_runner_retry__classify_job' "$RETRY_LIB" || \
+  fail "shared classify_job must exist"
+awk '/release_runner_retry__plan_from_state_file/,/^}/' "$RETRY_LIB" | \
+  grep -q 'release_runner_retry__classify_job' || \
+  fail "plan loop must call classify_job"
+ok "plan loop uses classify_job (lib)"
 
 ok "runner retry plan contracts OK"
