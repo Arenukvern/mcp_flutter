@@ -7,7 +7,8 @@
 
 ### Bug Fixes
 
-* **Release:** replace mock-`gh` release e2e with fixture contract tests; verify recovery uploads against already-published `checksums.txt`; drop test-only runner retry backoff hook; strict decimal CLI port flags aligned with connection override parsing.
+* **Release:** plan-mode contract tests drive real `publish_release_assets.sh` / `maybe_rerun_runner_shortage_jobs.sh` decisions via shared libs (no mock `gh`); fail-closed published `checksums.txt` manifest checks; strict superset before clobbering `checksums.txt` on published releases.
+* **cli:** invalid `--dart-vm-port` / web port flags exit **64** with a JSON envelope (reject `0`, out-of-range, signed, hex, whitespace, and leading-zero decimals).
 
 ## [7.2.1](https://github.com/Arenukvern/mcp_flutter/compare/v7.2.0...v7.2.1) (2026-11-18)
 
@@ -15,7 +16,7 @@
 
 * **Kuljeet Singh ([@KuljeetSinghXDA](https://github.com/KuljeetSinghXDA)):** pair `captureHints` warnings with the capture state the app declared ([#173](https://github.com/Arenukvern/mcp_flutter/pull/173)); strict decimal `port` parsing for resource URI and nested tool `connection` overrides ([#174](https://github.com/Arenukvern/mcp_flutter/pull/174)); keep explicit `viewId: 0` ([#175](https://github.com/Arenukvern/mcp_flutter/pull/175))
 * **Parity ([#189](https://github.com/Arenukvern/mcp_flutter/pull/189)):** complete Kuljeet connection/viewId wiring across server, core, and `mcp_toolkit`; truncated `details.actual` on invalid connection fields
-* **Release ([#189](https://github.com/Arenukvern/mcp_flutter/pull/189)):** automatic retry when hosted macOS runners cancel with zero steps; clobber-safe published uploads; basename `checksums.txt`; partial-recovery pre-upload `sha256sum -c` stages local and re-downloaded remote tarballs in a temp `verify_dir` (remote-only lines check release self-consistency on second download, not authenticity against a prior `checksums.txt`); mock-`gh` release tooling e2e contracts
+* **Release ([#189](https://github.com/Arenukvern/mcp_flutter/pull/189)):** automatic retry when hosted macOS runners cancel with zero steps; clobber-safe published uploads; basename `checksums.txt`; partial-recovery pre-upload `sha256sum -c` stages local and re-downloaded remote tarballs in a temp `verify_dir` (manifest lines prove **consistency** with already-listed remote digests, not cryptographic authenticity — attestation/signatures remain follow-up work)
 
 ### Documentation
 
@@ -218,6 +219,7 @@
 * flutter mcp harness ([8e38699](https://github.com/Arenukvern/mcp_flutter/commit/8e386990c2bd4934f7682b807a6149f8f8812865))
 * flutter MCP harness — ToolkitDriver, IntentDriverRouter, showcase consolidation ([4fc4c27](https://github.com/Arenukvern/mcp_flutter/commit/4fc4c2770168f26f27fc360b32bd9804f962f1e4))
 * flutter MCP harness — ToolkitDriver, IntentDriverRouter, showcase consolidation ([#146](https://github.com/Arenukvern/mcp_flutter/issues/146)) ([4fc4c27](https://github.com/Arenukvern/mcp_flutter/commit/4fc4c2770168f26f27fc360b32bd9804f962f1e4))
+* Delegate `codegen sync` and `init intentcall-platform` to `intentcall_cli`; add `jaspr_web_example` with the three-gate CI recipe.
 * **focus_widget:** give a widget keyboard focus by ref and prove it ([7028e44](https://github.com/Arenukvern/mcp_flutter/commit/7028e4453b14d4e963a20a05f6b8ec73fe999361))
 * **harness:** add FlutterRunTarget and Dart showcase launcher ([dc4c0ce](https://github.com/Arenukvern/mcp_flutter/commit/dc4c0ce589bba770ff93c128b52ae502b9108436))
 * **harness:** add IntentDriverRouter for hint-routed driver invocation ([cb0059d](https://github.com/Arenukvern/mcp_flutter/commit/cb0059d2ed79ab5b033785e3e8cdb5678ebb5da3))
@@ -239,6 +241,7 @@
 ### Bug Fixes
 
 * await websocket upgrade and guard sink close in VM connect ([40b4b11](https://github.com/Arenukvern/mcp_flutter/commit/40b4b1198c2e491fce497afb8a62df9c653a693c))
+* **capture:** explain when inline screenshots move into image blocks
 * **capture:** count the errors a snapshot carries, not the cap requested ([f610327](https://github.com/Arenukvern/mcp_flutter/commit/f6103278ae91db7023ac3d8a0ac34cef915b275e))
 * **capture:** say where the captured images went ([5ddb091](https://github.com/Arenukvern/mcp_flutter/commit/5ddb091cf9a2d99f102464e50506c7cd1179719e))
 * **ci:** eval gates survive an invisible flutter_harness sibling ([211217a](https://github.com/Arenukvern/mcp_flutter/commit/211217acc16c227405a1d42593c0775f2d7dd4f6))
@@ -266,6 +269,7 @@
 * **interaction:** open a drag with small moves so the press point survives ([#145](https://github.com/Arenukvern/mcp_flutter/issues/145)) ([b3e278c](https://github.com/Arenukvern/mcp_flutter/commit/b3e278cff2102b2f702499c8e7a346cf8c75e256))
 * **interaction:** read a pop off the stack, and answer the rest of the review ([d4bdc7c](https://github.com/Arenukvern/mcp_flutter/commit/d4bdc7c6cffd0ee5b2021bc747448a94de4a2990))
 * **interaction:** report what a gesture did, and say why it refused ([88747e3](https://github.com/Arenukvern/mcp_flutter/commit/88747e3f117cdd04ddc5446afe0b6358cf1cf7b9))
+* **press_key:** define `handled` as the main key-down dispatch result
 * **press_key:** name both dispatch phases in the unhandled hint ([43d720e](https://github.com/Arenukvern/mcp_flutter/commit/43d720ef4299b756a2dd192410829dc7cbb84974))
 * **press_key:** name the failure code the tool actually returns ([eb44e62](https://github.com/Arenukvern/mcp_flutter/commit/eb44e626b19075f6408fc9aefb34c6b5a6c30fed))
 * **press_key:** send modifiers as real keys and leave none held ([c0e048c](https://github.com/Arenukvern/mcp_flutter/commit/c0e048c3fcacc6e98c012b12862e5ad5a5735b4e))
@@ -511,6 +515,7 @@
 * **release:** sync package changelogs for pub publish ([6dfca08](https://github.com/Arenukvern/mcp_flutter/commit/6dfca082e1b1472d2913887c93fb54b908eb9e6b))
 * **server:** address PR [#115](https://github.com/Arenukvern/mcp_flutter/issues/115) review comments ([d2cea26](https://github.com/Arenukvern/mcp_flutter/commit/d2cea2613a4504cf2ae470b683adde2c0d6d9bd4))
 * **server:** address PR 115 review comments ([7f140dc](https://github.com/Arenukvern/mcp_flutter/commit/7f140dcfb744b8bca13b24b3c25032345accfbe0))
+* **server:** coalesce identical overlapping Flutter discovery requests and terminate their process trees on Windows
 * **server:** clean up Windows machine discovery process trees ([11d5d02](https://github.com/Arenukvern/mcp_flutter/commit/11d5d02b3e6066820720285bfd369336d127e4e8))
 * **server:** clean up Windows machine discovery process trees. Made by [@wenyue](https://github.com/wenyue) in https://github.com/Arenukvern/mcp_flutter/pull/115 ([b510de0](https://github.com/Arenukvern/mcp_flutter/commit/b510de08d14cc11dab3b8bea04503a9bbae81e9e))
 * **server:** complete host_flag_smoke_test deletion + tighten catch clauses ([27a81a4](https://github.com/Arenukvern/mcp_flutter/commit/27a81a46e4f5bf4642afee1710985f4f6f90937e))
@@ -664,6 +669,11 @@
 ## [4.0.0-dev.6](https://github.com/Arenukvern/mcp_flutter/compare/v4.0.0-dev.5...v4.0.0-dev.6) (2026-07-05)
 
 
+### Features
+
+* `fmtk` short CLI alias for `flutter-mcp-toolkit`, including release artifacts and install script smoke checks.
+
+
 ### Bug Fixes
 
 * add FMT_MODE_PRELUDE to boundary-audit skill and sync assets ([81f788c](https://github.com/Arenukvern/mcp_flutter/commit/81f788cbaafde6ff70105e106eed0b55edfa2061))
@@ -700,7 +710,26 @@
 
 ### Features
 
+* Gating CI: `make check-intentcall-hosted-consumer`; `make check-intentcall-sibling-matrix` / `.github/workflows/intentcall_eval.yml`.
+* `make macos-validate-runtime` helper (`tool/evals/run_macos_validate_runtime.sh`).
+* intentcall: `xsoulspace_lints`, `make analyze`, IntentCall consumer guide; Phase 7 **7.1–7.3, 7.6** `intentcall/` workspace and pub.dev metadata.
+* Phase 7 **7.1/7.2**: `intentcall_*` packages under `intentcall/packages/`.
+* `flutter_test_app` web dogfood: `WebMcpPublishAdapter`; Xcode intentcall Codegen Run Script (ios/macos).
+* `flutter-mcp-toolkit init intentcall-platform` — idempotent Gradle, manifest, `index.html`, and codegen shell hooks with `--check` for CI.
+* `fmt_migrate_agent_entries` MCP tool (report-only default; `apply: true` to rewrite sources).
+* `intentcall_platform` thin Flutter plugin + `intentcallInvokeLinkListener` (`app_links`) for `intentcall://invoke/<qualifiedName>`.
+* CI / `make check-contracts`: `codegen sync --check` on `flutter_test_app`.
+* ADR [0008](decisions/0008_web_agent_invoke_js_only.mdx): web `/agent/invoke` Flutter route optional (JS + WebMCP sufficient).
 * add steward hosted dependency gate ([3b91408](https://github.com/Arenukvern/mcp_flutter/commit/3b91408f266480d7822df409c2efbfc34f45e99f))
+
+### Changed
+
+* Raised workspace Dart SDK floor to `>=3.12.0 <4.0.0`; Flutter SDK floor `>=3.44.0 <4.0.0` for Flutter packages; Docker toolchain `dart:3.12.0-sdk`.
+* **Breaking:** `mcp_server_dart/lib/flutter_mcp_core.dart` no longer promises compatibility for removed private session/state/snapshot internals; use `intentcall_session` for `IntentSessionManager`, `StateStore`, `StateLockManager`, `SafeFileWriter`, and `IntentSnapshotStore`.
+* `ToolRegistration` / `ResourceRegistration` canonical types moved to `intentcall_core`; kernel re-exports.
+* Dogfood harness paths use `--dart-define=INTENTCALL_HARNESS_ROOT` / `INTENTCALL_VISUAL_RECONSTRUCT_ROOT`.
+* `MigrateAgentEntriesMigrator` moved to `intentcall_core` (shared by CLI and MCP tool).
+* `intentcall_testing`: ecsly-style builder → `invokeWire` → `AgentResult.envelope` test.
 * promote hosted dependency steward gate ([82868e8](https://github.com/Arenukvern/mcp_flutter/commit/82868e83145fd9c56dbd45f677c42ea39b60e4ce))
 
 

@@ -28,13 +28,20 @@ Future<void> main(List<String> args) async {
 
   await runZonedGuarded(
     () async {
-      final VMServiceConfigurationRecord configuration = (
-        vmHost: parsedArgs.option(dartVMHost) ?? defaultHost,
-        vmPort: cliPositivePort(
+      late final int vmPort;
+      try {
+        vmPort = cliPositivePort(
           parsedArgs.option(dartVMPort),
           fallback: defaultPort,
           flag: dartVMPort,
-        ),
+        );
+      } on CliPortUsageException catch (error) {
+        io.stderr.writeln(error.message);
+        io.exit(64);
+      }
+      final VMServiceConfigurationRecord configuration = (
+        vmHost: parsedArgs.option(dartVMHost) ?? defaultHost,
+        vmPort: vmPort,
         resourcesSupported: parsedArgs.flag(resourcesSupported),
         imagesSupported: parsedArgs.flag(imagesSupported),
         dumpsSupported: parsedArgs.flag(dumpsSupported),
