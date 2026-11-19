@@ -1,4 +1,5 @@
 // mcp_server_dart/test/cli/init_writers_test.dart
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_mcp_toolkit_server/src/cli/init_mode.dart';
@@ -90,7 +91,7 @@ void main() {
       expect(f.existsSync(), isTrue);
     });
 
-    test('zcode writes .zcode/config.json + .agents/skills/', () {
+    test('zcode workspace scope writes .zcode/config.json + .agents/skills/', () {
       InitWriters.writeFor(
         target: InitTarget.zcode,
         mode: InitMode.mcp,
@@ -108,6 +109,116 @@ void main() {
         '${tmp.path}/.agents/skills/flutter-mcp-toolkit-guide/SKILL.md',
       );
       expect(skill.existsSync(), isTrue);
+    });
+
+    test('zcode user scope merges into .zcode/cli/config.json', () {
+      final configPath = '${tmp.path}/.zcode/cli/config.json';
+      final existing = {
+        'plugins': {
+          'enabledPlugins': {'other@marketplace': true},
+        },
+        'mcp': {
+          'servers': {
+            'gitnexus': {'type': 'stdio', 'command': '/bin/gitnexus'},
+          },
+        },
+      };
+      File(configPath).parent.createSync(recursive: true);
+      File(configPath).writeAsStringSync(jsonEncode(existing));
+
+      InitWriters.writeFor(
+        target: InitTarget.zcode,
+        mode: InitMode.mcp,
+        outputRoot: tmp.path,
+        scopeIsUserHome: true,
+      );
+
+      final doc =
+          jsonDecode(File(configPath).readAsStringSync()) as Map<String, dynamic>;
+      // Unrelated config and servers survive the merge.
+      final servers = (doc['mcp'] as Map)['servers'] as Map;
+      expect(servers.keys, containsAll(['gitnexus', 'flutter-mcp-toolkit']));
+      final entry = servers['flutter-mcp-toolkit'] as Map;
+      expect(entry['command'], contains('flutter-mcp-toolkit-server'));
+      expect(entry['command'], startsWith('/'), reason:
+          'config-file servers get no template expansion, so the command '
+          'must be an absolute path when the binary is on PATH');
+    });
+
+    test('zcode init never overwrites an existing server entry', () {
+      final configPath = '${tmp.path}/.zcode/cli/config.json';
+      File(configPath).parent.createSync(recursive: true);
+      File(configPath).writeAsStringSync(
+        jsonEncode({
+          'mcp': {
+            'servers': {
+              'flutter-mcp-toolkit': {
+                'type': 'stdio',
+                'command': '/custom/server',
+                'args': ['--dart-vm-port=9999'],
+              },
+            },
+          },
+        }),
+      );
+
+      InitWriters.writeFor(
+        target: InitTarget.zcode,
+        mode: InitMode.mcp,
+        outputRoot: tmp.path,
+        scopeIsUserHome: true,
+      );
+
+      final servers =
+          (((jsonDecode(File(configPath).readAsStringSync()) as Map)['mcp']
+                      as Map)['servers'] as Map)['flutter-mcp-toolkit'] as Map;
+      expect(servers['command'], '/custom/server');
+      expect(servers['args'], ['--dart-vm-port=9999']);
+    });
+
+    test('zcode init leaves an invalid JSON config untouched', () {
+      final configPath = '${tmp.path}/.zcode/config.json';
+      File(configPath).parent.createSync(recursive: true);
+      File(configPath).writeAsStringSync('{not valid json');
+
+      InitWriters.writeFor(
+        target: InitTarget.zcode,
+        mode: InitMode.mcp,
+        outputRoot: tmp.path,
+        scopeIsUserHome: false,
+      );
+
+      expect(File(configPath).readAsStringSync(), '{not valid json');
+    });
+
+    test('zcode vendors only user-facing skills (maintainer skills stay out)', () {
+      InitWriters.writeFor(
+        target: InitTarget.zcode,
+        mode: InitMode.mcp,
+        outputRoot: tmp.path,
+        scopeIsUserHome: false,
+      );
+      final skillsRoot = Directory('${tmp.path}/.agents/skills');
+      final vendored = skillsRoot
+          .listSync()
+          .whereType<Directory>()
+          .map((d) => d.path.split('/').last)
+          .toSet();
+      expect(vendored, contains('flutter-mcp-toolkit-guide'));
+      expect(
+        vendored,
+        isNot(contains('flutter-mcp-toolkit-repo-maintainer')),
+        reason: 'repo-maintainer skills describe mcp_flutter itself',
+      );
+      expect(
+        vendored,
+        isNot(contains('flutter-mcp-boundary-audit')),
+      );
+      expect(
+        vendored,
+        isNot(contains('flutter-mcp-toolkit-dogfood-iterations')),
+      );
+      expect(vendored.length, lessThan(16));
     });
 
     test('writes are idempotent (re-running is safe)', () {

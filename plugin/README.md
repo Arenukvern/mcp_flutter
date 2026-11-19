@@ -1,6 +1,6 @@
 # flutter-mcp-toolkit (plugin)
 
-Single source of truth for the shippable plugin: **Cursor**, **Codex**, and **Claude Code** marketplace layouts, MCP registration, skills, and the optional installer.
+Single source of truth for the shippable plugin: **Cursor**, **Codex**, **Claude Code**, and **ZCode** layouts, MCP registration, skills, and the optional installer.
 
 ## What this plugin ships
 
@@ -29,6 +29,7 @@ AI agent
 2. **`npx skills add Arenukvern/mcp_flutter`** — skills only ([skills.sh](https://skills.sh)); add MCP via [client setup](../docs/install/clients.mdx)
 3. **Claude git marketplace** — `/plugin marketplace add Arenukvern/mcp_flutter`
 4. **Codex git marketplace** — `codex plugin marketplace add Arenukvern/mcp_flutter`
+5. **ZCode plugin** — add a marketplace from this repository's `plugin/` dir (Settings → Plugin Management → Discover); the manifest at `.zcode-plugin/plugin.json` ships skills plus the MCP server (binary resolved from `PATH`)
 
 All paths materialize from the embedded skill bundle generated from this directory (`make sync-skills`).
 
@@ -63,6 +64,7 @@ Store listing copy: [plugin/assets/marketplace_copy.yaml](assets/marketplace_cop
 - `hyperframes-cursor-plugin/plugin.json` — optional promo-only Cursor plugin (still requires `heygen-com/hyperframes` skills)
 - `.codex-plugin/plugin.json` — Codex plugin manifest (+ `interface` for directory)
 - `.claude-plugin/plugin.json` — Claude Code plugin manifest
+- `.zcode-plugin/plugin.json` — ZCode plugin manifest (inline `mcpServers`; plugin servers may use `${ZCODE_PLUGIN_ROOT}`-style templates, the bare command resolves from `PATH`)
 - `mcp.json` — MCP server (`${FLUTTER_MCP_BIN:-flutter-mcp-toolkit-server}`, `--dynamics`)
 - `install.sh` — prerequisite check (Dart, server binary version pin)
 - `EXPECTED_SERVER_VERSION` — must match repo root `VERSION`
