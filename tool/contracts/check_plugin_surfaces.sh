@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Validate plugin/ surfaces (Cursor, Codex, Claude Code marketplace):
+# Validate plugin/ surfaces (Cursor, Codex, Claude Code marketplace, ZCode plugin):
 # - required files exist
 # - skill/agent files have parseable frontmatter with required fields
 # - mcp.json registers the toolkit server under canonical key flutter-mcp-toolkit
@@ -24,6 +24,7 @@ required_files=(
   "$PLUGIN_DIR/.claude-plugin/plugin.json"
   "$PLUGIN_DIR/.cursor-plugin/plugin.json"
   "$PLUGIN_DIR/.codex-plugin/plugin.json"
+  "$PLUGIN_DIR/.zcode-plugin/plugin.json"
   "$PLUGIN_DIR/mcp.json"
   "$PLUGIN_DIR/README.md"
   "$PLUGIN_DIR/install.sh"
@@ -91,8 +92,8 @@ if [[ "$repo_version" != "$pin_version" ]]; then
 fi
 ok "version pin matches repo VERSION ($repo_version)"
 
-# 6. Claude + Cursor + Codex plugin.json name is flutter-mcp-toolkit
-for manifest in "$PLUGIN_DIR/.claude-plugin/plugin.json" "$PLUGIN_DIR/.cursor-plugin/plugin.json" "$PLUGIN_DIR/.codex-plugin/plugin.json"; do
+# 6. Claude + Cursor + Codex + ZCode plugin.json name is flutter-mcp-toolkit
+for manifest in "$PLUGIN_DIR/.claude-plugin/plugin.json" "$PLUGIN_DIR/.cursor-plugin/plugin.json" "$PLUGIN_DIR/.codex-plugin/plugin.json" "$PLUGIN_DIR/.zcode-plugin/plugin.json"; do
   if ! grep -q '"name"[[:space:]]*:[[:space:]]*"flutter-mcp-toolkit"' "$manifest"; then
     fail "$(basename "$(dirname "$manifest")")/plugin.json 'name' is not 'flutter-mcp-toolkit'"
   fi
@@ -116,10 +117,22 @@ for manifest in \
   "$PLUGIN_DIR/.claude-plugin/plugin.json" \
   "$PLUGIN_DIR/.cursor-plugin/plugin.json" \
   "$PLUGIN_DIR/.codex-plugin/plugin.json" \
+  "$PLUGIN_DIR/.zcode-plugin/plugin.json" \
   "$MARKET_FILE"; do
   check_description_mentions_dynamic "$manifest"
 done
 ok "plugin/marketplace descriptions mention dynamic or custom tools"
+
+# 6c. ZCode plugin manifest registers the toolkit server inline (ZCode reads
+# the manifest's mcpServers object; plugin servers may use ${...} templates,
+# so the bare command resolves from PATH like the mcp.json FLUTTER_MCP_BIN default).
+if ! grep -qE '"flutter-mcp-toolkit"[[:space:]]*:[[:space:]]*\{' "$PLUGIN_DIR/.zcode-plugin/plugin.json"; then
+  fail ".zcode-plugin/plugin.json must register mcpServers key 'flutter-mcp-toolkit' inline"
+fi
+if ! grep -q 'flutter-mcp-toolkit-server' "$PLUGIN_DIR/.zcode-plugin/plugin.json"; then
+  fail ".zcode-plugin/plugin.json mcpServers command must reference flutter-mcp-toolkit-server"
+fi
+ok ".zcode-plugin registers toolkit server inline (flutter-mcp-toolkit-server)"
 
 # 7. Skills reference MCP tool names (v3.0.0: prefixed `fmt_*`) that exist
 # in the locked tool surface. Catches: plugin docs forgetting to prepend

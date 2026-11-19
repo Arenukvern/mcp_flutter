@@ -15,7 +15,11 @@ Future<int> runInit({
   final mode = modeOverride == InitMode.auto
       ? detectMode(
           binaryOnPath: _binaryOnPath('flutter-mcp-toolkit'),
-          mcpServerRegistered: _isMcpServerRegistered(target, outputRoot),
+          mcpServerRegistered: _isMcpServerRegistered(
+            target,
+            outputRoot,
+            scopeIsUserHome,
+          ),
         )
       : modeOverride;
   stdout.writeln('Mode: ${mode.name}');
@@ -36,7 +40,11 @@ bool _binaryOnPath(String name) {
   return result.exitCode == 0;
 }
 
-bool _isMcpServerRegistered(InitTarget target, String outputRoot) {
+bool _isMcpServerRegistered(
+  InitTarget target,
+  String outputRoot,
+  bool scopeIsUserHome,
+) {
   // Heuristic: existing `mcp.json`/`claude_desktop_config.json` mentions
   // `flutter-mcp-toolkit`. Per-target detection details deferred to follow-up.
   switch (target) {
@@ -45,7 +53,12 @@ bool _isMcpServerRegistered(InitTarget target, String outputRoot) {
       return f.existsSync() &&
           f.readAsStringSync().contains('flutter-mcp-toolkit');
     case InitTarget.zcode:
-      final f = File('$outputRoot/.zcode/config.json');
+      // Same paths the zcode writer merges into: user scope reads
+      // ~/.zcode/cli/config.json, workspace scope reads <repo>/.zcode/config.json.
+      final configPath = scopeIsUserHome
+          ? '$outputRoot/.zcode/cli/config.json'
+          : '$outputRoot/.zcode/config.json';
+      final f = File(configPath);
       return f.existsSync() &&
           f.readAsStringSync().contains('flutter-mcp-toolkit');
     case InitTarget.cursor:

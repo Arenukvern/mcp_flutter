@@ -42,7 +42,7 @@ class InitWriters {
       case InitTarget.cline:
         _writeCline(outputRoot, mode);
       case InitTarget.zcode:
-        _writeZcode(outputRoot, mode);
+        _writeZcode(outputRoot, mode, scopeIsUserHome);
       case InitTarget.agentsSkills:
         _writeAgentsSkills(outputRoot, mode);
       case InitTarget.all:
@@ -115,33 +115,101 @@ class InitWriters {
     }
   }
 
-  /// ZCode reads workspace `.zcode/config.json` (`mcp.servers`, nested shape)
-  /// and `.agents/skills/`. Config-file MCP servers get no `${...}` template
-  /// expansion there, so the server binary is resolved to an absolute path
-  /// at init time (falling back to the bare name when not on PATH).
-  static void _writeZcode(String root, InitMode mode) {
+  /// ZCode reads MCP servers from the nested `mcp.servers` shape: user scope
+  /// `~/.zcode/cli/config.json`, workspace scope `<repo>/.zcode/config.json`.
+  /// Both scopes discover skills from `.agents/skills/`. The config-file
+  /// server schema is strict and `${...}` templates are not expanded there,
+  /// so the server binary is resolved to an absolute path at init time
+  /// (falling back to the bare name when not on PATH). Existing configs are
+  /// merged, never overwritten: the `flutter-mcp-toolkit` entry is written
+  /// only when absent, so user-tuned args and unrelated servers survive.
+  static void _writeZcode(String root, InitMode mode, bool scopeIsUserHome) {
+    final configPath = scopeIsUserHome
+        ? '$root/.zcode/cli/config.json'
+        : '$root/.zcode/config.json';
+    _mergeZcodeServerEntry(configPath);
+    _writeZcodeSkills(root, mode);
+  }
+
+  static const String _zcodeServerKey = 'flutter-mcp-toolkit';
+
+  static void _mergeZcodeServerEntry(String configPath) {
+    final file = File(configPath);
+    Map<String, dynamic> doc = {};
+    if (file.existsSync()) {
+      dynamic decoded;
+      try {
+        decoded = jsonDecode(file.readAsStringSync());
+      } on FormatException {
+        stdout.writeln(
+          'WARN: $configPath is not valid JSON — left untouched. '
+          'Register the server manually under mcp.servers.$_zcodeServerKey.',
+        );
+        return;
+      }
+      if (decoded is! Map<String, dynamic>) {
+        stdout.writeln(
+          'WARN: $configPath top level is not a JSON object — left untouched. '
+          'Register the server manually under mcp.servers.$_zcodeServerKey.',
+        );
+        return;
+      }
+      doc = decoded;
+    }
+    final mcp = Map<String, dynamic>.from(
+      doc['mcp'] as Map<String, dynamic>? ?? <String, dynamic>{},
+    );
+    final servers = Map<String, dynamic>.from(
+      mcp['servers'] as Map<String, dynamic>? ?? <String, dynamic>{},
+    );
+    if (servers.containsKey(_zcodeServerKey)) {
+      stdout.writeln(
+        'MCP server "$_zcodeServerKey" already registered in $configPath '
+        '(left unchanged).',
+      );
+      return;
+    }
+    servers[_zcodeServerKey] = {
+      'type': 'stdio',
+      'command': _resolveServerCommand(),
+      'args': [
+        '--dart-vm-host=localhost',
+        '--dart-vm-port=8181',
+        '--resources',
+        '--images',
+        '--dynamics',
+      ],
+    };
+    mcp['servers'] = servers;
+    doc['mcp'] = mcp;
+    Directory(file.parent.path).createSync(recursive: true);
     const encoder = JsonEncoder.withIndent('  ');
-    final config = encoder.convert({
-      'mcp': {
-        'servers': {
-          'flutter-mcp-toolkit': {
-            'type': 'stdio',
-            'command': _resolveServerCommand(),
-            'args': [
-              '--dart-vm-host=localhost',
-              '--dart-vm-port=8181',
-              '--resources',
-              '--images',
-              '--dynamics',
-            ],
-          },
-        },
-      },
-    });
-    final path = '$root/.zcode/config.json';
-    Directory(File(path).parent.path).createSync(recursive: true);
-    File(path).writeAsStringSync('$config\n');
-    _writeAgentsSkills(root, mode);
+    file.writeAsStringSync('${encoder.convert(doc)}\n');
+  }
+
+  /// Skills that help end users drive and extend their own Flutter apps.
+  /// Repo-maintainer skills (boundary audit, runtime validation, dogfood
+  /// iterations, showcase platform maintenance, repo maintainer) describe
+  /// mcp_flutter's own development workflow and stay plugin-local — vendoring
+  /// them into a user's skill store is noise.
+  static const Set<String> _zcodeUserSkillIds = {
+    'flutter-mcp',
+    'flutter-mcp-automation-chain',
+    'flutter-mcp-e2e-harness',
+    'flutter-mcp-toolkit-control',
+    'flutter-mcp-toolkit-custom-tools',
+    'flutter-mcp-toolkit-debug',
+    'flutter-mcp-toolkit-guide',
+    'flutter-mcp-toolkit-inspect',
+    'flutter-mcp-toolkit-intentcall-migration',
+    'flutter-mcp-toolkit-setup',
+  };
+
+  static void _writeZcodeSkills(String root, InitMode mode) {
+    for (final s in SkillAssets.skills) {
+      if (!_zcodeUserSkillIds.contains(s.id)) continue;
+      _writeSkillFile('$root/.agents/skills/${s.id}/SKILL.md', s, mode);
+    }
   }
 
   static String _resolveServerCommand() {
