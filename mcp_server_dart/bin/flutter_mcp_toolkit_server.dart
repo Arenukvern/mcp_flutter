@@ -11,6 +11,7 @@ import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_capability_core/flutter_mcp_toolkit_capability_core.dart';
 import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_server.dart';
+import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/idle_exit_monitor.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/core_port_scanner.dart';
 import 'package:stream_channel/stream_channel.dart';
 
@@ -51,7 +52,25 @@ Future<void> main(List<String> args) async {
           parsedArgs.option(preferTargetLabel),
         ),
       );
-      final server = MCPToolkitServer.fromStreamChannel(
+      final idleMinutes =
+          int.tryParse(parsedArgs.option(idleExitMinutes) ?? '') ?? 0;
+      late final MCPToolkitServer server;
+      final idleMonitor = idleMinutes > 0
+          ? IdleExitMonitor(
+              idleTimeout: Duration(minutes: idleMinutes),
+              isVmServiceConnected: () => server.isVMServiceConnected,
+              onExit: (reason) async {
+                io.stderr.writeln('[flutter-mcp-toolkit-server] $reason');
+                try {
+                  await server.shutdown().timeout(const Duration(seconds: 2));
+                } on Object {
+                  // Best-effort teardown on the idle path; never block exit.
+                }
+                io.exit(0);
+              },
+            )
+          : null;
+      server = MCPToolkitServer.fromStreamChannel(
         StreamChannel.withCloseGuarantee(io.stdin, io.stdout)
             .transform(StreamChannelTransformer.fromCodec(utf8))
             .transformStream(const LineSplitter())
@@ -61,6 +80,7 @@ Future<void> main(List<String> args) async {
                   if (data.trim().isEmpty) {
                     return;
                   }
+                  idleMonitor?.touch();
                   sink.add(data);
                 },
               ),
@@ -74,6 +94,7 @@ Future<void> main(List<String> args) async {
             ),
         configuration: configuration,
       );
+      idleMonitor?.start();
       await server.capabilityHost.registerCapability(const FmtCapability());
       await server.handleSetLevel(
         SetLevelRequest(
@@ -195,6 +216,15 @@ final argParser = ArgParser(allowTrailingOptions: false)
         'process, and any app started with --no-dds.',
   )
   ..addOption(
+    idleExitMinutes,
+    defaultsTo: '0',
+    help:
+        'Exit after this many idle minutes with no MCP requests and no VM '
+        'service connection. Clients keep stdio servers alive while a '
+        'conversation stays open (resumable for days); this bounds idle '
+        'server processes. 0 disables (default).',
+  )
+  ..addOption(
     preferTargetLabel,
     help:
         'Prefer the discovered target whose label contains this text, so '
@@ -236,5 +266,6 @@ const flutterProjectDir = 'flutter-project-dir';
 const flutterDevice = 'flutter-device';
 const flutterDiscoveryTimeoutMs = 'flutter-discovery-timeout-ms';
 const scanPorts = 'scan-ports';
+const idleExitMinutes = 'idle-exit-minutes';
 const preferTargetLabel = 'prefer-target-label';
 const defaultFlutterDiscoveryTimeoutMs = 2500;
