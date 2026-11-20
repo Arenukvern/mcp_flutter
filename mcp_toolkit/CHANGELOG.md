@@ -1,3 +1,7 @@
+# 8.0.0
+
+- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit 8.0.0 release.
+
 # 7.2.1
 
 ### Fixed

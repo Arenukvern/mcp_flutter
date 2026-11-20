@@ -1,5 +1,11 @@
 # Changelog
 
+## [8.0.0] - 2026-11-20
+
+### Changed
+
+- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit 8.0.0 release.
+
 ## [7.2.1] - 2026-11-18
 
 ### Changed
