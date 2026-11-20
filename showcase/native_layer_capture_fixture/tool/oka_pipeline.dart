@@ -19,7 +19,7 @@ Future<void> main(List<String> args) => okaRun(
         overrides: const PipelineOverrides(
           resDirs: ['android/app/src/main/res'],
         ),
-        // Pinned oka SDK (PR #18+): `defaultSteps` includes `record-run-session`.
+        // oka v0.11.0 tag pin (tool/ci/oka_consumer_pin.txt): defaultSteps + record-run-session.
         steps: [...AndroidPipeline.defaultSteps],
       ),
     ],

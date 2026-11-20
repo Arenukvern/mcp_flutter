@@ -1,4 +1,4 @@
-/// Android oka 0.9.1 build ↔ dev manifest diagnostics (consumer boundary).
+/// Android oka 0.11.0 build ↔ dev manifest diagnostics (consumer boundary).
 ///
 /// Uses hosted [checkDevSession] / [devLoopDoctorChecks] — no oka patches.
 library;

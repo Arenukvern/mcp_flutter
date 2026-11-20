@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Temporary unreleased oka SDK integration (oka PR #18). Test-only consumer pin.
+# Test-only oka SDK consumer pin (tool/ci/oka_consumer_pin.txt → v0.11.0 train).
 set -euo pipefail
 repo_root="$(cd "$(dirname "$0")/../.." && pwd)"
 ref="$(tr -d '[:space:]' < "$repo_root/tool/ci/oka_consumer_pin.txt")"
