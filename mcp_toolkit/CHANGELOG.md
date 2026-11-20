@@ -1,3 +1,11 @@
+# 7.2.3
+
+### Changed
+
+- Widen `from_json_to_json` and `is_dart_empty_or_not` hosted ranges to
+  `>=0.5.0 <0.7.0` so consumers can resolve fj2j/idoen 0.5.x without API
+  changes.
+
 # 7.2.2
 
 ### Changed

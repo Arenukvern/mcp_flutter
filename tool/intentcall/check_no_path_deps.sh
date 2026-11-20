@@ -115,6 +115,13 @@ for raw_path in sys.argv[1:]:
         "packages/server_capability_core/pubspec.yaml",
         "mcp_toolkit/pubspec.yaml",
     }
+    # Server pins session floor after intentcall_session 1.2.1 (fj2j clash fix);
+    # other intentcall_* stay unconstrained for override/lock resolution.
+    session_floor_allow = {
+        "mcp_server_dart/pubspec.yaml": {
+            "intentcall_session": re.compile(r"^\^1\.2\.1$"),
+        },
+    }
     allow_pinned = rel in published_packages
     dep_ranges = section_ranges(lines)
     for index, line in enumerate(lines):
@@ -140,6 +147,9 @@ for raw_path in sys.argv[1:]:
                 )
                 failed = True
         elif inline and not allow_pinned:
+            allowed = session_floor_allow.get(rel, {}).get(package)
+            if allowed and allowed.fullmatch(inline):
+                continue
             print(
                 f"hosted intentcall dependency: {path}:{index + 1}: "
                 f"{package} uses hosted {inline}; expected no version "

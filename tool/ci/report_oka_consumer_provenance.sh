@@ -103,7 +103,7 @@ data = {
     "fixtureOkaPackageRoots": fixture_roots,
     "harnessPubDepsCompact": harness_deps,
     "fixturePubDepsCompact": fixture_deps,
-    "note": "Provisional unmerged oka PR #18 test pin only; not production cutover or hosted release.",
+    "note": "Hosted oka v0.11.0 train CI pin (tool/ci/oka_consumer_pin.txt SHA); native proof only.",
 }
 os.makedirs(os.path.dirname(os.environ["REPORT_OUT"]) or ".", exist_ok=True)
 with open(os.environ["REPORT_OUT"], "w", encoding="utf-8") as f:

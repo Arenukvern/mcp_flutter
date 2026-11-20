@@ -1,0 +1,58 @@
+# Mirrors per-package dart_changesets tags onto the root binary train tag `vX.Y.Z`
+# so `release.yml` (on `v*`) can build install tarballs without a manual tag step.
+name: dart_changesets — root release tag
+
+on:
+  push:
+    tags:
+      - 'mcp_toolkit-v*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dart-changesets-root-release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  mirror-root-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create root v* tag and GitHub release when absent
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$TAG_NAME" =~ ^mcp_toolkit-v([0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?)$ ]]; then
+            echo "Skipping non-semver tag: $TAG_NAME"
+            exit 0
+          fi
+          version="${BASH_REMATCH[1]}"
+          root_tag="v${version}"
+          if git rev-parse "$root_tag" >/dev/null 2>&1; then
+            echo "Root tag $root_tag already exists"
+            exit 0
+          fi
+          sha="$(git rev-parse HEAD)"
+          git tag "$root_tag" "$sha"
+          git push origin "$root_tag"
+
+          notes="$(python3 - "$version" <<'PY'
+import re, sys
+version = sys.argv[1]
+text = open("CHANGELOG.md", encoding="utf-8").read()
+pattern = rf"## \[{re.escape(version)}\][^\n]*\n(.*?)(?=\n## \[|\Z)"
+m = re.search(pattern, text, re.S)
+body = m.group(1).strip() if m else f"Release {version} (from dart_changesets)."
+print(body)
+PY
+)"
+          gh release create "$root_tag" \
+            --title "Flutter MCP Toolkit $version" \
+            --notes "$notes" \
+            --verify-tag

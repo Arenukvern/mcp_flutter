@@ -25,7 +25,7 @@ dependencies:
   flutter_mcp_toolkit_capability_kernel: ^7.2.1
   flutter_mcp_toolkit_core: ^7.2.1
   from_json_to_json: ">=0.5.0 <0.7.0"
-  intentcall_codegen: ^1.0.0
+  intentcall_codegen: ^1.2.1
   intentcall_core: ^1.0.0
   intentcall_mcp: ^1.0.0
   intentcall_schema: ^1.0.0
