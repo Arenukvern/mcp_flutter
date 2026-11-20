@@ -46,7 +46,11 @@ jobs:
           fetch-depth: 0
 
       - name: Sync release version touchpoints
-        run: bash tool/release/sync_version.sh
+        run: |
+          set -euo pipefail
+          version="$(sed -nE 's/^version:[[:space:]]*([^[:space:]#]+).*/\1/p' mcp_toolkit/pubspec.yaml | head -1)"
+          [[ -n "$version" ]] || { echo "::error::mcp_toolkit pubspec has no version"; exit 1; }
+          bash tool/release/sync_version.sh --version "$version"
 
       - name: Commit and push if changed
         env:

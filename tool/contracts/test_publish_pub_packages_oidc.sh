@@ -4,14 +4,16 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MINT_SCRIPT="$ROOT_DIR/tool/release/mint_pub_dev_oidc_token.sh"
 PUBLISH_SCRIPT="$ROOT_DIR/tool/release/publish_pub_packages.sh"
-WORKFLOW="$ROOT_DIR/.github/workflows/pub_publish.yml"
+WORKFLOW="$ROOT_DIR/.github/workflows/dart_changesets_publish.yml"
 
 fail() { echo "test_publish_pub_packages_oidc: $*" >&2; exit 1; }
 ok() { echo "test_publish_pub_packages_oidc: $*"; }
 
 [[ -f "$MINT_SCRIPT" ]] || fail "missing mint_pub_dev_oidc_token.sh"
 [[ -f "$PUBLISH_SCRIPT" ]] || fail "missing publish_pub_packages.sh"
-[[ -f "$WORKFLOW" ]] || fail "missing pub_publish.yml"
+[[ -f "$WORKFLOW" ]] || fail "missing dart_changesets_publish.yml"
+grep -q 'id-token: write' "$WORKFLOW" ||
+  fail "dart_changesets_publish.yml must grant id-token for pub.dev OIDC"
 
 grep -q 'mint_pub_dev_oidc_token' "$PUBLISH_SCRIPT" ||
   fail "publish_pub_packages.sh must call mint_pub_dev_oidc_token"
@@ -54,9 +56,9 @@ grep -q '::add-mask::' "$MINT_SCRIPT" ||
 ok "mint script jq and add-mask contract"
 
 if grep -qE 'env\.ACTIONS_ID_TOKEN_REQUEST|ACTIONS_ID_TOKEN_REQUEST.*\$\{\{[[:space:]]*env\.' "$WORKFLOW"; then
-  fail "pub_publish.yml must not re-declare ACTIONS_ID_TOKEN_REQUEST_* via env.\${{ env.* }}"
+  fail "dart_changesets_publish.yml must not re-declare ACTIONS_ID_TOKEN_REQUEST_* via env.\${{ env.* }}"
 fi
-ok "pub_publish workflow does not override OIDC env"
+ok "dart_changesets publish workflow does not override OIDC env"
 
 set +e
 out="$(env -u ACTIONS_ID_TOKEN_REQUEST_URL -u ACTIONS_ID_TOKEN_REQUEST_TOKEN \

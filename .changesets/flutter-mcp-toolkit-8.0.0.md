@@ -1,4 +1,5 @@
 ---
+'flutter_mcp_toolkit_server': major
 'mcp_toolkit': major
 'flutter_mcp_toolkit_core': major
 'flutter_mcp_toolkit_capability_kernel': major

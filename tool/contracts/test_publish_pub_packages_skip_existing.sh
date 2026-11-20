@@ -3,13 +3,15 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PUBLISH_SCRIPT="$ROOT_DIR/tool/release/publish_pub_packages.sh"
-WORKFLOW="$ROOT_DIR/.github/workflows/pub_publish.yml"
+PUB_WORKFLOW="$ROOT_DIR/.github/workflows/dart_changesets_publish.yml"
+RELEASE_WORKFLOW="$ROOT_DIR/.github/workflows/release.yml"
 
 fail() { echo "test_publish_pub_packages_skip_existing: $*" >&2; exit 1; }
 ok() { echo "test_publish_pub_packages_skip_existing: $*"; }
 
 [[ -f "$PUBLISH_SCRIPT" ]] || fail "missing publish_pub_packages.sh"
-[[ -f "$WORKFLOW" ]] || fail "missing pub_publish.yml"
+[[ -f "$PUB_WORKFLOW" ]] || fail "missing dart_changesets_publish.yml"
+[[ -f "$RELEASE_WORKFLOW" ]] || fail "missing release.yml"
 
 grep -q 'package_has_version' "$PUBLISH_SCRIPT" ||
   fail "publish script must implement package_has_version"
@@ -30,24 +32,19 @@ fi
 grep -q 'curl -fsS "https://pub.dev/api/packages/' "$PUBLISH_SCRIPT" ||
   fail "package_has_version must query pub.dev API"
 
-grep -q '\-\-skip-existing' "$WORKFLOW" ||
-  fail "pub_publish workflow must pass --skip-existing"
-grep -q 'workflow_dispatch:' "$WORKFLOW" ||
-  fail "pub_publish must support workflow_dispatch recovery"
-grep -q 'execute_publish' "$WORKFLOW" ||
-  fail "pub_publish workflow_dispatch must define execute_publish input"
-grep -q 'trigger_mcp_registry' "$WORKFLOW" ||
-  fail "pub_publish workflow_dispatch must define trigger_mcp_registry input"
-grep -q 'publish_mcp_registry.yml' "$WORKFLOW" ||
-  fail "pub_publish must be able to trigger publish_mcp_registry.yml"
-grep -q '\-\-ref main' "$WORKFLOW" ||
+grep -q 'Arenukvern/dart_changesets/.github/workflows/publish.yml' "$PUB_WORKFLOW" ||
+  fail "dart_changesets publish must call reusable engine publish workflow"
+grep -q 'workflow_dispatch:' "$PUB_WORKFLOW" ||
+  fail "dart_changesets publish must support workflow_dispatch recovery"
+grep -q 'execute:' "$PUB_WORKFLOW" ||
+  fail "dart_changesets publish workflow_dispatch must define execute input"
+grep -q 'publish_mcp_registry.yml' "$RELEASE_WORKFLOW" ||
+  fail "release.yml must trigger publish_mcp_registry.yml after root v* release"
+grep -q '\-\-ref main' "$RELEASE_WORKFLOW" ||
   fail "registry trigger must dispatch publish_mcp_registry on main (fixed tooling)"
-grep -q 'release_tag=' "$WORKFLOW" ||
+grep -q 'release_tag=' "$RELEASE_WORKFLOW" ||
   fail "registry trigger must pass release_tag to publish_mcp_registry"
-grep -q "startsWith(github.ref, 'refs/tags/v')" "$WORKFLOW" ||
-  fail "registry trigger must require refs/tags/v*"
 
-# package_has_version: exact VERSION match, not just latest.
 grep -q "v\['version'\] == '\$VERSION'" "$PUBLISH_SCRIPT" ||
   fail "package_has_version must match exact VERSION on pub.dev"
 

@@ -19,6 +19,12 @@ fi
 if ! grep -q 'workflow_dispatch:' "$WF"; then
   fail "release.yml must support workflow_dispatch for asset recovery"
 fi
+if ! grep -q 'workflow_call:' "$WF"; then
+  fail "release.yml must support workflow_call from dart_changesets publish"
+fi
+if ! grep -q 'ensure_root_release_tag.sh' "$WF"; then
+  fail "release.yml must ensure root v* tag from dart_changesets package tags"
+fi
 if ! grep -q 'release_tag:' "$WF"; then
   fail "workflow_dispatch must declare release_tag input"
 fi
