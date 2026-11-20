@@ -50,7 +50,8 @@ fmt_capability_version="$(
 for manifest in \
   "$ROOT_DIR/plugin/.cursor-plugin/plugin.json" \
   "$ROOT_DIR/plugin/.codex-plugin/plugin.json" \
-  "$ROOT_DIR/plugin/.claude-plugin/plugin.json"; do
+  "$ROOT_DIR/plugin/.claude-plugin/plugin.json" \
+  "$ROOT_DIR/plugin/.zcode-plugin/plugin.json"; do
   manifest_version="$(
     sed -nE 's/.*"version"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' "$manifest" | head -1
   )"

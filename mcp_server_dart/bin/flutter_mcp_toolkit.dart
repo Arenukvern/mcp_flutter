@@ -9,6 +9,7 @@ import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/platform_view_hints.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/appintents_testing_command.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/cli_port_options.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/codegen_init_command.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/codegen_sync_command.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/diagnostics/doctor_human_output.dart';
@@ -110,7 +111,11 @@ Future<void> main(List<String> args) async {
 
   final connectionContext = ConnectionContext(
     defaultHost: parsed.option(_dartVmHost) ?? _defaultHost,
-    defaultPort: int.tryParse(parsed.option(_dartVmPort) ?? '') ?? _defaultPort,
+    defaultPort: _cliPositivePortOption(
+      parsed,
+      option: _dartVmPort,
+      fallback: _defaultPort,
+    ),
     logger: logger,
     discoverPorts: portScanner.scanForFlutterPorts,
     preferredTargetLabel: _nonEmptyOption(parsed.option(_preferTargetLabel)),
@@ -131,7 +136,11 @@ Future<void> main(List<String> args) async {
 
   final configuration = CoreRuntimeConfiguration(
     vmHost: parsed.option(_dartVmHost) ?? _defaultHost,
-    vmPort: int.tryParse(parsed.option(_dartVmPort) ?? '') ?? _defaultPort,
+    vmPort: _cliPositivePortOption(
+      parsed,
+      option: _dartVmPort,
+      fallback: _defaultPort,
+    ),
     resourcesSupported: parsed.flag(_resourcesSupported),
     imagesSupported: parsed.flag(_imagesSupported),
     dumpsSupported: parsed.flag(_dumpsSupported),
@@ -141,10 +150,11 @@ Future<void> main(List<String> args) async {
     flutterDevice: flutterDevice,
     stateRootDir: stateRoot,
     outputDir: outputDir,
-    webBrowserDebuggingPort: int.tryParse(
-      parsed.option(_webBrowserDebuggingPort) ?? '',
+    webBrowserDebuggingPort: _cliOptionalPortOption(
+      parsed,
+      option: _webBrowserDebuggingPort,
     ),
-    webPort: int.tryParse(parsed.option(_webPort) ?? ''),
+    webPort: _cliOptionalPortOption(parsed, option: _webPort),
   );
 
   final executor = DefaultCoreCommandExecutor(
@@ -1165,6 +1175,65 @@ List<int> _parseScanPortsOption(
     );
   }
   return ports;
+}
+
+Never _exitInvalidCliPort(CliPortUsageException error) {
+  final result = CoreResult.failure(
+    code: CoreErrorCode.invalidCommand,
+    message: error.message,
+  );
+  io.stdout.writeln(jsonEncode(result.toEnvelopeJson()));
+  io.exit(64);
+}
+
+int _cliPositivePortOption(
+  ArgResults parsed, {
+  required String option,
+  required int fallback,
+}) {
+  try {
+    return cliPositivePort(
+      parsed.option(option),
+      fallback: fallback,
+      flag: option,
+    );
+  } on CliPortUsageException catch (error) {
+    _exitInvalidCliPort(error);
+  }
+}
+
+int? _cliOptionalPortOption(
+  ArgResults parsed, {
+  required String option,
+}) {
+  try {
+    return cliOptionalPort(parsed.option(option), flag: option);
+  } on CliPortUsageException catch (error) {
+    _exitInvalidCliPort(error);
+  }
+}
+
+int _cliPositivePortFromValues(
+  String? value, {
+  required int fallback,
+  required String flag,
+}) {
+  try {
+    return cliPositivePort(value, fallback: fallback, flag: flag);
+  } on CliPortUsageException catch (error) {
+    _exitInvalidCliPort(error);
+  }
+}
+
+int? _cliOptionalPortFromValues(
+  String? value, {
+  required String flag,
+}) {
+  try {
+    return cliOptionalPort(value, flag: flag);
+  } on CliPortUsageException catch (error) {
+    _exitInvalidCliPort(error);
+  }
 }
 
 int _parsePositiveIntOption(
@@ -2812,8 +2881,15 @@ Future<int> _runWebmcpSubcommand(ArgResults command) async {
           : const <String, Object?>{};
       final rawExpected = sub.option('expect-result-value');
       return runWebmcpVerify(
-        cdpPort: int.tryParse(sub.option('cdp-port') ?? ''),
-        preferredWebPort: int.tryParse(sub.option('web-port') ?? '') ?? 8080,
+        cdpPort: _cliOptionalPortFromValues(
+          sub.option('cdp-port'),
+          flag: 'cdp-port',
+        ),
+        preferredWebPort: _cliPositivePortFromValues(
+          sub.option('web-port'),
+          fallback: 8080,
+          flag: 'web-port',
+        ),
         toolName: sub.option('tool-name'),
         toolArguments: toolArgs,
         expectResultField: sub.option('expect-result-field'),

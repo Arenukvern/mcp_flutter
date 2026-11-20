@@ -9,6 +9,7 @@ LONG_QUEUE="$ROOT_DIR/tool/contracts/fixtures/release_job_runner_shortage_long_q
 SUPERSEDED="$ROOT_DIR/tool/contracts/fixtures/release_superseded_runs.json"
 SCRIPT="$ROOT_DIR/tool/release/maybe_rerun_runner_shortage_jobs.sh"
 LIB="$ROOT_DIR/tool/release/runner_shortage_lib.sh"
+RETRY_LIB="$ROOT_DIR/tool/release/release_runner_retry_lib.sh"
 
 fail() { echo "test_release_runner_retry_decision: $*" >&2; exit 1; }
 ok() { echo "test_release_runner_retry_decision: $*"; }
@@ -16,6 +17,8 @@ ok() { echo "test_release_runner_retry_decision: $*"; }
 command -v jq >/dev/null 2>&1 || fail "jq required"
 # shellcheck source=../release/runner_shortage_lib.sh
 source "$LIB"
+# shellcheck source=../release/release_runner_retry_lib.sh
+source "$RETRY_LIB"
 
 NOT_ACQUIRED_RE="$NOT_ACQUIRED_RE_DEFAULT"
 
@@ -52,13 +55,16 @@ else
   ok "run_attempt 2 still eligible"
 fi
 
-if ! grep -q 'gh run rerun.*--failed' "$SCRIPT"; then
-  fail "script must use single gh run rerun --failed"
+if ! grep -q 'release_runner_retry__invoke_rerun_argv' "$SCRIPT"; then
+  fail "production script must dispatch via release_runner_retry__invoke_rerun_argv"
 fi
-ok "single --failed rerun present"
+if ! grep -qE 'gh run rerun.*--failed' "$RETRY_LIB"; then
+  fail "retry lib must build single gh run rerun --failed argv"
+fi
+ok "single --failed rerun via shared argv builder"
 
-if grep -q 'gh run rerun.*--job' "$SCRIPT"; then
-  fail "script must not loop per-job reruns"
+if grep -qE 'gh run rerun.*--job' "$SCRIPT" "$RETRY_LIB"; then
+  fail "must not loop per-job reruns"
 fi
 ok "no per-job rerun loop"
 
@@ -73,11 +79,40 @@ if ! grep -q 'superseded by a newer Release run' "$SCRIPT"; then
 fi
 ok "superseded run guard present"
 
-newer="$(jq --arg hb "v7.2.0" --arg ts "2026-11-17T10:30:00Z" --argjson rid 100 \
-  '[.workflow_runs[] | select(.head_branch == $hb and .created_at > $ts and .id != $rid)] | length' \
-  "$SUPERSEDED")"
+newer="$(release_runner_retry__newer_run_count \
+  "$(cat "$SUPERSEDED")" "v7.2.0" "2026-11-17T10:30:00Z" 100)"
 [[ "$newer" -gt 0 ]] || fail "superseded fixture must detect newer run"
 ok "superseded fixture detects newer run for same tag"
+
+if release_runner_retry__is_superseded \
+  "$(cat "$SUPERSEDED")" "v7.2.0" "2026-11-17T10:30:00Z" 100; then
+  ok "superseded guard triggers for newer release run"
+else
+  fail "superseded guard must trigger"
+fi
+
+jobs_empty='{"jobs":[]}'
+decision="$(release_runner_retry__decide 1 3 "$(cat "$SUPERSEDED")" \
+  "v7.2.0" "2026-11-17T10:30:00Z" 100 "$jobs_empty")"
+[[ "$decision" == superseded ]] || fail "decide must return superseded"
+ok "decide returns superseded without gh"
+
+long_jobs="$(jq -n --argjson j "$(cat "$LONG_QUEUE")" '{jobs: [$j]}')"
+decision="$(release_runner_retry__decide 2 3 '{"workflow_runs":[]}' \
+  "v7.2.1" "2026-11-17T09:00:00Z" 102 "$long_jobs")"
+[[ "$decision" == rerun ]] || fail "long zero-step cancel must decide rerun"
+ok "decide classifies runner shortage and requests rerun"
+
+manual_jobs="$(jq -n --argjson j "$(cat "$MANUAL_CANCEL")" '{jobs: [$j]}')"
+decision="$(release_runner_retry__decide 1 3 '{"workflow_runs":[]}' \
+  "v7.2.1" "2026-11-17T09:00:00Z" 101 "$manual_jobs")"
+[[ "$decision" == real_failure ]] || fail "manual short cancel must not rerun"
+ok "decide rejects manual short-queue cancel"
+
+if grep -q 'RUNNER_RETRY_SKIP_BACKOFF' "$SCRIPT"; then
+  fail "production retry script must not include RUNNER_RETRY_SKIP_BACKOFF"
+fi
+ok "no test-only retry backoff hook in production script"
 
 job="$(cat "$MANUAL_CANCEL")"
 runner_id="$(echo "$job" | jq -r '.runner_id')"

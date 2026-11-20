@@ -2,18 +2,13 @@
 # Decide whether to re-run GitHub Actions jobs cancelled by hosted-runner shortages.
 set -euo pipefail
 
-RUN_ID="${1:-}"
-REPO="${2:-}"
-RUN_ATTEMPT="${3:-1}"
-MAX_ATTEMPTS="${4:-3}"
-
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # shellcheck source=runner_shortage_lib.sh
 source "$ROOT_DIR/tool/release/runner_shortage_lib.sh"
+# shellcheck source=release_runner_retry_lib.sh
+source "$ROOT_DIR/tool/release/release_runner_retry_lib.sh"
 
 SUMMARY="${GITHUB_STEP_SUMMARY:-/dev/stdout}"
-NOT_ACQUIRED_RE="$NOT_ACQUIRED_RE_DEFAULT"
-ZERO_STEP_MIN_WAIT_SECONDS="$ZERO_STEP_MIN_WAIT_SECONDS_DEFAULT"
 
 log() {
   echo "$*" | tee -a "$SUMMARY"
@@ -23,6 +18,21 @@ fail() {
   log "❌ $*"
   exit 1
 }
+
+if [[ "${1:-}" == --plan ]]; then
+  state_file="${2:-}"
+  [[ -f "$state_file" ]] || fail "usage: maybe_rerun_runner_shortage_jobs.sh --plan <state.json>"
+  plan="$(release_runner_retry__plan_from_state_file "$state_file")"
+  echo "$plan"
+  [[ "$(echo "$plan" | jq -r '.ok')" == "true" ]] || fail "$(echo "$plan" | jq -r '.error')"
+  release_runner_retry__emit_plan_dry_run_trailer "$state_file" "$plan"
+  exit 0
+fi
+
+RUN_ID="${1:-}"
+REPO="${2:-}"
+RUN_ATTEMPT="${3:-1}"
+MAX_ATTEMPTS="${4:-3}"
 
 [[ -n "$RUN_ID" && -n "$REPO" ]] || \
   fail "usage: maybe_rerun_runner_shortage_jobs.sh <run-id> <owner/repo> [run_attempt] [max_attempts]"
@@ -36,123 +46,139 @@ log "- Workflow run: $RUN_ID"
 log "- Repository: $REPO"
 log "- Run attempt: $RUN_ATTEMPT / $MAX_ATTEMPTS (max total runs)"
 
-if [[ "$RUN_ATTEMPT" -ge "$MAX_ATTEMPTS" ]]; then
-  log ""
-  log "**No rerun:** attempt cap reached (max $MAX_ATTEMPTS total runs)."
-  exit 0
-fi
-
 run_json="$(gh api "repos/$REPO/actions/runs/$RUN_ID")"
 head_branch="$(echo "$run_json" | jq -r '.head_branch // empty')"
 created_at="$(echo "$run_json" | jq -r '.created_at // empty')"
+workflow_event="$(echo "$run_json" | jq -r '.event // empty')"
 
-if [[ -n "$head_branch" && -n "$created_at" ]]; then
-  workflow_id="$(gh api "repos/$REPO/actions/workflows" \
-    --jq '.workflows[] | select(.path | endswith("release.yml")) | .id' | head -n1)"
-  if [[ -n "$workflow_id" ]]; then
-    workflow_runs_json="$(gh api \
-      "repos/$REPO/actions/workflows/$workflow_id/runs?per_page=30")"
-    newer_count="$(echo "$workflow_runs_json" | jq --arg hb "$head_branch" \
-      --arg ts "$created_at" --argjson rid "$RUN_ID" \
-      '[.workflow_runs[] | select(.head_branch == $hb and .created_at > $ts and .id != $rid)] | length')"
-    if [[ "$newer_count" -gt 0 ]]; then
-      log ""
-      log "**No rerun:** superseded by a newer Release run for \`$head_branch\`."
-      exit 0
-    fi
-  fi
+workflow_runs_json='{"workflow_runs":[]}'
+workflow_id="$(gh api "repos/$REPO/actions/workflows" \
+  --jq '.workflows[] | select(.path | endswith("release.yml")) | .id' | head -n1)"
+if [[ -n "$workflow_id" ]]; then
+  workflow_runs_json="$(gh api \
+    "repos/$REPO/actions/workflows/$workflow_id/runs?per_page=30")"
 fi
 
 jobs_json="$(gh api "repos/$REPO/actions/runs/$RUN_ID/jobs" --paginate)"
 
-job_has_not_acquired_annotation() {
-  local check_run_url="$1"
-  [[ -n "$check_run_url" && "$check_run_url" != "null" ]] || return 1
-  local annotations
-  annotations="$(gh api "${check_run_url%/}/annotations" --paginate 2>/dev/null || true)"
-  runner_shortage__annotation_matches "$annotations" "$NOT_ACQUIRED_RE"
-}
-
-runner_shortage_detected=false
+enriched_jobs='[]'
 real_failure_jobs=()
-unclassified_jobs=()
-
 while IFS= read -r job_line; do
   [[ -n "$job_line" ]] || continue
   job_id="$(echo "$job_line" | jq -r '.id')"
   job_name="$(echo "$job_line" | jq -r '.name')"
-  conclusion="$(echo "$job_line" | jq -r '.conclusion')"
-  runner_id="$(echo "$job_line" | jq -r '.runner_id')"
-  step_count="$(echo "$job_line" | jq -r '.steps | length')"
   check_run_url="$(echo "$job_line" | jq -r '.check_run_url // empty')"
-  created_job="$(echo "$job_line" | jq -r '.created_at // empty')"
-  completed_job="$(echo "$job_line" | jq -r '.completed_at // empty')"
+  annotations='[]'
+  if [[ -n "$check_run_url" && "$check_run_url" != "null" ]]; then
+    annotations="$(release_runner_retry__gh_api_annotations_json "$check_run_url")"
+  fi
+  job_with_ann="$(echo "$job_line" | jq -c --argjson ann "$annotations" '. + {annotations: $ann}')"
+  enriched_jobs="$(jq -c --argjson j "$job_with_ann" '. + [$j]' <<<"$enriched_jobs")"
 
-  if [[ "$conclusion" == "failure" ]]; then
-    failed_steps="$(echo "$job_line" | jq -r \
-      '[.steps[]? | select(.conclusion == "failure")] | length')"
-    if [[ "$failed_steps" -gt 0 ]]; then
-      real_failure_jobs+=("$job_name ($job_id)")
-    else
+  job_class="$(release_runner_retry__classify_job \
+    "$job_with_ann" "$NOT_ACQUIRED_RE_DEFAULT" "$ZERO_STEP_MIN_WAIT_SECONDS_DEFAULT")"
+  case "$job_class" in
+    unclassified)
       log "- Unclassified: $job_name ($job_id) (failure, zero failed steps)"
-      unclassified_jobs+=("$job_name ($job_id)")
-    fi
-    continue
-  fi
-
-  if [[ "$conclusion" != "cancelled" ]]; then
-    continue
-  fi
-
-  if job_has_not_acquired_annotation "$check_run_url"; then
-    log "- Classified runner shortage (annotation): $job_name ($job_id)"
-    runner_shortage_detected=true
-    continue
-  fi
-
-  if runner_shortage__zero_step_shortage_candidate \
-    "$runner_id" "$step_count" "$created_job" "$completed_job" \
-    "$ZERO_STEP_MIN_WAIT_SECONDS"; then
-    log "- Classified runner shortage (zero steps, waited >= ${ZERO_STEP_MIN_WAIT_SECONDS}s): $job_name ($job_id)"
-    runner_shortage_detected=true
-    continue
-  fi
-
-  real_failure_jobs+=("$job_name ($job_id)")
+      ;;
+    shortage_annotation)
+      log "- Classified runner shortage (annotation): $job_name ($job_id)"
+      ;;
+    shortage_zero)
+      log "- Classified runner shortage (zero steps, waited >= ${ZERO_STEP_MIN_WAIT_SECONDS_DEFAULT}s): $job_name ($job_id)"
+      ;;
+    real_failure)
+      real_failure_jobs+=("$job_name ($job_id)")
+      ;;
+  esac
 done < <(echo "$jobs_json" | jq -c '.jobs[]?')
 
-if [[ ${#real_failure_jobs[@]} -gt 0 ]]; then
+state_file="$(mktemp)"
+trap 'rm -f "$state_file"' EXIT
+jq -n \
+  --argjson run_attempt "$RUN_ATTEMPT" \
+  --argjson max_attempts "$MAX_ATTEMPTS" \
+  --arg head_branch "$head_branch" \
+  --arg created_at "$created_at" \
+  --argjson run_id "$RUN_ID" \
+  --arg repo "$REPO" \
+  --arg workflow_event "$workflow_event" \
+  --argjson workflow_runs "$workflow_runs_json" \
+  --argjson jobs "$enriched_jobs" \
+  --arg not_acquired_re "$NOT_ACQUIRED_RE_DEFAULT" \
+  --argjson min_wait "$ZERO_STEP_MIN_WAIT_SECONDS_DEFAULT" \
+  '{
+    run_attempt: $run_attempt,
+    max_attempts: $max_attempts,
+    head_branch: $head_branch,
+    created_at: $created_at,
+    run_id: $run_id,
+    repo: $repo,
+    workflow_event: $workflow_event,
+    workflow_runs: $workflow_runs,
+    jobs: $jobs,
+    not_acquired_re: $not_acquired_re,
+    zero_step_min_wait_seconds: $min_wait
+  }' >"$state_file"
+
+plan="$(release_runner_retry__plan_from_state_file "$state_file")"
+
+[[ "$(echo "$plan" | jq -r '.ok')" == "true" ]] || fail "$(echo "$plan" | jq -r '.error')"
+
+decision="$(echo "$plan" | jq -r '.decision')"
+case "$decision" in
+  cap)
+    log ""
+    log "**No rerun:** attempt cap reached (max $MAX_ATTEMPTS total runs)."
+    exit 0
+    ;;
+  skip_event)
+    log ""
+    log "**No rerun:** workflow event is not push."
+    exit 0
+    ;;
+  superseded)
+    log ""
+    log "**No rerun:** superseded by a newer Release run for \`$head_branch\`."
+    exit 0
+    ;;
+  real_failure)
+    log ""
+    log "**No rerun:** real build/test failures or non-shortage cancellations:"
+    for name in "${real_failure_jobs[@]}"; do
+      log "- $name"
+    done
+    exit 0
+    ;;
+  unclassified)
+    log ""
+    log "**No rerun:** unclassified failure jobs present."
+    exit 0
+    ;;
+  no_shortage)
+    log ""
+    log "**No rerun:** no runner-shortage cancellations detected."
+    exit 0
+    ;;
+  rerun)
+    ;;
+  *)
+    fail "unknown retry decision: $decision"
+    ;;
+esac
+
+if [[ "$(echo "$plan" | jq -r '.dispatch_rerun')" == "true" ]]; then
+  sleep_seconds="$(echo "$plan" | jq -r '.sleep_seconds')"
   log ""
-  log "**No rerun:** real build/test failures or non-shortage cancellations:"
-  for name in "${real_failure_jobs[@]}"; do
-    log "- $name"
-  done
-  exit 0
-fi
-
-if [[ ${#unclassified_jobs[@]} -gt 0 && "$runner_shortage_detected" != true ]]; then
+  log "Backoff: waiting ${sleep_seconds}s (120s × run attempt $RUN_ATTEMPT) before rerun..."
+  sleep "$sleep_seconds"
   log ""
-  log "**No rerun:** unclassified failure jobs present."
-  exit 0
-fi
-
-if [[ "$runner_shortage_detected" != true ]]; then
+  log "**Rerunning failed jobs (single dispatch):** run $RUN_ID"
+  release_runner_retry__invoke_rerun_argv \
+    "$RUN_ID" "$REPO" release_runner_retry__cb_run_argv || fail "rerun dispatch failed"
   log ""
-  log "**No rerun:** no runner-shortage cancellations detected."
-  exit 0
+  log "**Rerun dispatched.** Dependent publish should resume once all build jobs succeed."
 fi
 
-sleep_seconds=$((120 * RUN_ATTEMPT))
-if [[ "${RUNNER_RETRY_SKIP_BACKOFF:-}" == "1" ]]; then
-  sleep_seconds=0
-fi
-log ""
-log "Backoff: waiting ${sleep_seconds}s (120s × run attempt $RUN_ATTEMPT) before rerun..."
-sleep "$sleep_seconds"
-
-log ""
-log "**Rerunning failed jobs (single dispatch):** run $RUN_ID"
-gh run rerun "$RUN_ID" --repo "$REPO" --failed
-
-log ""
-log "**Rerun dispatched.** Dependent publish should resume once all build jobs succeed."
+rm -f "$state_file"
+trap - EXIT

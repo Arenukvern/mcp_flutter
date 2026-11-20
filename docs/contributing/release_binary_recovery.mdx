@@ -6,6 +6,8 @@ Use when a tagged release exists but [`release.yml`](https://github.com/Arenukve
 
 - The git tag (for example `v7.0.2`) and GitHub Release already exist from release-please.
 - Partial publishes are supported: `publish_release_assets.sh` uploads only missing tarball names on **published** releases, verifies existing remote digests, and rebuilds `checksums.txt` to cover every tarball on the release.
+- When a published release already has `checksums.txt`, every remote tarball must be listed with a matching SHA-256; unlisted assets, empty files, or unparseable lines fail closed. Updated `checksums.txt` on published releases must be a **strict superset** of the prior manifest (unchanged lines preserved). This proves **consistency**, not authenticity (signatures/attestation remain follow-up work).
+- When a published release has **no** `checksums.txt` yet, the first recovery run trusts the initial remote tarball download when building the new manifest (consistency against itself only on that pass).
 - Recovery does **not** create, move, or delete tags and does **not** republish pub.dev or MCP Registry packages.
 - **MCP Registry smoke CI** on release-please PRs is unrelated to tarball recovery: smoke builds use ephemeral sibling path overrides when pub.dev does not yet expose the bumped train; production registry publish remains hosted-only after `pub_publish`.
 

@@ -6,9 +6,15 @@ import 'package:flutter_mcp_toolkit_server/src/cli/init_mode.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/init_target.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/mode_prelude.dart';
 import 'package:flutter_mcp_toolkit_server/src/skill_assets.g.dart';
+import 'package:meta/meta.dart';
 
 // ignore: avoid_classes_with_only_static_members
 class InitWriters {
+  /// Tests inject an absolute server path so zcode init stays hermetic without
+  /// relying on PATH. Production leaves this null and uses [_resolveServerCommand].
+  @visibleForTesting
+  static String Function()? debugResolveServerCommand;
+
   static void writeFor({
     required InitTarget target,
     required InitMode mode,
@@ -213,6 +219,10 @@ class InitWriters {
   }
 
   static String _resolveServerCommand() {
+    final injected = debugResolveServerCommand;
+    if (injected != null) {
+      return injected();
+    }
     final result = Process.runSync(Platform.isWindows ? 'where' : 'which', [
       'flutter-mcp-toolkit-server',
     ]);

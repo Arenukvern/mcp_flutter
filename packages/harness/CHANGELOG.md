@@ -60,22 +60,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit 7.0.2 release.
 
-## [7.0.1] - 2026-10-17
-
-### Fixed
-
-- **Compiles against published packages again**: `universal_automation_interface`
-  moves to `^0.3.0` — the coordinate-tier actions (`ClickAtAction`,
-  `MoveAction`, `DragAction`) the 7.0.0 artifact pattern-matched were never
-  on pub.dev, so published 7.0.0 failed to compile for every consumer.
-  7.0.0 was published against an interface revision that never shipped; this
-  release ports its exhaustive-switch handling (loud refusals for coordinate
-  actions on the instrumented tier + a catch-all) onto `main` and pins the
-  versions that actually exist. `universal_automation_conformance` dev
-  dependency follows at `^0.3.0`.
-
-## [Unreleased]
-
 ### Added
 
 - **App ownership is a first-class choice (`AppOwnership`)**: targets
@@ -107,6 +91,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   one slow call instead of a dead client. Tearoff-based consumers
   (`ToolkitDriver(client.callExtension, …)`) stay valid — the methods
   dispatch to the reconnected internals.
+
+## [7.0.1] - 2026-10-17
+
+### Fixed
+
+- **Compiles against published packages again**: `universal_automation_interface`
+  moves to `^0.3.0` — the coordinate-tier actions (`ClickAtAction`,
+  `MoveAction`, `DragAction`) the 7.0.0 artifact pattern-matched were never
+  on pub.dev, so published 7.0.0 failed to compile for every consumer.
+  7.0.0 was published against an interface revision that never shipped; this
+  release ports its exhaustive-switch handling (loud refusals for coordinate
+  actions on the instrumented tier + a catch-all) onto `main` and pins the
+  versions that actually exist. `universal_automation_conformance` dev
+  dependency follows at `^0.3.0`.
 
 ## [7.0.0] - 2026-10-03
 
@@ -174,7 +172,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   range. In-repo proof consumers remain version-free per
   `docs/intentcall/README.md`; the consumer gate exempts this file.
 
-## [Unreleased]
+## [0.1.0] - 2026-09-30
 
 ### Added
 

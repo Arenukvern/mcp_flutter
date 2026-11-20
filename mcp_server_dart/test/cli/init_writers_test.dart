@@ -9,8 +9,19 @@ import 'package:test/test.dart';
 
 void main() {
   late Directory tmp;
-  setUp(() => tmp = Directory.systemTemp.createTempSync('init_writers_'));
-  tearDown(() => tmp.deleteSync(recursive: true));
+  late String injectedServerCommand;
+
+  setUp(() {
+    tmp = Directory.systemTemp.createTempSync('init_writers_');
+    injectedServerCommand =
+        '${tmp.path}/bin/flutter-mcp-toolkit-server';
+    Directory('${tmp.path}/bin').createSync(recursive: true);
+    InitWriters.debugResolveServerCommand = () => injectedServerCommand;
+  });
+  tearDown(() {
+    InitWriters.debugResolveServerCommand = null;
+    tmp.deleteSync(recursive: true);
+  });
 
   group('InitWriters', () {
     test(

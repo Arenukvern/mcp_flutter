@@ -5,6 +5,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- **BREAKING:** `parseStrictPositiveDecimalPort` rejects leading-zero decimal
+  strings (e.g. `08181`) and other non-canonical forms; **7.2.1** accepted
+  leading-zero decimals such as `08181`.
+
 ## [7.2.1] - 2026-11-18
 
 ### Fixed
