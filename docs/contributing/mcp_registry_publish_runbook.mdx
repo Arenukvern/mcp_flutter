@@ -6,10 +6,13 @@ description: How the flutter-mcp-toolkit OCI image is published to the official 
 # MCP Registry publish runbook
 
 The official [MCP Registry](https://registry.modelcontextprotocol.io) entry
-(`io.github.Arenukvern/flutter-mcp-toolkit`) is published automatically when a
-new version tag lands: `pub_publish.yml` triggers
-`publish_mcp_registry.yml`, which builds the OCI image, pushes it to GHCR, and
-publishes `mcp_server_dart/server.json` to the registry.
+(`io.github.Arenukvern/flutter-mcp-toolkit`) is published by dispatching
+`publish_mcp_registry.yml` (Actions → Run workflow on **`main`** with the
+`release_tag` input), which builds the OCI image, pushes it to GHCR, and
+publishes `mcp_server_dart/server.json` to the registry. (It used to
+auto-trigger from `pub_publish.yml` on `v*` tags; pub packages now release
+per-tag via dart_changesets, so the registry publish is an explicit dispatch
+after the pub train lands — 2026-11-21.)
 
 This pipeline failed four times before its first green run. Every failure mode
 is now covered by a local gate — see
@@ -27,9 +30,7 @@ downstream automation failed (release binaries and/or MCP Registry OCI publish).
 | Missing `flutter_mcp_*` tarballs or `checksums.txt` | On `main`, **Actions → Release → Run workflow** with `release_tag` (e.g. `v7.1.0`). See [release_binary_recovery](/contributing/release_binary_recovery). |
 | MCP Registry image / `server.json` publish | On **`main`** (after tooling fixes are merged), **Actions → Publish MCP Registry server → Run workflow** with `release_tag` (e.g. `v7.1.0`). The workflow uses **tooling from `main`** (fixed `Dockerfile.registry`) and **`mcp_server_dart` from the tag**. |
 
-`publish_mcp_registry.yml` only auto-triggers after a successful pub publish step on tag
-push (`pub_publish.yml` dispatches it on **`main`** with the `release_tag` input). When pub.dev
-already succeeded out-of-band, dispatch manually on **`main`** with the same input — not from
+Dispatch `publish_mcp_registry.yml` on **`main`** with the `release_tag` input — never from
 the tag ref (the tag tree may still carry a broken Dockerfile).
 
 ## Recovery when pub.dev publish failed mid-train

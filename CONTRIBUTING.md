@@ -21,13 +21,13 @@ Product harness releases should keep **changelog in git** and **binaries aligned
 - Reference: [binary-release-contract.md](https://github.com/Arenukvern/skill_steward/blob/main/skills/release-changelog-harness/references/binary-release-contract.md)
 - ADR (meta vs product): [ADR 0010 — binary releases for product harness](https://github.com/Arenukvern/skill_steward/blob/main/docs/decisions/0010-binary-releases-for-product-harness-not-meta-steward.md)
 
-mcp_flutter is the reference implementation: release-please on `main`, tag-triggered artifacts, consumer `install.sh` without a full clone.
+mcp_flutter runs two trains: pub packages via [dart_changesets](https://github.com/Arenukvern/dart_changesets) (intent files → version PR → per-package tags → per-tag publish), and the binary harness via `vX.Y.Z` tags with consumer `install.sh`.
 
 ### Binary release train (this repo)
 
 | Step | Where |
 |------|--------|
-| Version + changelog PR | release-please → merge Release PR → tag `vX.Y.Z` |
+| Version + changelog | Pub packages: `.changesets/` intent file → merge the `chore: version packages` PR (per-package tags, per-tag publish). Binary harness: bump `VERSION` manually, tag `vX.Y.Z` |
 | Build tarballs | [`.github/workflows/release.yml`](.github/workflows/release.yml) or locally `make release-artifacts` → [`tool/release/build_release_artifacts.sh`](tool/release/build_release_artifacts.sh) |
 | Outputs | `dist/release/flutter_mcp_<version>_<triple>.tar.gz` + [`dist/release/checksums.txt`](dist/release/checksums.txt) (SHA-256 per tarball) |
 | Attach to GitHub Release | CI on tag (same filenames as `checksums.txt` entries) |

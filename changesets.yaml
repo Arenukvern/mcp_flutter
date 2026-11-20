@@ -1,0 +1,7 @@
+# dart_changesets configuration (replaces the release-please root train for
+# pub packages: intent files declare bumps, the graph cascades dependents).
+# Package discovery uses the root pubspec `workspace:` declaration
+# (packages/*, mcp_toolkit, mcp_server_dart, ...); packages_dir is the fallback.
+packages_dir: packages
+dependent_bump: patch
+tag_format: '{package}-v{version}'

@@ -4,7 +4,7 @@ Use when a tagged release exists but [`release.yml`](https://github.com/Arenukve
 
 ## Preconditions
 
-- The git tag (for example `v7.0.2`) and GitHub Release already exist from release-please.
+- The git tag (for example `v7.0.2`) and GitHub Release already exist (binary tags are now manual: bump `VERSION`, tag `vX.Y.Z`; the release-please automation was retired 2026-11-21).
 - Partial publishes are supported: `publish_release_assets.sh` uploads only missing tarball names on **published** releases, verifies existing remote digests, and rebuilds `checksums.txt` to cover every tarball on the release.
 - When a published release already has `checksums.txt`, every remote tarball must be listed with a matching SHA-256; unlisted assets, empty files, or unparseable lines fail closed. Updated `checksums.txt` on published releases must be a **strict superset** of the prior manifest (unchanged lines preserved). This proves **consistency**, not authenticity (signatures/attestation remain follow-up work).
 - When a published release has **no** `checksums.txt` yet, the first recovery run trusts the initial remote tarball download when building the new manifest (consistency against itself only on that pass).

@@ -45,11 +45,12 @@ Commit both `SKILL.md` and regenerated `mcp_server_dart/lib/src/skill_assets.g.d
 
 ## Commit messages
 
-Use [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, …) for release-please.
+Use [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, …). Release intent for pub packages lives in `.changesets/` intent files (dart_changesets), not commit messages.
 
 ## Releases and binaries
 
-- Automated on `main` via **release-please** → GitHub Release tarballs (`darwin-arm64`, `linux-x64`) and `checksums.txt`.
+- Binary harness: bump `VERSION`, push tag `vX.Y.Z` → GitHub Release tarballs (`darwin-arm64`, `linux-x64`) and `checksums.txt`.
+- Pub packages: **dart_changesets** — intent file in `.changesets/` → merge the version PR → one tag per package → per-tag pub.dev publish (OIDC).
 - Consumer install: [`install.sh`](../../install.sh) verifies SHA-256 against the release.
 - MCP Registry OCI image: [runbook](../contributing/mcp_registry_publish_runbook.mdx), [ADR 0013](../decisions/0013_mcp_registry_publish_hardening.mdx).
 

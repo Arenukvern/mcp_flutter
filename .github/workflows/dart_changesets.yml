@@ -1,0 +1,31 @@
+# dart_changesets release train (engine: Arenukvern/dart_changesets).
+# The action assembles the version PR from pending intent files and, on the
+# version-PR merge, pushes one tag per release and dispatches the per-tag
+# publish runs. Replaces the release-please root train for pub packages.
+name: dart_changesets
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: dart-changesets-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: Arenukvern/dart_changesets@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
