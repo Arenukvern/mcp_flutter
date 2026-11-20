@@ -6,6 +6,13 @@
 
 - Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit 8.0.0 release.
 
+## [7.2.2] - 2026-11-20
+
+### Changed
+
+- Widen `from_json_to_json` and `is_dart_empty_or_not` hosted ranges to
+  `>=0.5.0 <0.7.0` (aligned with `mcp_toolkit` 7.2.3 fj2j/idoen train on main).
+
 ## [7.2.1] - 2026-11-18
 
 ### Fixed

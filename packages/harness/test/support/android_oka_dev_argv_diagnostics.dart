@@ -1,33 +1,14 @@
-/// Documented argv mismatch: hosted [AndroidAppTarget] vs oka 0.9.1 CLI routing.
+/// Documented oka_harness [AndroidAppTarget] child argv (consumer boundary).
 library;
 
-/// Args hosted `AndroidAppTarget` passes to `Process.start` (oka_harness 0.9.1).
+/// Args hosted `AndroidAppTarget` passes to `Process.start` (oka_harness 0.11.0).
 ///
-/// Confirmed against hosted `packages/oka_harness/lib/src/android_app_target.dart`
-/// and `oka` 0.9.1 `DevCommand`: without positional `android`, `oka dev` routes
-/// to `delegateToKernelStack` (kernel live-update stack), **not** the ADR-0011
-/// android daemon that writes `.flutter_mcp/runner-session.json`.
+/// From `packages/oka_harness/lib/src/android_app_target.dart` on the v0.11.0
+/// train (ADR-0011 android daemon: `oka dev android` writes runner-session.json).
 List<String> hostedAndroidAppTargetDevArgv({
   String? deviceId,
   Map<String, String> dartDefines = const {},
-}) {
-  final defineArgs = [
-    for (final entry in dartDefines.entries) ...[
-      '--dart-define',
-      '${entry.key}=${entry.value}',
-    ],
-  ];
-  return <String>[
-    'dev',
-    if (deviceId != null) ...['--device', deviceId],
-    ...defineArgs,
-  ];
-}
-
-/// Supported diagnostic invocation (manifest parity with hosted target).
-List<String> supportedOkaDevAndroidArgv({
-  String? deviceId,
-  Map<String, String> dartDefines = const {},
+  bool jsonControl = true,
 }) {
   final defineArgs = [
     for (final entry in dartDefines.entries) ...[
@@ -38,6 +19,25 @@ List<String> supportedOkaDevAndroidArgv({
   return <String>[
     'dev',
     'android',
+    if (jsonControl) '--json',
+    if (deviceId != null) ...['--device', deviceId],
+    ...defineArgs,
+  ];
+}
+
+/// Legacy bare `oka dev` argv (oka_harness 0.9.1; oka ADR-0011 routing bug).
+List<String> legacyBareOkaDevArgv({
+  String? deviceId,
+  Map<String, String> dartDefines = const {},
+}) {
+  final defineArgs = [
+    for (final entry in dartDefines.entries) ...[
+      '--dart-define',
+      '${entry.key}=${entry.value}',
+    ],
+  ];
+  return <String>[
+    'dev',
     if (deviceId != null) ...['--device', deviceId],
     ...defineArgs,
   ];
@@ -53,14 +53,14 @@ Map<String, Object?> androidOkaDevLaunchIntent({
     deviceId: deviceId,
     dartDefines: dartDefines,
   );
-  final supported = supportedOkaDevAndroidArgv(
+  final legacyBare = legacyBareOkaDevArgv(
     deviceId: deviceId,
     dartDefines: dartDefines,
   );
   return {
-    'okaHarnessVersion': '0.9.1',
+    'okaHarnessVersion': '0.11.0',
     'hostedAndroidAppTargetChildArgv': hostedChild,
-    'supportedOkaCliArgv': supported,
+    'legacyBareOkaDevArgv': legacyBare,
     'hostedOmitsAndroidPositional': !hostedChild.contains('android'),
     'okaBinConfigured': okaBin,
     'projectDir': projectDir,
@@ -72,16 +72,18 @@ Map<String, Object?> androidOkaDevLaunchIntent({
       'name',
       'okaBin',
       'logcat',
+      'jsonControl',
       'sessionTimeout',
+      'requirePlausibleSpawnOwnership',
     ],
     'hostedWaitForSessionBehavior': {
       'pollsRunnerSessionFile': true,
       'racesChildExitCode': false,
-      'timeoutTailLines': 15,
+      'usesSpawnBindingVerification': true,
     },
-    'routingReference': 'oka 0.9.1 DevCommand: args.first != android → kernel stack',
-    'consumerNote':
-        'Await immutable oka SDK PR commit (tool/ci/oka_consumer_pin.txt + OKA_BIN). '
-        'No shell argv rewrite; hosted fix must emit dev android child argv.',
+    'routingReference':
+        'oka dev android → ADR-0011 android daemon (runner-session.json)',
+    'historicalNote':
+        'oka_harness 0.9.1 omitted android positional; fixed in oka 0.10.x+.',
   };
 }
