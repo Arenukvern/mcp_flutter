@@ -1,3 +1,10 @@
+# 7.2.2
+
+### Changed
+
+- Widen `is_dart_empty_or_not` to `^0.5.0` (0.5.0 is additive: nullable-aware
+  empty checks). No API changes.
+
 # 7.2.1
 
 ### Fixed
