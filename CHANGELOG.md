@@ -3,6 +3,36 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
+## [8.0.0](https://github.com/Arenukvern/mcp_flutter/compare/v7.2.1...v8.0.0) (2026-11-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* **release:** CLI global port flags and core connection override parsing no longer accept leading-zero decimals, signed, hex, or whitespace-padded values that 7.2.1 allowed for some flags.
+
+### Features
+
+* **server:** add --idle-exit-minutes to exit idle server processes ([a9efbf1](https://github.com/Arenukvern/mcp_flutter/commit/a9efbf19e365bfc8438353674e5368a32a93ffa3))
+
+
+### Bug Fixes
+
+* **ci:** restore hosted pubspec.lock; hermetic zcode init test ([876f0d8](https://github.com/Arenukvern/mcp_flutter/commit/876f0d857711965ec022468642b5e049566b8009))
+* **cli:** init zcode targets real config paths and curates user skills ([05a2734](https://github.com/Arenukvern/mcp_flutter/commit/05a2734149d13d5d09402c7650fe241a16fc4f14))
+* **contracts:** assert retry rerun via shared argv builder ([e19f1fb](https://github.com/Arenukvern/mcp_flutter/commit/e19f1fbdea0201f446415bab63ac8c2aae3b298c))
+* **contracts:** integration uses real fetch; stub cb_run_argv ([2a676a1](https://github.com/Arenukvern/mcp_flutter/commit/2a676a1b119704ec98faa2bfb6b271798ab82991))
+* **release:** address PR review — plan-mode contracts and cleanup ([437732d](https://github.com/Arenukvern/mcp_flutter/commit/437732d500c3a99236f5a45799b7f478013bcf86))
+* **release:** conflict check contract callbacks replace mock gh ([faab71c](https://github.com/Arenukvern/mcp_flutter/commit/faab71c458d9593788e25798e51fb0d0bba7168c))
+* **release:** drop contract env switches; test hooks in-process ([41a07e8](https://github.com/Arenukvern/mcp_flutter/commit/41a07e80a8ce4649ef433823abe42303a590133b))
+* **release:** honest publish/retry contracts and post-7.2.1 cleanup ([306c6f2](https://github.com/Arenukvern/mcp_flutter/commit/306c6f28c60f8332deefd8877bf631f654cdea66))
+* **release:** plan dry-run commands and draft checksums gate ([f020dc4](https://github.com/Arenukvern/mcp_flutter/commit/f020dc41748b3f09d5ae88e0fb3fc4165b786a08))
+* **release:** plan dry-run commands and draft checksums gate ([07ec0e2](https://github.com/Arenukvern/mcp_flutter/commit/07ec0e2c943a451f6edfca0f0267eb196625ece3))
+* **release:** plan-driven publish uploads and strict port parsing ([fd6b6f0](https://github.com/Arenukvern/mcp_flutter/commit/fd6b6f0e2c7c6cbbd7e2d30d1ecbbb7c8616015f))
+* **release:** post-7.2.1 honest release contracts and cleanup ([7342869](https://github.com/Arenukvern/mcp_flutter/commit/73428699fd4fa369bbc61826014b18206556e4a6))
+* **release:** propagate gh callback failures through publish and retry ([61f8fe9](https://github.com/Arenukvern/mcp_flutter/commit/61f8fe9e3cf185e39e20125162867042775201f5))
+* **release:** require_gh hook; harden callback contract tests ([7d5b800](https://github.com/Arenukvern/mcp_flutter/commit/7d5b8001a47f0164316da360883eda45976fda65))
+* **release:** unify gh argv builders for plan and execution ([81f29fe](https://github.com/Arenukvern/mcp_flutter/commit/81f29feb9ff1c9a51ace2b4ee075f185e9e57bfc))
+
 ## [Unreleased]
 
 ### ⚠ BREAKING CHANGES
