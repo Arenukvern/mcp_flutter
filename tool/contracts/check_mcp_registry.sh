@@ -9,7 +9,6 @@ FLUTTER_PIN="$ROOT_DIR/tool/contracts/flutter_sdk_pin.env"
 SERVER_PUBSPEC="$ROOT_DIR/mcp_server_dart/pubspec.yaml"
 RELEASE_WORKFLOW="$ROOT_DIR/.github/workflows/publish_mcp_registry.yml"
 SMOKE_WORKFLOW="$ROOT_DIR/.github/workflows/mcp_registry_dockerfile.yml"
-PUB_WORKFLOW="$ROOT_DIR/.github/workflows/pub_publish.yml"
 
 fail() {
   echo "check_mcp_registry: $*" >&2
@@ -22,7 +21,6 @@ fail() {
 [[ -f "$SERVER_PUBSPEC" ]] || fail "missing mcp_server_dart/pubspec.yaml"
 [[ -f "$RELEASE_WORKFLOW" ]] || fail "missing publish_mcp_registry.yml"
 [[ -f "$SMOKE_WORKFLOW" ]] || fail "missing mcp_registry_dockerfile.yml"
-[[ -f "$PUB_WORKFLOW" ]] || fail "missing pub_publish.yml"
 
 export FLUTTER_PIN
 python3 <<'PY'
@@ -177,10 +175,9 @@ grep -Fq 'release_tag:' "$RELEASE_WORKFLOW" ||
   fail "publish workflow must declare workflow_dispatch release_tag input"
 grep -Fq 'github-oidc' "$RELEASE_WORKFLOW" ||
   fail "publish workflow does not use GitHub OIDC for MCP Registry authentication"
-grep -Fq 'gh workflow run publish_mcp_registry.yml' "$PUB_WORKFLOW" ||
-  fail "pub.dev publication does not trigger the dependent MCP Registry publication"
-grep -Fq "startsWith(github.ref, 'refs/tags/v')" "$PUB_WORKFLOW" ||
-  fail "pub_publish registry trigger must require a v* tag ref"
+# The MCP Registry publish is an explicit dispatch (Actions -> Run workflow on
+# main with release_tag) since the pub package train moved to dart_changesets
+# per-tag publishes (2026-11-21); the old pub_publish.yml auto-trigger is gone.
 grep -Fq 'resolve_mcp_registry_release_version.sh' "$RELEASE_WORKFLOW" ||
   fail "publish_mcp_registry must resolve version from release-src"
 grep -Fq 'overlay_mcp_registry_tag_sources.sh' "$RELEASE_WORKFLOW" ||
