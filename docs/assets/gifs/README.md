@@ -4,7 +4,7 @@ Terminal recordings for docs quickstart / CI / harness pages. Sources are [Charm
 
 ## Regenerate
 
-Prereqs: `vhs`, `ttyd`, `flutter` (3.50.1+), release `flutter-mcp-toolkit` on `PATH`, Chrome (headless drives), X11 (`DISPLAY`).
+Prereqs: `vhs`, `ttyd`, `flutter` (3.50.0+), release `flutter-mcp-toolkit` on `PATH`, Chrome (headless drives), X11 (`DISPLAY`).
 
 ```bash
 export PATH="$HOME/.local/bin:$HOME/flutter/bin:$PATH"
