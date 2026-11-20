@@ -181,6 +181,7 @@ files = [
   ['plugin/.cursor-plugin/plugin.json', ['version']],
   ['plugin/.codex-plugin/plugin.json', ['version']],
   ['plugin/.claude-plugin/plugin.json', ['version']],
+  ['plugin/.zcode-plugin/plugin.json', ['version']],
   ['.claude-plugin/marketplace.json', ['plugins', 0, 'version']],
   ['docs.json', ['variables', 'version']],
   ['.release-please-manifest.json', ['.']],
