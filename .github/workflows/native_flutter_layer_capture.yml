@@ -23,7 +23,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: '3.47.5'
+          flutter-version: '3.50.1'
           cache: true
 
       - name: Provision intentcall (pinned ref in-repo)
@@ -88,7 +88,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: '3.47.5'
+          flutter-version: '3.50.1'
           cache: true
 
       - name: Linux toolchain deps
