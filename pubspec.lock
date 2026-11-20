@@ -17,38 +17,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "14.7.0"
-  app_links:
-    dependency: transitive
-    description:
-      name: app_links
-      sha256: "5f88447519add627fe1cbcab4fd1da3d4fed15b9baf29f28b22535c95ecee3e8"
-      url: "https://pub.dev"
-    source: hosted
-    version: "6.4.1"
-  app_links_linux:
-    dependency: transitive
-    description:
-      name: app_links_linux
-      sha256: "734aa57a2f65d1b35c3643384ccfbe668730157a08479bfa488e10a9da847853"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.5"
-  app_links_platform_interface:
-    dependency: transitive
-    description:
-      name: app_links_platform_interface
-      sha256: "7546f09a6e93f4a2df2fe2bd40a5c6c64310ac461b036d82b43033be7a59f809"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.0.4"
-  app_links_web:
-    dependency: transitive
-    description:
-      name: app_links_web
-      sha256: "382d32c6f486f15b1d7f5d6a37a70a481a4fc08382eef419d373169921a3e765"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.5"
   archive:
     dependency: transitive
     description:
@@ -85,18 +53,18 @@ packages:
     dependency: transitive
     description:
       name: build
-      sha256: "8a5c5761af8e31748bba3c82f68925ace40f3225c3eea25be9beb57eca7cd7a8"
+      sha256: "50df3d1558953a0d936401c1687cc41dbc039f9132f538c7bcb2aac2a580ae7f"
       url: "https://pub.dev"
     source: hosted
-    version: "4.0.11"
+    version: "5.0.0"
   build_config:
     dependency: transitive
     description:
       name: build_config
-      sha256: d466ed2dc9c6cd1d169948879b84ee061eb5e22c64a7c6089879c6296d272a8d
+      sha256: "4703a785fbc3c266c5c7518589d0863f6a05078ee33f7ca5aa4b87a56f1cedd2"
       url: "https://pub.dev"
     source: hosted
-    version: "1.3.3"
+    version: "1.4.0"
   build_daemon:
     dependency: transitive
     description:
@@ -109,10 +77,10 @@ packages:
     dependency: transitive
     description:
       name: build_runner
-      sha256: "6feadd32d90a68253c1f7b4fcff76adb4b41ad32a53f8bad835dc65f01ac9dc5"
+      sha256: "96b9da39a3a8d4365aa1ca6f7655437d80f514ba13d4c21d8408cc8aacb94681"
       url: "https://pub.dev"
     source: hosted
-    version: "2.16.2"
+    version: "2.17.1"
   built_collection:
     dependency: transitive
     description:
@@ -169,14 +137,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.3"
-  code_assets:
-    dependency: transitive
-    description:
-      name: code_assets
-      sha256: "1ef22a0be3af9370bd9481ac76db114db92bfe75d5ca2b2d7bc911764478a4d9"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.2.0"
   collection:
     dependency: transitive
     description:
@@ -241,14 +201,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.14"
-  dbus:
-    dependency: transitive
-    description:
-      name: dbus
-      sha256: fe6b46eae35441227e9e750656d06a4f40c230fe96e4390da7d7ebc69a60f0b3
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.8.1"
   decimal:
     dependency: transitive
     description:
@@ -331,11 +283,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_web_plugins:
-    dependency: transitive
-    description: flutter
-    source: sdk
-    version: "0.0.0"
   from_json_to_json:
     dependency: transitive
     description:
@@ -368,14 +315,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.3.2"
-  hooks:
-    dependency: transitive
-    description:
-      name: hooks
-      sha256: eaac480a35ec0814146c2c48d96aaa829e0e44a7662c88ae84c9edf4bc35651f
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.2.0"
   http:
     dependency: transitive
     description:
@@ -408,97 +347,46 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.13.1"
-  intentcall_bridge:
-    dependency: "direct overridden"
-    description:
-      path: "../intentcall/packages/intentcall_bridge"
-      relative: true
-    source: path
-    version: "1.3.0"
-  intentcall_cli:
-    dependency: "direct overridden"
-    description:
-      path: "../intentcall/packages/intentcall_cli"
-      relative: true
-    source: path
-    version: "1.3.0"
-  intentcall_codegen:
-    dependency: "direct overridden"
-    description:
-      path: "../intentcall/packages/intentcall_codegen"
-      relative: true
-    source: path
-    version: "1.3.0"
   intentcall_core:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: "../intentcall/packages/intentcall_core"
-      relative: true
-    source: path
-    version: "1.3.0"
-  intentcall_hooks:
-    dependency: "direct overridden"
-    description:
-      path: "../intentcall/packages/intentcall_hooks"
-      relative: true
-    source: path
-    version: "1.3.0"
+      name: intentcall_core
+      sha256: "5943bf2101129d2c1c7e011d5987bc873e83506c4de0245b400159011054d51a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.0"
   intentcall_mcp:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: "../intentcall/packages/intentcall_mcp"
-      relative: true
-    source: path
-    version: "1.3.0"
-  intentcall_platform:
-    dependency: "direct overridden"
-    description:
-      path: "../intentcall/packages/intentcall_platform"
-      relative: true
-    source: path
-    version: "1.3.0"
-  intentcall_platform_android:
-    dependency: "direct overridden"
-    description:
-      path: "../intentcall/packages/intentcall_platform_android"
-      relative: true
-    source: path
-    version: "1.3.0"
-  intentcall_platform_apple:
-    dependency: "direct overridden"
-    description:
-      path: "../intentcall/packages/intentcall_platform_apple"
-      relative: true
-    source: path
-    version: "1.3.0"
+      name: intentcall_mcp
+      sha256: "7e7786c797c5440b7d9ead12e30fafeb0e548f26bb83f287f2521e2bb1ac59ac"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.0"
   intentcall_platform_sync:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: "../intentcall/packages/intentcall_platform_sync"
-      relative: true
-    source: path
-    version: "1.3.0"
+      name: intentcall_platform_sync
+      sha256: "83613e05ed39aaf5cd7a9776a015e71ba90da756ddd5d03afd7352038507cdc3"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.0"
   intentcall_schema:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: "../intentcall/packages/intentcall_schema"
-      relative: true
-    source: path
-    version: "1.3.0"
+      name: intentcall_schema
+      sha256: "9ecb4ec9c0dbe7b8174c603b3964645f0677e0741c82c1312e98654b082e5a40"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.2"
   intentcall_session:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: "../intentcall/packages/intentcall_session"
-      relative: true
-    source: path
-    version: "1.3.0"
-  intentcall_webmcp:
-    dependency: "direct overridden"
-    description:
-      path: "../intentcall/packages/intentcall_webmcp"
-      relative: true
-    source: path
-    version: "1.3.0"
+      name: intentcall_session
+      sha256: "84cf7bf76358edeaf01a730beeeb995b0fb6868cfbf7109fad0edf2a257eb55a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.0"
   intl:
     dependency: transitive
     description:
@@ -647,26 +535,26 @@ packages:
     dependency: transitive
     description:
       name: oka_android
-      sha256: b8f700398ec41c572ea79b59beba50b5fa080e79570a6514109ab1ff0b26ecf2
+      sha256: ec6a34ed244436e72b3a5633cd176b10609e7be1444511114954fcc275decf7a
       url: "https://pub.dev"
     source: hosted
-    version: "0.9.1"
+    version: "0.11.0"
   oka_core:
     dependency: transitive
     description:
       name: oka_core
-      sha256: ba0b612f437287f52698714af0e8d1181b0f9c73e54a08569fae56eb6c7546b5
+      sha256: "044a8833c44f883fa9e62c0c51be504d35e24fc76de55677a3f2c12b28023ca2"
       url: "https://pub.dev"
     source: hosted
-    version: "0.9.1"
+    version: "0.11.0"
   oka_harness:
     dependency: transitive
     description:
       name: oka_harness
-      sha256: "32d1a941b5d2e97997552a4531fbcb892db7b8a6cc87c56a99d3a922a8007bb5"
+      sha256: "443e3fa14e72d77d8f77e73d5c6e22f0812f049095403ecd6ac31faee1233c0c"
       url: "https://pub.dev"
     source: hosted
-    version: "0.9.1"
+    version: "0.11.0"
   package_config:
     dependency: transitive
     description:
@@ -699,14 +587,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.2.0"
-  plugin_platform_interface:
-    dependency: transitive
-    description:
-      name: plugin_platform_interface
-      sha256: "4820fbfdb9478b1ebae27888254d445073732dae3d6ea81f0b7e06d5dedc3f02"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.1.8"
   pool:
     dependency: transitive
     description:
@@ -755,22 +635,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.2.3"
-  record_use:
-    dependency: transitive
-    description:
-      name: record_use
-      sha256: "1cb8564af8d43b464294411db9217f5ec04891c6f22ee2c32d73ae05e88a6bd2"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.1.1"
   resource_composition:
     dependency: transitive
     description:
       name: resource_composition
-      sha256: "1d512e19137e5d3b425d7413658cd670cbda4776b7b08dcc287a8a6a6fd97161"
+      sha256: "52dd36d6dc356adbeddef1c08e3cab7f865f2dc2cf67c3db6c38e668797a4322"
       url: "https://pub.dev"
     source: hosted
-    version: "0.9.1"
+    version: "0.11.0"
   rx:
     dependency: transitive
     description:
@@ -824,14 +696,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  source_gen:
-    dependency: transitive
-    description:
-      name: source_gen
-      sha256: "833ea7d15b5be79949d3d6c077da0267a0bd93c16897b36a771395a91e63086e"
-      url: "https://pub.dev"
-    source: hosted
-    version: "4.3.1"
   source_map_stack_trace:
     dependency: transitive
     description:
@@ -937,89 +801,38 @@ packages:
     source: hosted
     version: "8.4.0"
   universal_automation_conformance:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: "../../../xs/ai_computer_use_universal_automation/pkgs/universal_automation_conformance"
-      relative: true
-    source: path
-    version: "0.4.0"
+      path: "pkgs/universal_automation_conformance"
+      ref: a3be2da0ec99eeaa8eab3d05fc6db16b2c7bb984
+      resolved-ref: a3be2da0ec99eeaa8eab3d05fc6db16b2c7bb984
+      url: "https://github.com/Arenukvern/universal_automation_ai_device_use.git"
+    source: git
+    version: "0.3.1"
   universal_automation_interface:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: "../../../xs/ai_computer_use_universal_automation/pkgs/universal_automation_interface"
-      relative: true
-    source: path
-    version: "0.5.0"
+      name: universal_automation_interface
+      sha256: "72b21a227fc0a64c2122d5cae3b56b31128382121e64043f3d8d40ebd300527c"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.4.0"
   universal_automation_semantics:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: "../../../xs/ai_computer_use_universal_automation/pkgs/universal_automation_semantics"
-      relative: true
-    source: path
-    version: "0.5.1"
-  universal_automation_toolkit:
-    dependency: "direct overridden"
-    description:
-      path: "../../../xs/ai_computer_use_universal_automation/pkgs/universal_automation_toolkit"
-      relative: true
-    source: path
-    version: "0.5.1"
+      name: universal_automation_semantics
+      sha256: "315e2e86f5cb00a4290ccc167e6bd81d4b2d6f0b9ffc6a296cd320b2aa6882f9"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.5.0"
   universal_browser_cdp:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: "../../../xs/ai_computer_use_universal_automation/pkgs/universal_browser_cdp"
-      relative: true
-    source: path
-    version: "0.6.1"
-  universal_browser_webdriver:
-    dependency: "direct overridden"
-    description:
-      path: "../../../xs/ai_computer_use_universal_automation/pkgs/universal_browser_webdriver"
-      relative: true
-    source: path
-    version: "0.3.1"
-  universal_capture_flutter:
-    dependency: "direct overridden"
-    description:
-      path: "../../../xs/ai_computer_use_universal_automation/pkgs/universal_capture_flutter"
-      relative: true
-    source: path
-    version: "0.2.3"
-  universal_capture_macos:
-    dependency: "direct overridden"
-    description:
-      path: "../../../xs/ai_computer_use_universal_automation/pkgs/universal_capture_macos"
-      relative: true
-    source: path
-    version: "0.3.2"
-  universal_driver_flutter:
-    dependency: "direct overridden"
-    description:
-      path: "../../../xs/ai_computer_use_universal_automation/pkgs/universal_driver_flutter"
-      relative: true
-    source: path
-    version: "0.1.2"
-  universal_driver_linux:
-    dependency: "direct overridden"
-    description:
-      path: "../../../xs/ai_computer_use_universal_automation/pkgs/universal_driver_linux"
-      relative: true
-    source: path
-    version: "0.3.1"
-  universal_driver_macos:
-    dependency: "direct overridden"
-    description:
-      path: "../../../xs/ai_computer_use_universal_automation/pkgs/universal_driver_macos"
-      relative: true
-    source: path
-    version: "0.4.1"
-  universal_driver_windows:
-    dependency: "direct overridden"
-    description:
-      path: "../../../xs/ai_computer_use_universal_automation/pkgs/universal_driver_windows"
-      relative: true
-    source: path
-    version: "0.3.2"
+      name: universal_browser_cdp
+      sha256: "3543f188272d866e3f790a3966767aef392fe2e134da76e438517935f84c0890"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.5.0"
   universal_io:
     dependency: transitive
     description:
@@ -1029,12 +842,13 @@ packages:
     source: hosted
     version: "2.3.1"
   universal_screencast:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: "../../../xs/ai_computer_use_universal_automation/pkgs/universal_screencast"
-      relative: true
-    source: path
-    version: "0.3.1"
+      name: universal_screencast
+      sha256: "6caf269f1e4532e17a1dcd15b0b9c979e67cb67501dc8c204977e8fa60069313"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.0"
   universal_tooling_runtime:
     dependency: transitive
     description:
@@ -1043,20 +857,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.2"
-  universal_webrtc:
-    dependency: "direct overridden"
-    description:
-      path: "../../../xs/ai_computer_use_universal_automation/pkgs/universal_webrtc"
-      relative: true
-    source: path
-    version: "0.3.2"
-  universal_webrtc_raw:
-    dependency: "direct overridden"
-    description:
-      path: "../../../xs/ai_computer_use_universal_automation/pkgs/universal_webrtc_raw"
-      relative: true
-    source: path
-    version: "0.1.0"
   vector_math:
     dependency: transitive
     description:
@@ -1129,14 +929,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.1.2"
-  xsoulspace_permission_core:
-    dependency: transitive
-    description:
-      name: xsoulspace_permission_core
-      sha256: "747f5efc54be91cecaa97ca0b56ac9289f0b04819d6d507bd7604d566ef14a7d"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.0"
   yaml:
     dependency: transitive
     description:
