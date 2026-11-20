@@ -18,11 +18,9 @@
 ### Bug Fixes
 
 * **Release ([#190](https://github.com/Arenukvern/mcp_flutter/pull/190)):** Shared release libs for publish, asset-conflict check, and runner-shortage retry; plan-mode contract tests call real fetch/callback chains (no production contract-env switches); clobber-safe published uploads; strict `checksums.txt` superset before clobber on published releases.
-* **ci:** Pin Flutter **3.50.1** stable, Dart **3.14.0**, and `test` **1.32.0** for SDK `test_api` **0.7.14**; refresh hosted-only root `pubspec.lock` (no `source: path` entries).
-* **ci:** Hosted **oka_harness** **0.11.0** train and consumer pin; restore **0.11.0** `AndroidAppTarget` child argv contract (`dev android --json …`).
+* **ci:** Pin Flutter **3.50.1** stable, Dart **3.14.0**, and `test` **1.32.0** for SDK `test_api` **0.7.14**; refresh hosted-only root `pubspec.lock` (no `source: path` entries) ([33b830a4](https://github.com/Arenukvern/mcp_flutter/commit/33b830a4e6f93bf74a65bbb5bf5d364ce077c9d7)).
+* **ci:** Hosted **oka_harness** **0.11.0** train and consumer pin; restore **0.11.0** `AndroidAppTarget` child argv contract (`dev android --json …`) ([6b0c1b4f](https://github.com/Arenukvern/mcp_flutter/commit/6b0c1b4f192c22c9c9408d457b84fd26622bf77e)).
 * **deps:** Pin hosted **`intentcall_session`** and **`intentcall_codegen`** at **^1.2.1** (resolves fj2j `jsonDecodeNullableString` clash; restore runtime codegen in `server_capability_core`).
-* pin `test` 1.32.0 for SDK `test_api` 0.7.14 and refresh workspace lock ([c05be66](https://github.com/Arenukvern/mcp_flutter/commit/c05be6660ecb350c478d2d7a4961bb6c6cf73819))
-* hosted oka **0.11.0** dev dependencies so workspace `flutter_mcp_harness` **8.0.0** resolves without root shims ([ce907c8](https://github.com/Arenukvern/mcp_flutter/commit/ce907c8936205728293af5db9d6e03b5bbeaf37e))
 
 ### Documentation
 
