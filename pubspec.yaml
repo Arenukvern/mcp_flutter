@@ -13,6 +13,11 @@ workspace:
 
 # Native capture branch: hosted oka_* dev_deps still declare interface ^0.3.0 while the
 # workspace trains on published 0.4.0 (main #161). Drop when oka pub coordinates match.
+# Hosted oka_harness (^0.9.1) still constrains flutter_mcp_harness to ^7.x while the
+# in-repo workspace package is 8.0.0. Pub forbids dependency_overrides on workspace
+# members, so the override substitutes hosted oka_harness with the path shim below.
+# Drop when hosted oka_harness allows flutter_mcp_harness ^8.0.0.
 dependency_overrides:
   universal_automation_interface: 0.4.0
-
+  oka_harness:
+    path: tool/dev/oka_harness_pub_solve

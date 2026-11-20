@@ -1,0 +1,30 @@
+name: oka_harness
+publish_to: none
+description: >-
+  Workspace-only copy of hosted oka_harness 0.9.1 with a relaxed
+  flutter_mcp_harness constraint so the mcp_flutter 8.x train resolves.
+  Drop with root pubspec.yaml oka_harness override when hosted oka_harness
+  allows flutter_mcp_harness ^8.0.0.
+version: 0.9.1
+homepage: https://github.com/Arenukvern/oka
+repository: https://github.com/Arenukvern/oka/tree/main/packages/oka_harness
+issue_tracker: https://github.com/Arenukvern/oka/issues
+documentation: https://docs.page/arenukvern/oka
+topics:
+  - build-system
+  - cli
+  - testing
+  - e2e
+
+environment:
+  sdk: ^3.13.0
+
+dependencies:
+  flutter_mcp_harness: '>=7.0.0 <9.0.0'
+  oka_android: ^0.9.1
+  path: ^1.9.0
+  resource_composition: ^0.9.1
+  universal_automation_interface: ^0.4.0
+dev_dependencies:
+  lints: ^6.1.0
+  test: ^1.25.0

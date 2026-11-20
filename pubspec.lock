@@ -572,12 +572,11 @@ packages:
     source: hosted
     version: "0.9.1"
   oka_harness:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: oka_harness
-      sha256: "32d1a941b5d2e97997552a4531fbcb892db7b8a6cc87c56a99d3a922a8007bb5"
-      url: "https://pub.dev"
-    source: hosted
+      path: "tool/dev/oka_harness_pub_solve"
+      relative: true
+    source: path
     version: "0.9.1"
   package_config:
     dependency: transitive
