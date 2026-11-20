@@ -5,44 +5,24 @@
 
 ## [8.0.0](https://github.com/Arenukvern/mcp_flutter/compare/v7.2.1...v8.0.0) (2026-11-20)
 
-
 ### ⚠ BREAKING CHANGES
 
-* **release:** CLI global port flags and core connection override parsing no longer accept leading-zero decimals, signed, hex, or whitespace-padded values that 7.2.1 allowed for some flags.
+* **cli:** Global port flags (`--dart-vm-port`, `--web-browser-debugging-port`, `--web-port`, and CDP-related CLI options) now reject leading-zero decimals (`08181`), signed (`+8181`), hex (`0x1F`), whitespace-padded, and out-of-range values with exit **64** and a JSON error envelope. **7.2.1** used `int.tryParse` and accepted those forms on every CLI port flag.
+* **core:** `parseStrictPositiveDecimalPort` rejects leading-zero decimals and other non-canonical port strings everywhere connection overrides and resource URIs are parsed.
 
 ### Features
 
-* **server:** add --idle-exit-minutes to exit idle server processes ([a9efbf1](https://github.com/Arenukvern/mcp_flutter/commit/a9efbf19e365bfc8438353674e5368a32a93ffa3))
-
-
-### Bug Fixes
-
-* **ci:** restore hosted pubspec.lock; hermetic zcode init test ([876f0d8](https://github.com/Arenukvern/mcp_flutter/commit/876f0d857711965ec022468642b5e049566b8009))
-* **cli:** init zcode targets real config paths and curates user skills ([05a2734](https://github.com/Arenukvern/mcp_flutter/commit/05a2734149d13d5d09402c7650fe241a16fc4f14))
-* **contracts:** assert retry rerun via shared argv builder ([e19f1fb](https://github.com/Arenukvern/mcp_flutter/commit/e19f1fbdea0201f446415bab63ac8c2aae3b298c))
-* **contracts:** integration uses real fetch; stub cb_run_argv ([2a676a1](https://github.com/Arenukvern/mcp_flutter/commit/2a676a1b119704ec98faa2bfb6b271798ab82991))
-* **release:** address PR review — plan-mode contracts and cleanup ([437732d](https://github.com/Arenukvern/mcp_flutter/commit/437732d500c3a99236f5a45799b7f478013bcf86))
-* **release:** conflict check contract callbacks replace mock gh ([faab71c](https://github.com/Arenukvern/mcp_flutter/commit/faab71c458d9593788e25798e51fb0d0bba7168c))
-* **release:** drop contract env switches; test hooks in-process ([41a07e8](https://github.com/Arenukvern/mcp_flutter/commit/41a07e80a8ce4649ef433823abe42303a590133b))
-* **release:** honest publish/retry contracts and post-7.2.1 cleanup ([306c6f2](https://github.com/Arenukvern/mcp_flutter/commit/306c6f28c60f8332deefd8877bf631f654cdea66))
-* **release:** plan dry-run commands and draft checksums gate ([f020dc4](https://github.com/Arenukvern/mcp_flutter/commit/f020dc41748b3f09d5ae88e0fb3fc4165b786a08))
-* **release:** plan dry-run commands and draft checksums gate ([07ec0e2](https://github.com/Arenukvern/mcp_flutter/commit/07ec0e2c943a451f6edfca0f0267eb196625ece3))
-* **release:** plan-driven publish uploads and strict port parsing ([fd6b6f0](https://github.com/Arenukvern/mcp_flutter/commit/fd6b6f0e2c7c6cbbd7e2d30d1ecbbb7c8616015f))
-* **release:** post-7.2.1 honest release contracts and cleanup ([7342869](https://github.com/Arenukvern/mcp_flutter/commit/73428699fd4fa369bbc61826014b18206556e4a6))
-* **release:** propagate gh callback failures through publish and retry ([61f8fe9](https://github.com/Arenukvern/mcp_flutter/commit/61f8fe9e3cf185e39e20125162867042775201f5))
-* **release:** require_gh hook; harden callback contract tests ([7d5b800](https://github.com/Arenukvern/mcp_flutter/commit/7d5b8001a47f0164316da360883eda45976fda65))
-* **release:** unify gh argv builders for plan and execution ([81f29fe](https://github.com/Arenukvern/mcp_flutter/commit/81f29feb9ff1c9a51ace2b4ee075f185e9e57bfc))
-
-## [Unreleased]
-
-### ⚠ BREAKING CHANGES
-
-* **cli:** global port flags (`--dart-vm-port`, `--web-browser-debugging-port`, `--web-port`, and CDP-related CLI options) now reject leading-zero decimals (`08181`), signed (`+8181`), hex (`0x1F`), whitespace-padded, and out-of-range values with exit **64** and a JSON envelope; **7.2.1** used `int.tryParse` and **accepted** `08181`, hex, `+`, and whitespace on **every** CLI port flag.
-* **core:** `parseStrictPositiveDecimalPort` rejects leading-zero decimal strings (e.g. `08181`) everywhere connection overrides and resource URIs are parsed.
+* **server:** `--idle-exit-minutes` exits idle stdio server processes after *N* minutes with no MCP traffic and no VM service connection (`0` disables; default). ([#190](https://github.com/Arenukvern/mcp_flutter/pull/190))
+* **cli:** `flutter-mcp-toolkit init zcode` targets real ZCode MCP config paths, resolves `flutter-mcp-toolkit-server` to an absolute path when the binary is on `PATH`, merges without overwriting existing servers, and vendors a curated user-facing skill set. ([#190](https://github.com/Arenukvern/mcp_flutter/pull/190))
 
 ### Bug Fixes
 
-* **Release:** plan-driven `publish_release_assets.sh` verify/upload; fail-closed published `checksums.txt`; strict superset before clobbering `checksums.txt` on published releases.
+* **Release ([#190](https://github.com/Arenukvern/mcp_flutter/pull/190)):** Shared release libs for publish, asset-conflict check, and runner-shortage retry; plan-mode contract tests call real fetch/callback chains (no production contract-env switches); clobber-safe published uploads; strict `checksums.txt` superset before clobber on published releases.
+* **ci:** Restore hosted-only root `pubspec.lock` (no path pins to external intentcall or sibling trees).
+
+### Documentation
+
+* Regenerated CLI and server flag reference for strict ports and `--idle-exit-minutes`.
 
 ## [7.2.1](https://github.com/Arenukvern/mcp_flutter/compare/v7.2.0...v7.2.1) (2026-11-18)
 
