@@ -17,6 +17,13 @@
       "transport": {
         "type": "stdio"
       }
+    },
+    {
+      "registryType": "mcpb",
+      "identifier": "https://github.com/Arenukvern/mcp_flutter/releases/download/v8.0.0/flutter-mcp-toolkit.mcpb",
+      "transport": {
+        "type": "stdio"
+      }
     }
   ]
 }

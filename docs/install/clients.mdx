@@ -5,18 +5,24 @@ description: Marketplace install and manual MCP JSON for Cursor, Codex, and Clau
 
 # AI client setup
 
-## Prefer marketplace or plugin
+## Prefer marketplace, plugin, or MCPB
 
 | Client | Typical install |
 | --- | --- |
 | **Cursor** | `flutter-mcp-toolkit init cursor` or repo marketplace plugin |
 | **Codex** | `codex plugin marketplace add Arenukvern/mcp_flutter` |
 | **Claude Code** | `/plugin marketplace add Arenukvern/mcp_flutter` then `/plugin install flutter-mcp-toolkit@flutter-mcp-toolkit` |
+| **Claude Desktop** | Install **`flutter-mcp-toolkit.mcpb`** from a GitHub release (MCPB-aware clients install the bundle directly) |
 | **ChatGPT** | No supported MCP plugin path yet — use Cursor/Codex/Claude or manual `mcpServers` JSON |
 | **Cline** | `flutter-mcp-toolkit init cline` (skills); add MCP JSON below |
 | **Any agent** | `npx skills add Arenukvern/mcp_flutter` then configure MCP manually |
 
-Marketplace flows bundle **skills** and often **MCP registration**. See also [quickstart](../quickstart.mdx).
+Marketplace flows bundle **skills** and often **MCP registration**. The
+**`.mcpb` release bundle** is the primary path for the *server binary* on
+macOS (Apple Silicon) and Linux x64 — it carries both platform binaries and
+default `mcp_config` args, so hosts can start it without manual JSON. See
+[platforms](./platforms.mdx) for the download and the macOS quarantine note.
+See also [quickstart](../quickstart.mdx).
 
 ### `init` behavior
 
@@ -30,7 +36,17 @@ When the host **already** references `flutter-mcp-toolkit` in `mcp.json`, re-run
 
 ## Manual `mcpServers` JSON
 
-Use binary **`flutter-mcp-toolkit-server`** on PATH. Marketplace/plugin flows install **skills** (and sometimes MCP JSON) but **do not** download the server binary — run [install.sh](../../install.sh) (or a release package) so `flutter-mcp-toolkit` and `flutter-mcp-toolkit-server` are available. Registry key **`flutter-mcp-toolkit`**. Legacy key renames: [migration v2→v3](../migration/migration_v2_to_v3.mdx).
+Manual JSON requires the **standalone `flutter-mcp-toolkit-server` binary on
+PATH** (install it with [install.sh](../../install.sh)) or an explicit absolute
+path as `command`. Installing the **`.mcpb`** release bundle is a separate,
+alternative path: the MCPB-aware client (for example Claude Desktop) extracts
+the bundle into its own extension directory and generates the server config
+from the manifest — it does **not** put the binary on PATH for other clients,
+and manual JSON keeps pointing at `flutter-mcp-toolkit-server` regardless.
+
+Marketplace/plugin flows install **skills** (and sometimes MCP JSON) but **do
+not** download the server binary. Registry key **`flutter-mcp-toolkit`**.
+Legacy key renames: [migration v2→v3](../migration/migration_v2_to_v3.mdx).
 
 ### Cursor (`~/.cursor/mcp.json` or project `.cursor/mcp.json`)
 

@@ -1,17 +1,23 @@
 ---
 title: Docker and MCP Registry
-description: Run flutter-mcp-toolkit-server from the official OCI image (secondary to native binaries).
+description: Optional containerized install of flutter-mcp-toolkit-server from the official OCI image.
 ---
 
-# Docker and MCP Registry
+# Docker and MCP Registry (optional)
 
-Most users should install the **release binary** via [install.sh](../../install.sh) or a client marketplace. Docker is useful when your MCP host prefers containerized servers.
+Docker is **optional**. The primary install path is the native server binary —
+via [install.sh](../../install.sh), a client marketplace, or the **`.mcpb`
+bundle** attached to every GitHub release (Claude Desktop and other MCPB-aware
+clients install `flutter-mcp-toolkit.mcpb` directly; see
+[platforms](./platforms.mdx)). Use Docker when your MCP host prefers
+containerized servers, or on hosts without a native build (for example Intel
+macOS, which runs the `linux/amd64` image under Docker Desktop).
 
 ## Official registry entry
 
 Published on the [MCP Registry](https://registry.modelcontextprotocol.io) as **`io.github.Arenukvern/flutter-mcp-toolkit`**.
 
-Image coordinates (tag matches repo `VERSION`, currently **7.2.1**{/* x-release-please-version */} — always pin the tag you validated):
+Image coordinates (tag matches repo `VERSION`, currently **8.0.0**{/* x-release-please-version */} — always pin the tag you validated):
 
 ```text
 ghcr.io/arenukvern/flutter-mcp-toolkit:<VERSION>
@@ -20,12 +26,15 @@ ghcr.io/arenukvern/flutter-mcp-toolkit:<VERSION>
 Example:
 
 ```bash
-docker pull ghcr.io/arenukvern/flutter-mcp-toolkit:7.2.1 # x-release-please-version
+docker pull ghcr.io/arenukvern/flutter-mcp-toolkit:8.0.0 # x-release-please-version
 ```
 
-See [`mcp_server_dart/server.json`](../../mcp_server_dart/server.json) for the exact identifier on your train.
+See [`mcp_server_dart/server.json`](../../mcp_server_dart/server.json) for the exact identifiers on your train (OCI image first, MCPB bundle second).
 
-## MCP host config
+## MCP host config (Docker Desktop)
+
+The image defaults to `--dart-vm-host=host.docker.internal`, which Docker
+Desktop (macOS/Windows) resolves to your host — no extra networking flags:
 
 ```json
 {
@@ -36,8 +45,7 @@ See [`mcp_server_dart/server.json`](../../mcp_server_dart/server.json) for the e
         "run",
         "-i",
         "--rm",
-        "--network=host",
-        "ghcr.io/arenukvern/flutter-mcp-toolkit:7.2.1" // x-release-please-version
+        "ghcr.io/arenukvern/flutter-mcp-toolkit:8.0.0" // x-release-please-version
       ]
     }
   }
@@ -46,7 +54,29 @@ See [`mcp_server_dart/server.json`](../../mcp_server_dart/server.json) for the e
 
 Replace the image tag with your validated release version (see repo `VERSION` or `x-release-please-version` markers in this doc).
 
-`--network=host` lets the container reach the **Dart VM service** of a Flutter app running on the host (macOS/Linux). Your Flutter app still runs **outside** the container in debug mode with `mcp_toolkit` initialized.
+Your Flutter app still runs **outside** the container in debug mode with `mcp_toolkit` initialized; the container reaches its **Dart VM service** through `host.docker.internal`.
+
+**Start the app with the DDS origin check disabled.** The Dart VM service accepts only loopback `Host` headers (verified against the DDS source at Dart 3.14.0), and a container connection presents `Host: host.docker.internal:<port>`:
+
+```bash
+flutter run --disable-service-origin-check
+```
+
+Without it the server gets HTTP 403 `forbidden host` during the handshake. Discovery also probes the configured `--dart-vm-host`, so `host.docker.internal` is checked instead of `localhost` inside the container.
+
+### Linux note
+
+Plain Linux (no Docker Desktop) does not resolve `host.docker.internal`. Use
+`--network=host` and target localhost — the container then connects via
+`localhost`, which DDS always accepts, so **no app-side flag is needed**:
+
+```json
+"args": [
+  "run", "-i", "--rm", "--network=host",
+  "ghcr.io/arenukvern/flutter-mcp-toolkit:8.0.0", // x-release-please-version
+  "--dart-vm-host=localhost"
+]
+```
 
 ## Build locally
 

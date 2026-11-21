@@ -51,6 +51,7 @@ release_conflict__expected_asset_names() {
   printf '%s\n' \
     "flutter_mcp_${version}_darwin-arm64.tar.gz" \
     "flutter_mcp_${version}_linux-x64.tar.gz" \
+    "flutter-mcp-toolkit.mcpb" \
     "checksums.txt"
 }
 

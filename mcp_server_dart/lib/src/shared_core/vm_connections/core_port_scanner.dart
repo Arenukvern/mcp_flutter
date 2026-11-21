@@ -12,9 +12,21 @@ import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 
 /// Cross-platform port scanner used by CLI and MCP wrapper.
 final class CorePortScanner {
-  const CorePortScanner({required this.logger, this.scanPorts = const <int>[]});
+  const CorePortScanner({
+    required this.logger,
+    this.scanPorts = const <int>[],
+    this.probeHost = 'localhost',
+  });
 
   final CoreLogger logger;
+
+  /// Host probed by [isPortAccessible] and [probeKnownPorts].
+  ///
+  /// Defaults to loopback. Containerized servers reach the host's VM service
+  /// through a gateway hostname (for example `host.docker.internal`), so the
+  /// configured `--dart-vm-host` must be probed there — the process scan
+  /// cannot see host processes from inside a container.
+  final String probeHost;
 
   /// Ports probed on every scan in addition to the process scan.
   ///
@@ -281,11 +293,11 @@ final class CorePortScanner {
     return activePorts;
   }
 
-  /// Test whether a port is accessible.
+  /// Test whether a port is accessible on [probeHost].
   Future<bool> isPortAccessible(int port) async {
     try {
       final socket = await Socket.connect(
-        'localhost',
+        probeHost,
         port,
         timeout: const Duration(milliseconds: 100),
       );

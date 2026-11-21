@@ -54,7 +54,7 @@ Full list and suggested watch order: [Video walkthroughs](docs/concepts/video-wa
 | What can an agent do? | Inspect UI/errors, drive widgets, reload, screenshots (Flutter render pipeline), dynamic app tools. |
 | When to use this vs [Dart MCP](https://github.com/dart-lang/ai/tree/main/pkgs/dart_mcp_server)? | **Dart MCP:** Dart/Flutter *tooling* (analyzer, tests). **This toolkit:** a *running debug app* (UI + your app-defined tools). |
 | When not to use it? | Release builds, no debug VM, or you only need static analysis — use Dart MCP or CI instead. |
-| Supported install targets | Release binaries: **macOS Apple Silicon** and **Linux x64** ([details](docs/install/platforms.mdx)). Intel macOS is deprecated. |
+| Supported install targets | Release binaries: **macOS Apple Silicon** and **Linux x64** ([details](docs/install/platforms.mdx)). Intel macOS is not supported. |
 | Fastest proof | [Quickstart](docs/quickstart.mdx) → `doctor` → agent calls `fmt_discover_debug_apps` + `fmt_semantic_snapshot`. |
 | Tool list | Generated: [docs/reference/tools.mdx](docs/reference/tools.mdx) (regenerate with `make docs-reference`). |
 
@@ -72,6 +72,14 @@ Codex:       codex plugin marketplace add Arenukvern/mcp_flutter
 **2. Install script (recommended for server + CLI on PATH)** — curl:
 
 `curl -fsSL https://raw.githubusercontent.com/Arenukvern/mcp_flutter/main/install.sh | bash`
+
+**2b. Claude Desktop (MCPB)** — install **`flutter-mcp-toolkit.mcpb`** from the
+[latest release](https://github.com/Arenukvern/mcp_flutter/releases): one bundle
+with macOS (Apple Silicon) + Linux x64 **server** binaries, installed directly by
+MCPB-aware clients. The bundle does **not** include the `flutter-mcp-toolkit`
+CLI — steps 3–4 still need it, so keep the install script too. macOS binaries
+are unsigned — clear the quarantine attribute if Gatekeeper blocks them
+([details](docs/install/platforms.mdx)).
 
 **3. Instrument the app** — `cd my_flutter_app && flutter-mcp-toolkit codegen-init` (paste `main()` snippet before `runApp`).
 

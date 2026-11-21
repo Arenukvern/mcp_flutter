@@ -68,9 +68,9 @@ assert_host_can_build() {
     darwin-arm64)
       if [[ "$host_os" == "Darwin" && "$host_arch" == "x86_64" ]]; then
         cat >&2 <<EOF
-darwin-arm64 requires an Apple Silicon macOS host.
-Dart does not support macos/arm64 cross-compilation from Intel Macs.
-Use macos-15 (or newer arm64) in CI, or build on an arm64 Mac locally.
+darwin-arm64 requires an arm64 (Apple Silicon) macOS build host.
+Dart cannot cross-compile the macos/arm64 target from an x64 host.
+Use macos-15 (or newer arm64) in CI, or build on an Apple Silicon Mac locally.
 EOF
         exit 1
       fi

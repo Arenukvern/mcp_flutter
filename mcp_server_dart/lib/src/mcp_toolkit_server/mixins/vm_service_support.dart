@@ -34,6 +34,7 @@ base mixin VMServiceSupport on BaseMCPToolkitServer {
   late final CorePortScanner _corePortScanner = CorePortScanner(
     logger: _log,
     scanPorts: configuration.scanPorts,
+    probeHost: configuration.vmHost,
   );
 
   late final CoreImageFileSaver _coreImageFileSaver = CoreImageFileSaver(

@@ -74,6 +74,52 @@ jobs:
       - name: Assert hosted-only resolution (no pubspec_overrides)
         run: bash tool/release/assert_mcp_registry_no_pubspec_overrides.sh
 
+      # Fail-closed MCPB gate: registry versions are immutable, so a missing or
+      # mismatched flutter-mcp-toolkit.mcpb on the release must abort before any
+      # publish (for example, when the release runner never produced the bundle).
+      - name: Download MCPB release asset and checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+          mkdir -p mcpb_release
+          gh release download "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --dir mcpb_release \
+            --pattern 'flutter-mcp-toolkit.mcpb' \
+            --pattern 'checksums.txt'
+          ls -la mcpb_release
+
+      - name: Assert MCPB release asset (fail-closed registry gate)
+        id: mcpb_gate
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          gate_out="$(bash tool/release/assert_mcp_registry_release_assets.sh \
+            --tag "${{ inputs.release_tag }}" \
+            --version "$RELEASE_VERSION" \
+            --assets-dir mcpb_release)"
+          echo "$gate_out"
+          mcpb_sha="$(printf '%s\n' "$gate_out" | sed -n 's/^sha256=//p' | tail -1)"
+          [[ -n "$mcpb_sha" ]] || { echo "::error::gate did not emit sha256="; exit 1; }
+          echo "sha256=$mcpb_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Inject MCPB fileSha256 into server.json
+        env:
+          MCPB_SHA256: ${{ steps.mcpb_gate.outputs.sha256 }}
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp)"
+          jq --arg sha "$MCPB_SHA256" \
+            '(.packages[] | select(.registryType == "mcpb") | .fileSha256) = $sha' \
+            mcp_server_dart/server.json > "$tmp"
+          mv "$tmp" mcp_server_dart/server.json
+          jq -e '.packages[] | select(.registryType == "mcpb") | .fileSha256' \
+            mcp_server_dart/server.json >/dev/null
+
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:

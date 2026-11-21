@@ -13,6 +13,7 @@ class PortScanner {
   CorePortScanner get _core => CorePortScanner(
     logger: server.log,
     scanPorts: server.configuration.scanPorts,
+    probeHost: server.configuration.vmHost,
   );
 
   Future<List<int>> scanForFlutterPorts() => _core.scanForFlutterPorts();

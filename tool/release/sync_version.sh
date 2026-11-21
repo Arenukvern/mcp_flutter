@@ -184,6 +184,7 @@ files = [
   ['plugin/.zcode-plugin/plugin.json', ['version']],
   ['.claude-plugin/marketplace.json', ['plugins', 0, 'version']],
   ['docs.json', ['variables', 'version']],
+  ['mcp_server_dart/mcpb/manifest.json', ['version']],
 ]
 
 files.each do |path, keys|
@@ -200,9 +201,17 @@ if File.exist?(server_path)
   server = JSON.parse(File.read(server_path))
   server['version'] = version
   server.fetch('packages').each do |package|
-    next unless package['registryType'] == 'oci'
-
-    package['identifier'] = "ghcr.io/arenukvern/flutter-mcp-toolkit:#{version}"
+    case package['registryType']
+    when 'oci'
+      package['identifier'] = "ghcr.io/arenukvern/flutter-mcp-toolkit:#{version}"
+    when 'mcpb'
+      # The bundle download URL is tag-addressed; fileSha256 is injected by the
+      # registry publish workflow (checksums of the built asset), so a synced
+      # tree must never keep a stale hash.
+      package['identifier'] =
+        "https://github.com/Arenukvern/mcp_flutter/releases/download/v#{version}/flutter-mcp-toolkit.mcpb"
+      package.delete('fileSha256')
+    end
   end
   File.write(server_path, JSON.pretty_generate(server) + "\n")
 end

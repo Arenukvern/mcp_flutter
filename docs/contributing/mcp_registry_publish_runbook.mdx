@@ -9,10 +9,12 @@ The official [MCP Registry](https://registry.modelcontextprotocol.io) entry
 (`io.github.Arenukvern/flutter-mcp-toolkit`) is published by dispatching
 `publish_mcp_registry.yml` (Actions → Run workflow on **`main`** with the
 `release_tag` input), which builds the OCI image, pushes it to GHCR, and
-publishes `mcp_server_dart/server.json` to the registry. (It used to
-auto-trigger from `pub_publish.yml` on `v*` tags; pub packages now release
-per-tag via dart_changesets, so the registry publish is an explicit dispatch
-after the pub train lands — 2026-11-21.)
+publishes `mcp_server_dart/server.json` to the registry. `server.json` lists
+two packages in order: the **OCI image** (first) and the **MCPB bundle**
+(`flutter-mcp-toolkit.mcpb`, second) with a publish-time `fileSha256`. (It
+used to auto-trigger from `pub_publish.yml` on `v*` tags; pub packages now
+release per-tag via dart_changesets, so the registry publish is an explicit
+dispatch after the pub train lands — 2026-11-21.)
 
 This pipeline failed four times before its first green run. Every failure mode
 is now covered by a local gate — see
@@ -28,6 +30,8 @@ downstream automation failed (release binaries and/or MCP Registry OCI publish).
 | Failure | Recovery |
 |---------|----------|
 | Missing `flutter_mcp_*` tarballs or `checksums.txt` | On `main`, **Actions → Release → Run workflow** with `release_tag` (e.g. `v7.1.0`). See [release_binary_recovery](/contributing/release_binary_recovery). |
+| Missing `flutter-mcp-toolkit.mcpb` (tarballs + `checksums.txt` present) | The registry publish fails closed before publishing (`assert_mcp_registry_release_assets.sh` gate). Re-run the **Release** workflow on `main` with `release_tag` — the publish step gap-fills only the missing assets — then re-dispatch **Publish MCP Registry server**. The bundle hash is reproducible (normalized timestamps), so the rerun matches. |
+| Invalid `flutter-mcp-toolkit.mcpb` with **all four** expected assets present | The Release rerun is **blocked** by `check_release_assets_conflict.sh` (full conflict) before any upload — do not assume a rerun replaces the bundle. Recovery options from the guard message: (a) delete the existing `flutter-mcp-toolkit.mcpb` asset (and its `checksums.txt` line) on the GitHub release page, then re-run Release to upload a corrected bundle, or (b) cut a new tag. After either, re-dispatch **Publish MCP Registry server**. |
 | MCP Registry image / `server.json` publish | On **`main`** (after tooling fixes are merged), **Actions → Publish MCP Registry server → Run workflow** with `release_tag` (e.g. `v7.1.0`). The workflow uses **tooling from `main`** (fixed `Dockerfile.registry`) and **`mcp_server_dart` from the tag**. |
 
 Dispatch `publish_mcp_registry.yml` on **`main`** with the `release_tag` input — never from
@@ -67,6 +71,23 @@ The `check_mcp_registry.sh` contract asserts:
 - `assert_mcp_registry_no_pubspec_overrides.sh` runs immediately before the
   production OCI build and fails if `mcp_server_dart/pubspec_overrides.yaml`
   exists in the workspace.
+- **MCPB fail-closed gate:** before any publish, the workflow downloads
+  `flutter-mcp-toolkit.mcpb` + `checksums.txt` from the release and
+  `assert_mcp_registry_release_assets.sh` verifies the bundle exists, its
+  sha256 matches `checksums.txt`, both platform binaries
+  (`server/darwin-arm64/…`, `server/linux-x64/…`) are inside, and the bundled
+  manifest version equals the release version. A failure aborts the job —
+  registry versions are immutable, so an incomplete release is never
+  published.
+- **`fileSha256` injection:** after the gate passes, the workflow injects the
+  verified bundle hash into the `mcpb` package of `server.json` (the
+  checked-in file intentionally carries no hash) and `mcp-publisher validate`
+  sees the final manifest.
+- The MCPB bundle itself is packed by the Release workflow's `mcpb` job via
+  `tool/release/pack_mcpb_bundle.sh` (official `@anthropic-ai/mcpb` CLI,
+  version-pinned in `MCPB_CLI_VERSION`), and its layout is pinned to the
+  release matrix by `tool/contracts/test_mcpb_manifest_matrix.sh`
+  (`make check-contracts`).
 - Offline contract coverage uses `MCP_REGISTRY_PUB_API_BASE` pointed at
   `tool/contracts/fixtures/mcp_registry_pub_api/`; smoke CI uses live pub.dev
   (`python3` + PyYAML + `curl` on ubuntu-latest).

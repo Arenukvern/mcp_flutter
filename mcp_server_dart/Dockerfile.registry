@@ -80,4 +80,10 @@ LABEL io.modelcontextprotocol.server.name="io.github.Arenukvern/flutter-mcp-tool
       org.opencontainers.image.title="Flutter MCP Toolkit" \
       org.opencontainers.image.description="Flutter MCP server with semantic snapshots, ready-to-use interaction tools, and runtime-registered client tools and resources."
 
-CMD ["--resources", "--images", "--log-level=error", "--environment=production"]
+# Default VM service host resolves on Docker Desktop (macOS/Windows), where
+# host.docker.internal points at the host running the Flutter debug app. The
+# app must run with --disable-service-origin-check so DDS accepts the
+# non-loopback Host header; on plain Linux use --network=host with
+# --dart-vm-host=localhost instead (see mcp_server_dart/DOCKER.md and
+# docs/install/docker.mdx).
+CMD ["--dart-vm-host=host.docker.internal", "--resources", "--images", "--log-level=error", "--environment=production"]

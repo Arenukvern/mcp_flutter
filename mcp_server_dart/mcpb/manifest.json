@@ -1,0 +1,54 @@
+{
+  "manifest_version": "0.3",
+  "name": "flutter-mcp-toolkit",
+  "display_name": "Flutter MCP Toolkit",
+  "version": "8.0.0",
+  "description": "Inspect and drive Flutter debug apps/games: semantic snapshots, search, and custom client tools",
+  "author": {
+    "name": "Arenukvern"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Arenukvern/mcp_flutter.git"
+  },
+  "homepage": "https://docs.page/arenukvern/mcp_flutter",
+  "documentation": "https://docs.page/arenukvern/mcp_flutter",
+  "support": "https://github.com/Arenukvern/mcp_flutter/issues",
+  "license": "MIT",
+  "server": {
+    "type": "binary",
+    "entry_point": "server/darwin-arm64/flutter-mcp-toolkit-server",
+    "mcp_config": {
+      "command": "server/darwin-arm64/flutter-mcp-toolkit-server",
+      "args": [
+        "--dart-vm-host=localhost",
+        "--dart-vm-port=8181",
+        "--resources",
+        "--images",
+        "--dynamics"
+      ],
+      "platform_overrides": {
+        "darwin": {
+          "command": "server/darwin-arm64/flutter-mcp-toolkit-server"
+        },
+        "linux": {
+          "command": "server/linux-x64/flutter-mcp-toolkit-server"
+        }
+      }
+    }
+  },
+  "tools_generated": true,
+  "keywords": [
+    "flutter",
+    "dart",
+    "mcp",
+    "semantic-snapshots",
+    "testing"
+  ],
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "linux"
+    ]
+  }
+}
