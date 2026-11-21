@@ -55,7 +55,7 @@ release_publish__checksum_tar_names() {
   if [[ -n "$remote_csv" ]]; then
     local remote
     for remote in ${remote_csv//,/ }; do
-      [[ -n "$remote" && "$remote" == *.tar.gz ]] || continue
+      [[ -n "$remote" && ( "$remote" == *.tar.gz || "$remote" == *.mcpb ) ]] || continue
       local found=false
       for local_name in "${local_names[@]}"; do
         [[ "$remote" == "$local_name" ]] && found=true && break
@@ -255,7 +255,7 @@ release_publish__plan_from_state_file() {
   is_draft="$(jq -r '.is_draft' "$state_file")"
   mapfile -t local_tars < <(jq -r '.local_tars[]?' "$state_file")
   [[ ${#local_tars[@]} -gt 0 ]] || {
-    release_publish__plan_emit_error "no local tarballs"
+    release_publish__plan_emit_error "no local release assets"
     return 0
   }
 
@@ -318,7 +318,7 @@ release_publish__plan_from_state_file() {
     printf '%s' "$published_checksums" >"$tmp_manifest"
     local remote_name remote_hash
     while IFS= read -r remote_name; do
-      [[ -n "$remote_name" && "$remote_name" == *.tar.gz ]] || continue
+      [[ -n "$remote_name" && ( "$remote_name" == *.tar.gz || "$remote_name" == *.mcpb ) ]] || continue
       remote_hash="$(jq -r --arg n "$remote_name" '.remote_hashes[$n] // empty' "$state_file")"
       [[ -n "$remote_hash" ]] || continue
       if ! release_publish__verify_listed_remote_hash \

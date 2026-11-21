@@ -78,7 +78,9 @@ server = JSON.parse(File.read(ENV.fetch('SERVER_JSON')))
 version = File.read(File.join(ENV.fetch('ROOT_DIR'), 'VERSION')).strip
 name = 'io.github.Arenukvern/flutter-mcp-toolkit'
 description = server.fetch('description')
-package = server.fetch('packages').find { |candidate| candidate['registryType'] == 'oci' }
+packages = server.fetch('packages')
+package = packages.find { |candidate| candidate['registryType'] == 'oci' }
+mcpb_package = packages.find { |candidate| candidate['registryType'] == 'mcpb' }
 
 abort 'server name is not the repository-owned MCP namespace' unless server['name'] == name
 abort 'description must be between 1 and 100 characters' unless description.length.between?(1, 100)
@@ -90,6 +92,18 @@ abort "OCI identifier #{package['identifier']} != #{expected_identifier}" unless
 # ghcr.io reference in identifier is required instead (publish run #4 failure).
 abort 'OCI package must not carry registryBaseUrl (use canonical identifier)' if package.key?('registryBaseUrl')
 abort 'OCI package transport must be stdio' unless package.dig('transport', 'type') == 'stdio'
+
+# MCPB package: ordered after the OCI image, tag-addressed download URL, stdio.
+# fileSha256 is injected by the publish workflow from the release asset; a
+# checked-in (stale) hash must never survive a version bump.
+abort "server.json must list exactly two packages (oci first, mcpb second), got #{packages.size}" unless packages.size == 2
+abort 'packages[0] must be the OCI image (clients prefer the first entry)' unless packages[0]['registryType'] == 'oci'
+abort 'MCPB package is missing' unless mcpb_package
+expected_mcpb_identifier =
+  "https://github.com/Arenukvern/mcp_flutter/releases/download/v#{version}/flutter-mcp-toolkit.mcpb"
+abort "MCPB identifier #{mcpb_package['identifier']} != #{expected_mcpb_identifier}" unless mcpb_package['identifier'] == expected_mcpb_identifier
+abort 'MCPB package transport must be stdio' unless mcpb_package.dig('transport', 'type') == 'stdio'
+abort 'MCPB package must not carry fileSha256 at rest (publish-time injection)' if mcpb_package.key?('fileSha256')
 RUBY
 
 grep -Fq 'io.modelcontextprotocol.server.name="io.github.Arenukvern/flutter-mcp-toolkit"' "$DOCKERFILE" ||
@@ -166,7 +180,42 @@ smoke_build = smoke_steps.find { |s| s['uses'].to_s.start_with?('docker/build-pu
 abort 'smoke workflow has no docker/build-push-action step' unless smoke_build
 smoke_with = smoke_build['with'] || {}
 abort 'smoke workflow must use dynamic docker context outputs' unless smoke_with['context'].to_s.include?('smoke_ctx.outputs.docker_context')
+
+# --- Registry publish: MCPB gate + fileSha256 injection must precede mcp-publisher publish
+publish_steps = workflow.dig('jobs', 'publish', 'steps') || []
+gate_index = publish_steps.index { |s| s['run'].to_s.include?('assert_mcp_registry_release_assets.sh') }
+abort 'publish workflow must run the fail-closed MCPB asset gate (assert_mcp_registry_release_assets.sh)' unless gate_index
+inject_index = publish_steps.index { |s| s['run'].to_s.include?('fileSha256') }
+abort 'publish workflow must inject fileSha256 into server.json before publishing' unless inject_index
+publisher_index = publish_steps.index { |s| s['run'].to_s.include?('mcp-publisher publish') }
+abort 'publish workflow has no mcp-publisher publish step' unless publisher_index
+abort 'MCPB asset gate must run before mcp-publisher publish' unless gate_index < publisher_index
+abort 'fileSha256 injection must run after the MCPB gate and before publish' unless gate_index < inject_index && inject_index < publisher_index
+download_step = publish_steps.find { |s| s['run'].to_s.include?("gh release download") && s['run'].to_s.include?('flutter-mcp-toolkit.mcpb') }
+abort 'publish workflow must download flutter-mcp-toolkit.mcpb from the release before the gate' unless download_step
+download_index = publish_steps.index(download_step)
+abort 'MCPB download must precede the fail-closed gate' unless download_index < gate_index
+
+# --- Binary release: the MCPB job packs and uploads the bundle; publish ships it
+binaries = YAML.safe_load(File.read(File.join(ENV.fetch('ROOT_DIR'), '.github/workflows/release.yml')), aliases: true)
+abort 'release.yml must have an mcpb job' unless binaries.dig('jobs', 'mcpb')
+abort 'release.yml mcpb job must pack via pack_mcpb_bundle.sh' unless
+  (binaries.dig('jobs', 'mcpb', 'steps') || []).any? { |s| s['run'].to_s.include?('pack_mcpb_bundle.sh') }
+mcpb_upload = (binaries.dig('jobs', 'mcpb', 'steps') || []).find { |s|
+  s['uses'].to_s.start_with?('actions/upload-artifact@') && s['with'].to_s.include?('release-mcpb')
+}
+abort 'release.yml mcpb job must upload the release-mcpb artifact' unless mcpb_upload
+publish_needs = binaries.dig('jobs', 'publish', 'needs') || []
+abort 'release.yml publish job must depend on the mcpb job' unless publish_needs.include?('mcpb')
+checksum_step = (binaries.dig('jobs', 'publish', 'steps') || []).find { |s| s['run'].to_s.include?('checksums.txt') }
+abort 'release.yml publish job must generate checksums.txt' unless checksum_step
+abort 'checksums.txt must include the .mcpb bundle' unless checksum_step['run'].to_s.include?('.mcpb')
 RUBY
+
+grep -Fq 'flutter-mcp-toolkit.mcpb' "$ROOT_DIR/tool/release/release_assets_conflict_lib.sh" ||
+  fail "release asset conflict guard must expect flutter-mcp-toolkit.mcpb"
+grep -Fq 'mcp_server_dart/mcpb/manifest.json' "$ROOT_DIR/tool/release/sync_version.sh" ||
+  fail "sync_version must keep mcp_server_dart/mcpb/manifest.json in the release train"
 
 grep -Fq 'prepare_mcp_registry_smoke_build.sh' "$RELEASE_WORKFLOW" &&
   fail "publish workflow must not invoke prepare_mcp_registry_smoke_build.sh"

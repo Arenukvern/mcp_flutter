@@ -111,8 +111,8 @@ publish_release_assets__main() {
   [[ -n "${GITHUB_REPOSITORY:-}" ]] || fail "GITHUB_REPOSITORY required"
   
   shopt -s nullglob
-  local_tars=( "$ASSET_DIR"/*.tar.gz )
-  [[ ${#local_tars[@]} -gt 0 ]] || fail "no local *.tar.gz in $ASSET_DIR"
+  local_tars=( "$ASSET_DIR"/*.tar.gz "$ASSET_DIR"/*.mcpb )
+  [[ ${#local_tars[@]} -gt 0 ]] || fail "no local release assets (*.tar.gz, *.mcpb) in $ASSET_DIR"
   
   release_json="$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,assets)"
   is_draft="$(echo "$release_json" | jq -r '.isDraft')"
@@ -209,7 +209,7 @@ publish_release_assets__main() {
   published_checksums_dir=""
   
   upload_count="$(echo "$plan" | jq '[.upload_local_names[]? | select(. != "")] | length')"
-  ok "published ${#local_tar_names[@]} local tarball(s); draft=$is_draft; new_uploads=$upload_count"
+  ok "published ${#local_tar_names[@]} local release asset(s); draft=$is_draft; new_uploads=$upload_count"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then

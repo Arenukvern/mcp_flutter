@@ -65,6 +65,17 @@ marketplace_version="$(
 [[ "$marketplace_version" == "$repo_version" ]] ||
   fail ".claude-plugin/marketplace.json plugins[0].version ($marketplace_version) != VERSION ($repo_version)"
 
+mcpb_manifest="$ROOT_DIR/mcp_server_dart/mcpb/manifest.json"
+if [[ -f "$mcpb_manifest" ]]; then
+  mcpb_version="$(
+    sed -nE 's/.*"version"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' "$mcpb_manifest" | head -1
+  )"
+  [[ "$mcpb_version" == "$repo_version" ]] ||
+    fail "mcp_server_dart/mcpb/manifest.json version ($mcpb_version) != VERSION ($repo_version)"
+else
+  fail "missing mcp_server_dart/mcpb/manifest.json (MCPB release package)"
+fi
+
 for dep in \
   flutter_mcp_toolkit_core \
   flutter_mcp_toolkit_capability_kernel \
