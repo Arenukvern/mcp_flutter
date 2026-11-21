@@ -36,7 +36,6 @@ jobs:
       execute: ${{ github.event_name == 'push' || github.event.inputs.execute }}
       flutter-version: '3.50.1'
     secrets: inherit
-    environment: pub.dev
 
   binaries:
     needs: publish
