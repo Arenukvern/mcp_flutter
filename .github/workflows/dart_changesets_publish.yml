@@ -33,7 +33,10 @@ jobs:
     uses: Arenukvern/dart_changesets/.github/workflows/publish.yml@v1
     with:
       tag: ${{ github.event.inputs.tag || github.ref_name }}
-      execute: ${{ github.event_name == 'push' || github.event.inputs.execute }}
+      # inputs.execute is the caller's TYPED boolean; github.event.inputs
+      # carries the string form, which the reusable's boolean input rejects
+      # ('Unexpected value true' at scheduling).
+      execute: ${{ github.event_name == 'push' || inputs.execute }}
       flutter-version: '3.50.1'
     secrets: inherit
 
