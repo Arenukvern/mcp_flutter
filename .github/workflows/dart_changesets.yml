@@ -40,6 +40,10 @@ jobs:
       # push uses RELEASE_PLEASE_TOKEN when set so pull_request workflows
       # (contract gates, Android/Linux proofs) run on the version PR head.
       - uses: Arenukvern/dart_changesets@v1
+        with:
+          # This repo's per-tag publish workflow (the action's default
+          # `publish.yml` does not exist here).
+          publish-workflow: dart_changesets_publish.yml
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
 
