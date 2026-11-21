@@ -13,6 +13,11 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  # workflow_dispatch creation (the action starts publish runs via
+  # `gh workflow run`) needs actions: write — without it a version-PR
+  # merge pushes tags but fails to start the publish runs (proven live on
+  # the engine repo 2026-11-21).
+  actions: write
 
 concurrency:
   group: dart-changesets-release
