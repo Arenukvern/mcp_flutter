@@ -1,5 +1,14 @@
 # Changelog
 
+## [7.2.2] - 2026-11-20
+
+### Changed
+
+- Widen `from_json_to_json` and `is_dart_empty_or_not` hosted ranges to
+  `>=0.5.0 <0.7.0` (aligned with `mcp_toolkit` 7.2.3 fj2j/idoen train on main).
+- Pin `intentcall_codegen` at **^1.2.1** and restore runtime codegen for
+  `get_recent_logs` tooling.
+
 ## [7.2.1] - 2026-11-18
 
 ### Fixed

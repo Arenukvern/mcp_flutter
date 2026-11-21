@@ -29,10 +29,10 @@ dependencies:
 dev_dependencies:
   crypto: ^3.0.6
   image: ^4.3.0
-  oka_core: ^0.9.1
+  oka_core: ^0.11.0
   lints: ^6.1.0
-  oka_android: ^0.9.1
-  oka_harness: ^0.9.1
+  oka_android: ^0.11.0
+  oka_harness: ^0.11.0
   test: 1.32.0
   universal_tooling_runtime: ^0.2.2
   universal_automation_conformance:

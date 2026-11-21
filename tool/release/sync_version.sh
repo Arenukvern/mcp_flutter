@@ -184,7 +184,6 @@ files = [
   ['plugin/.zcode-plugin/plugin.json', ['version']],
   ['.claude-plugin/marketplace.json', ['plugins', 0, 'version']],
   ['docs.json', ['variables', 'version']],
-  ['.release-please-manifest.json', ['.']],
 ]
 
 files.each do |path, keys|

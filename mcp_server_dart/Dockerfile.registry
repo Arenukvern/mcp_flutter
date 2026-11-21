@@ -14,13 +14,13 @@
 # publish (`publish_mcp_registry.yml`) never supplies overrides — only hosted.
 #
 # ghcr.io/cirruslabs/flutter stopped updating after Flutter 3.44.0 (Dart 3.12.0).
-# CI trains on Flutter 3.50.0 (Dart 3.14); the build stage installs that
+# CI trains on Flutter 3.50.1 (Dart 3.14.0); the build stage installs that
 # stable linux SDK from storage.googleapis.com. Values must match
 # tool/contracts/flutter_sdk_pin.env (reproducibility anchor).
 FROM debian:bookworm-slim AS build
 
-ARG FLUTTER_VERSION=3.50.0
-ARG FLUTTER_SDK_SHA256=6ea2d806fd57269ae783e6788e2a81fc26eaad782f1e0d0ff38623bb765ff9f5
+ARG FLUTTER_VERSION=3.50.1
+ARG FLUTTER_SDK_SHA256=4ad17fc8462fbcef2ba19ff4a78c0a16b7147fde1add8578e267ea62cdb92678
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends ca-certificates curl git unzip xz-utils && \

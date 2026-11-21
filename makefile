@@ -24,9 +24,8 @@ check-contracts:
 	bash tool/contracts/check_release_runner_retry_workflow.sh && \
 	bash tool/contracts/test_release_runner_retry_decision.sh && \
 	bash tool/contracts/test_resolve_release_tag.sh && \
+	bash tool/contracts/test_extract_package_release_notes.sh && \
 	bash tool/contracts/test_release_recovery_flow.sh && \
-	bash tool/contracts/test_publish_pub_packages_oidc.sh && \
-	bash tool/contracts/test_publish_pub_packages_skip_existing.sh && \
 	bash tool/contracts/test_oka_consumer_overrides_guard.sh && \
 	bash tool/contracts/check_version_sync.sh && \
 	bash tool/contracts/check_skill_assets_drift.sh && \

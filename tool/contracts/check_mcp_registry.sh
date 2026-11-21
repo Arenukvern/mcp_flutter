@@ -9,6 +9,7 @@ FLUTTER_PIN="$ROOT_DIR/tool/contracts/flutter_sdk_pin.env"
 SERVER_PUBSPEC="$ROOT_DIR/mcp_server_dart/pubspec.yaml"
 RELEASE_WORKFLOW="$ROOT_DIR/.github/workflows/publish_mcp_registry.yml"
 SMOKE_WORKFLOW="$ROOT_DIR/.github/workflows/mcp_registry_dockerfile.yml"
+RELEASE_BINARIES_WORKFLOW="$ROOT_DIR/.github/workflows/release.yml"
 
 fail() {
   echo "check_mcp_registry: $*" >&2
@@ -21,6 +22,7 @@ fail() {
 [[ -f "$SERVER_PUBSPEC" ]] || fail "missing mcp_server_dart/pubspec.yaml"
 [[ -f "$RELEASE_WORKFLOW" ]] || fail "missing publish_mcp_registry.yml"
 [[ -f "$SMOKE_WORKFLOW" ]] || fail "missing mcp_registry_dockerfile.yml"
+[[ -f "$RELEASE_BINARIES_WORKFLOW" ]] || fail "missing release.yml"
 
 export FLUTTER_PIN
 python3 <<'PY'
@@ -175,9 +177,10 @@ grep -Fq 'release_tag:' "$RELEASE_WORKFLOW" ||
   fail "publish workflow must declare workflow_dispatch release_tag input"
 grep -Fq 'github-oidc' "$RELEASE_WORKFLOW" ||
   fail "publish workflow does not use GitHub OIDC for MCP Registry authentication"
-# The MCP Registry publish is an explicit dispatch (Actions -> Run workflow on
-# main with release_tag) since the pub package train moved to dart_changesets
-# per-tag publishes (2026-11-21); the old pub_publish.yml auto-trigger is gone.
+grep -Fq 'gh workflow run publish_mcp_registry.yml' "$RELEASE_BINARIES_WORKFLOW" ||
+  fail "binary release does not trigger the dependent MCP Registry publication"
+grep -Fq 'needs.prepare.outputs.release_tag' "$RELEASE_BINARIES_WORKFLOW" ||
+  fail "registry trigger must use prepare.outputs.release_tag"
 grep -Fq 'resolve_mcp_registry_release_version.sh' "$RELEASE_WORKFLOW" ||
   fail "publish_mcp_registry must resolve version from release-src"
 grep -Fq 'overlay_mcp_registry_tag_sources.sh' "$RELEASE_WORKFLOW" ||

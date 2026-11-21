@@ -23,7 +23,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: '3.50.0'
+          flutter-version: '3.50.1'
           cache: true
 
       - name: Install mcp_server_dart dependencies
@@ -73,7 +73,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: '3.50.0'
+          flutter-version: '3.50.1'
           cache: true
 
       - name: Install mcp_server_dart dependencies
@@ -128,7 +128,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: '3.50.0'
+          flutter-version: '3.50.1'
           cache: true
 
       - name: Install mcp_server_dart dependencies

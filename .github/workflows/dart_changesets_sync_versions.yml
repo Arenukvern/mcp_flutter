@@ -1,0 +1,73 @@
+name: dart_changesets — sync versions
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: dart-changesets-sync-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  detect-version-pr:
+    runs-on: ubuntu-latest
+    outputs:
+      is_version_pr: ${{ steps.check.outputs.is_version_pr }}
+    steps:
+      - id: check
+        name: Detect dart_changesets version PR
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_HEAD: ${{ github.head_ref }}
+        run: |
+          title="$PR_TITLE"
+          head="$PR_HEAD"
+          if [[ "$title" == "chore: version packages" ]] ||
+             [[ "$head" == changesets/version-* ]] ||
+             [[ "$head" == changesets-version-* ]]; then
+            echo "is_version_pr=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_version_pr=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  auto-sync-versions:
+    needs: detect-version-pr
+    if: needs.detect-version-pr.outputs.is_version_pr == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Sync release version touchpoints
+        run: |
+          set -euo pipefail
+          version="$(sed -nE 's/^version:[[:space:]]*([^[:space:]#]+).*/\1/p' mcp_toolkit/pubspec.yaml | head -1)"
+          [[ -n "$version" ]] || { echo "::error::mcp_toolkit pubspec has no version"; exit 1; }
+          bash tool/release/sync_version.sh --version "$version"
+
+      - name: Commit and push if changed
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          if git diff --quiet; then
+            echo "release version touchpoints already in sync"
+            exit 0
+          fi
+          if [[ ! "$HEAD_REF" =~ ^[A-Za-z0-9._/-]+$ ]]; then
+            echo "::error::unexpected HEAD_REF"
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: sync release version touchpoints"
+          gh auth setup-git
+          git push origin "HEAD:refs/heads/${HEAD_REF}"

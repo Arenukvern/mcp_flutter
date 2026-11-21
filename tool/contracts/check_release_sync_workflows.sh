@@ -4,7 +4,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 DRIFT="$ROOT_DIR/.github/workflows/skill_assets_drift.yml"
-VERSIONS="$ROOT_DIR/.github/workflows/release_pr_sync_versions.yml"
+VERSIONS="$ROOT_DIR/.github/workflows/dart_changesets_sync_versions.yml"
 SKILLS="$ROOT_DIR/.github/workflows/release_pr_sync_skills.yml"
 
 fail() { echo "check_release_sync_workflows: $*" >&2; exit 1; }
@@ -15,11 +15,11 @@ if grep -q 'workflow_run:' "$DRIFT"; then
 fi
 
 if grep -q 'build_skill_assets.dart' "$VERSIONS"; then
-  fail "release_pr_sync_versions.yml must not regenerate skill assets (single owner: sync skills workflow)"
+  fail "dart_changesets_sync_versions.yml must not regenerate skill assets (single owner: sync skills workflow)"
 fi
 
-if ! grep -q 'release-pr-automation-\${{ github.event.pull_request.number }}' "$VERSIONS"; then
-  fail "release_pr_sync_versions.yml must use shared release-pr-automation concurrency group"
+if ! grep -q 'dart-changesets-sync-\${{ github.event.pull_request.number }}' "$VERSIONS"; then
+  fail "dart_changesets_sync_versions.yml must use dart-changesets-sync concurrency group"
 fi
 if ! grep -q 'release-pr-automation-\${{ github.event.pull_request.number }}' "$SKILLS"; then
   fail "release_pr_sync_skills.yml must use shared release-pr-automation concurrency group"
@@ -35,7 +35,7 @@ for wf in "$VERSIONS" "$SKILLS"; do
 done
 
 if grep -q 'Verify skill assets before commit' "$VERSIONS"; then
-  fail "release_pr_sync_versions.yml must not run pre-commit skill_assets git diff verify"
+  fail "dart_changesets_sync_versions.yml must not run pre-commit skill_assets git diff verify"
 fi
 
 if ! grep -q 'statuses: write' "$SKILLS"; then

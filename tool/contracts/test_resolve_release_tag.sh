@@ -41,4 +41,10 @@ else
   ok "rejects path injection"
 fi
 
+if run_case package_tag GITHUB_EVENT_NAME=workflow_call DISPATCH_RELEASE_TAG=mcp_toolkit-v8.0.0 | grep -q 'tag=v8.0.0'; then
+  ok "package tag maps to root v tag"
+else
+  fail "package tag resolution failed"
+fi
+
 ok "resolve_release_tag cases OK"

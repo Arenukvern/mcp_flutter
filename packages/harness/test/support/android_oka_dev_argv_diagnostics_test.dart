@@ -6,24 +6,24 @@ import 'package:test/test.dart';
 import 'android_oka_dev_argv_diagnostics.dart';
 
 void main() {
-  test('hosted target argv omits android positional', () {
-    final hosted = hostedAndroidAppTargetDevArgv(deviceId: 'emulator-5554');
-    final supported = supportedOkaDevAndroidArgv(deviceId: 'emulator-5554');
+  test('hosted AndroidAppTarget child argv includes android and json', () {
+    const deviceId = 'emulator-5554';
+    final hosted = hostedAndroidAppTargetDevArgv(deviceId: deviceId);
+    final legacy = legacyBareOkaDevArgv(deviceId: deviceId);
     final intent = androidOkaDevLaunchIntent(
       okaBin: 'oka',
       projectDir: '/tmp/p',
-      deviceId: 'emulator-5554',
+      deviceId: deviceId,
     );
-    final childArgv = intent['hostedAndroidAppTargetChildArgv'] as List;
-    if (childArgv.contains('android')) {
-      expect(hosted, supported);
-      expect(intent['hostedOmitsAndroidPositional'], isFalse);
-    } else {
-      expect(hosted, ['dev', '--device', 'emulator-5554']);
-      expect(supported, ['dev', 'android', '--device', 'emulator-5554']);
-      expect(intent['hostedOmitsAndroidPositional'], isTrue);
-    }
+
+    expect(
+      hosted,
+      ['dev', 'android', '--json', '--device', deviceId],
+    );
+    expect(legacy, ['dev', '--device', deviceId]);
+    expect(intent['okaHarnessVersion'], '0.11.0');
+    expect(intent['hostedOmitsAndroidPositional'], isFalse);
     expect(intent['hostedAndroidAppTargetChildArgv'], hosted);
-    expect(intent['supportedOkaCliArgv'], supported);
+    expect(intent['legacyBareOkaDevArgv'], legacy);
   });
 }

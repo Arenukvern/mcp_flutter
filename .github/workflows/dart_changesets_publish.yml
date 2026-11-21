@@ -25,14 +25,24 @@ permissions:
   id-token: write
 
 concurrency:
-  group: dart-changesets-publish-${{ inputs.tag || github.ref }}
+  group: dart-changesets-publish-${{ github.event.inputs.tag || github.ref }}
   cancel-in-progress: false
 
 jobs:
   publish:
     uses: Arenukvern/dart_changesets/.github/workflows/publish.yml@v1
     with:
-      tag: ${{ inputs.tag || github.ref_name }}
-      execute: ${{ github.event_name == 'push' || inputs.execute }}
-      flutter-version: '3.50.0'
+      tag: ${{ github.event.inputs.tag || github.ref_name }}
+      execute: ${{ github.event_name == 'push' || github.event.inputs.execute }}
+      flutter-version: '3.50.1'
+    secrets: inherit
     environment: pub.dev
+
+  binaries:
+    needs: publish
+    if: >-
+      startsWith(github.event.inputs.tag || github.ref_name, 'flutter_mcp_toolkit_server-v')
+    uses: ./.github/workflows/release.yml
+    with:
+      release_tag: ${{ github.event.inputs.tag || github.ref_name }}
+    secrets: inherit
