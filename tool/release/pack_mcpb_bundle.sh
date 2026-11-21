@@ -15,6 +15,8 @@
 # carries as fileSha256 in the MCP Registry publish).
 set -euo pipefail
 
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
 # Pinned official CLI (npm @anthropic-ai/mcpb). Override for local testing only.
 MCPB_CLI_VERSION="${MCPB_CLI_VERSION:-2.1.2}"
 
@@ -126,6 +128,16 @@ rm -f "$OUTPUT"
 run_mcpb pack "$stage_dir" "$OUTPUT" ||
   fail "mcpb pack failed"
 [[ -f "$OUTPUT" ]] || fail "mcpb pack produced no output at $OUTPUT"
+
+# mcpb pack stamps entries with the wall clock, so identical inputs otherwise
+# produce different bytes and a different sha256 on every rerun — which would
+# break checksum-based recovery after a partially published release. Patching
+# the timestamps to a fixed epoch makes the archive deterministic (payloads,
+# CRCs, permissions, and entry order are preserved byte-for-byte).
+command -v python3 >/dev/null 2>&1 ||
+  fail "python3 required to normalize bundle timestamps"
+python3 "$ROOT_DIR/tool/release/normalize_mcpb_timestamps.py" "$OUTPUT" ||
+  fail "timestamp normalization failed"
 
 # --- Bundle contents must carry both platform binaries.
 zip_listing="$(unzip -l "$OUTPUT")"

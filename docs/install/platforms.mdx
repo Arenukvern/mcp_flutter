@@ -27,7 +27,21 @@ Source: [`.github/workflows/release.yml`](../../.github/workflows/release.yml) `
 The macOS binaries and the MCPB bundle are **unsigned** (signing and
 notarization are out of scope for this project). macOS Gatekeeper may attach a
 `com.apple.quarantine` attribute to downloaded files; if the server refuses to
-start, clear it:
+start, clear it.
+
+**MCPB install (client-managed directory):** the client extracts the bundle
+into its own extension directory — for example Claude Desktop under
+`~/Library/Application Support/Claude/`. Locate the installed copy and clear
+the attribute on the binary the client launches:
+
+```bash
+find ~/Library/Application\ Support -type f \
+  -path '*server/darwin-arm64/flutter-mcp-toolkit-server' 2>/dev/null
+xattr -d com.apple.quarantine \
+  '<path-from-above>/server/darwin-arm64/flutter-mcp-toolkit-server'
+```
+
+**Tarball install (extracted archive):**
 
 ```bash
 xattr -d com.apple.quarantine flutter-mcp-toolkit-server

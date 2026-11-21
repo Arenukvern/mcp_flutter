@@ -38,6 +38,19 @@ the image defaults to `--dart-vm-host=host.docker.internal`):
 > `docker run -i --rm --network=host <image> --dart-vm-host=localhost`.
 > Pin the version tag to the release you validated against for reproducible
 > setups.
+>
+> **DDS host validation (Docker Desktop):** the Dart VM service on your host
+> accepts connections only from loopback `Host` headers (verified against the
+> DDS source at Dart 3.14.0). A container reaching the app through
+> `host.docker.internal` sends a non-loopback `Host`, so the app must be
+> started with the origin check disabled:
+>
+> ```bash
+> flutter run --disable-service-origin-check
+> ```
+>
+> The Linux `--network=host` path needs **no** app-side flag — the container
+> then connects via `localhost`, which DDS always accepts.
 
 ## Overview
 
@@ -179,7 +192,9 @@ Your Flutter debug app runs **outside** the container. The containerized server
 must reach its **Dart VM service**:
 
 ```bash
-# Docker Desktop (macOS/Windows): host.docker.internal resolves to the host
+# Docker Desktop (macOS/Windows): host.docker.internal resolves to the host.
+# The Flutter app must run with --disable-service-origin-check (see note above)
+# so DDS accepts the non-loopback Host header.
 docker run -i \
   mcp_server:latest \
   --dart-vm-host=host.docker.internal \

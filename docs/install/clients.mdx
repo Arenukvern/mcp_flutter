@@ -36,7 +36,17 @@ When the host **already** references `flutter-mcp-toolkit` in `mcp.json`, re-run
 
 ## Manual `mcpServers` JSON
 
-Use binary **`flutter-mcp-toolkit-server`** on PATH. Marketplace/plugin flows install **skills** (and sometimes MCP JSON) but **do not** download the server binary — run [install.sh](../../install.sh), or install the **`.mcpb`** release bundle in an MCPB-aware client, so `flutter-mcp-toolkit-server` is available. Registry key **`flutter-mcp-toolkit`**. Legacy key renames: [migration v2→v3](../migration/migration_v2_to_v3.mdx).
+Manual JSON requires the **standalone `flutter-mcp-toolkit-server` binary on
+PATH** (install it with [install.sh](../../install.sh)) or an explicit absolute
+path as `command`. Installing the **`.mcpb`** release bundle is a separate,
+alternative path: the MCPB-aware client (for example Claude Desktop) extracts
+the bundle into its own extension directory and generates the server config
+from the manifest — it does **not** put the binary on PATH for other clients,
+and manual JSON keeps pointing at `flutter-mcp-toolkit-server` regardless.
+
+Marketplace/plugin flows install **skills** (and sometimes MCP JSON) but **do
+not** download the server binary. Registry key **`flutter-mcp-toolkit`**.
+Legacy key renames: [migration v2→v3](../migration/migration_v2_to_v3.mdx).
 
 ### Cursor (`~/.cursor/mcp.json` or project `.cursor/mcp.json`)
 

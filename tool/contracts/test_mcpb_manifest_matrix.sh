@@ -86,14 +86,18 @@ grep -Fq "MCPB_CLI_VERSION:-${MCPB_CLI_VERSION}" "$PACK_SCRIPT" ||
 grep -Fq 'darwin-arm64' "$PACK_SCRIPT" || fail "pack script does not stage darwin-arm64"
 grep -Fq 'linux-x64' "$PACK_SCRIPT" || fail "pack script does not stage linux-x64"
 
-# Best-effort validation with the official CLI (skipped offline / without npx;
-# the release pipeline always validates via pack_mcpb_bundle.sh).
-if command -v npx >/dev/null 2>&1; then
+# Network-backed validation with the official CLI is an explicit opt-in
+# (MCPB_CONTRACT_VALIDATE=1): an unavailable npm registry or an uncached
+# package must not fail `make check-contracts` offline. The release pipeline
+# always validates — pack_mcpb_bundle.sh runs `mcpb validate` before packing.
+if [[ "${MCPB_CONTRACT_VALIDATE:-0}" == "1" ]]; then
+  command -v npx >/dev/null 2>&1 ||
+    fail "MCPB_CONTRACT_VALIDATE=1 requires npx"
   npx --yes "@anthropic-ai/mcpb@${MCPB_CLI_VERSION}" validate "$MANIFEST" >/dev/null 2>&1 ||
     fail "official mcpb CLI rejected mcp_server_dart/mcpb/manifest.json"
   ok "official mcpb CLI (${MCPB_CLI_VERSION}) accepted the manifest"
 else
-  ok "skipped official mcpb CLI validation (npx unavailable)"
+  ok "skipped network-backed CLI validation (set MCPB_CONTRACT_VALIDATE=1 to run)"
 fi
 
 ok "MCPB manifest matches the release matrix"

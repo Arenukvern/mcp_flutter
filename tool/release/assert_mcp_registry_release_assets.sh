@@ -73,11 +73,13 @@ fi
   fail "$MCPB_ASSET_NAME sha256 ($actual_sha) does not match checksums.txt ($listed_sha) on $TAG"
 
 # --- 3. The bundle must be complete: manifest + both platform binaries.
-zip_listing="$(unzip -l "$mcpb_path")" || fail "$MCPB_ASSET_NAME is not a readable MCPB (zip) archive"
-echo "$zip_listing" | grep -q "manifest.json" || fail "$MCPB_ASSET_NAME is missing manifest.json"
-echo "$zip_listing" | grep -q "$DARWIN_ENTRY" ||
+# Filename-only entries with exact, fixed-string matches: a suffixed name
+# (for example flutter-mcp-toolkit-server.bak) must never satisfy the gate.
+zip_entries="$(unzip -Z1 "$mcpb_path")" || fail "$MCPB_ASSET_NAME is not a readable MCPB (zip) archive"
+echo "$zip_entries" | grep -qxF "manifest.json" || fail "$MCPB_ASSET_NAME is missing manifest.json"
+echo "$zip_entries" | grep -qxF "$DARWIN_ENTRY" ||
   fail "$MCPB_ASSET_NAME is missing $DARWIN_ENTRY (darwin bundle missing — blocked)"
-echo "$zip_listing" | grep -q "$LINUX_ENTRY" ||
+echo "$zip_entries" | grep -qxF "$LINUX_ENTRY" ||
   fail "$MCPB_ASSET_NAME is missing $LINUX_ENTRY (linux bundle missing — blocked)"
 
 # --- 4. The bundled manifest must describe this exact release.

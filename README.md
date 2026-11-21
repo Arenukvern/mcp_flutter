@@ -75,9 +75,11 @@ Codex:       codex plugin marketplace add Arenukvern/mcp_flutter
 
 **2b. Claude Desktop (MCPB)** — install **`flutter-mcp-toolkit.mcpb`** from the
 [latest release](https://github.com/Arenukvern/mcp_flutter/releases): one bundle
-with macOS (Apple Silicon) + Linux x64 server binaries, installed directly by
-MCPB-aware clients. macOS binaries are unsigned — clear the quarantine
-attribute if Gatekeeper blocks them ([details](docs/install/platforms.mdx)).
+with macOS (Apple Silicon) + Linux x64 **server** binaries, installed directly by
+MCPB-aware clients. The bundle does **not** include the `flutter-mcp-toolkit`
+CLI — steps 3–4 still need it, so keep the install script too. macOS binaries
+are unsigned — clear the quarantine attribute if Gatekeeper blocks them
+([details](docs/install/platforms.mdx)).
 
 **3. Instrument the app** — `cd my_flutter_app && flutter-mcp-toolkit codegen-init` (paste `main()` snippet before `runApp`).
 

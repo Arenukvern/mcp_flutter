@@ -56,10 +56,19 @@ Replace the image tag with your validated release version (see repo `VERSION` or
 
 Your Flutter app still runs **outside** the container in debug mode with `mcp_toolkit` initialized; the container reaches its **Dart VM service** through `host.docker.internal`.
 
+**Start the app with the DDS origin check disabled.** The Dart VM service accepts only loopback `Host` headers (verified against the DDS source at Dart 3.14.0), and a container connection presents `Host: host.docker.internal:<port>`:
+
+```bash
+flutter run --disable-service-origin-check
+```
+
+Without it the server gets HTTP 403 `forbidden host` during the handshake. Discovery also probes the configured `--dart-vm-host`, so `host.docker.internal` is checked instead of `localhost` inside the container.
+
 ### Linux note
 
 Plain Linux (no Docker Desktop) does not resolve `host.docker.internal`. Use
-`--network=host` and target localhost:
+`--network=host` and target localhost — the container then connects via
+`localhost`, which DDS always accepts, so **no app-side flag is needed**:
 
 ```json
 "args": [

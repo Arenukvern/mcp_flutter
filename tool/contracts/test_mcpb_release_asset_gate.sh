@@ -9,6 +9,7 @@
 #   - the darwin bundle missing inside the archive
 #   - the linux bundle missing inside the archive
 #   - a bundle manifest version that differs from the release version
+#   - the required binary paths present only with a suffix (.bak trick)
 #   - checksums.txt not listing the bundle
 #
 # Fixtures are generated at test time (no opaque binary blobs checked in).
@@ -71,15 +72,6 @@ def write_checksums(dest, lines):
 
 write_bundle(os.path.join(fixtures, "positive"))
 
-cases = {
-    "missing_mcpb": None,          # no bundle at all
-    "sha_mismatch": ("positive", {"sha": "0" * 64}),
-    "darwin_missing": (("with_darwin", False), {}),
-    "linux_missing": (("with_linux", False), {}),
-    "wrong_version": ("positive", {"manifest_version": "7.9.9"}),
-    "unlisted_checksum": ("positive", {"checksums": False}),
-}
-
 # positive fixture checksums
 bundle = os.path.join(fixtures, "positive", "flutter-mcp-toolkit.mcpb")
 import hashlib
@@ -108,6 +100,16 @@ write_bundle(os.path.join(fixtures, "wrong_version"), manifest_version="7.9.9")
 write_checksums(os.path.join(fixtures, "wrong_version"),
                 _h.sha256(open(os.path.join(fixtures, "wrong_version", "flutter-mcp-toolkit.mcpb"), "rb").read()).hexdigest() + "  flutter-mcp-toolkit.mcpb\n")
 
+# suffix_trick: the required paths appear only with a .bak suffix — the exact
+# entry-name gate must reject this incomplete bundle.
+os.makedirs(os.path.join(fixtures, "suffix_trick"), exist_ok=True)
+with zipfile.ZipFile(os.path.join(fixtures, "suffix_trick", "flutter-mcp-toolkit.mcpb"), "w") as zf:
+    zf.writestr("server/darwin-arm64/flutter-mcp-toolkit-server.bak", b"stale\n")
+    zf.writestr("server/linux-x64/flutter-mcp-toolkit-server.bak", b"stale\n")
+    zf.writestr("manifest.json", json.dumps(manifest).encode())
+write_checksums(os.path.join(fixtures, "suffix_trick"),
+                _h.sha256(open(os.path.join(fixtures, "suffix_trick", "flutter-mcp-toolkit.mcpb"), "rb").read()).hexdigest() + "  flutter-mcp-toolkit.mcpb\n")
+
 # positive bundle re-listed: unlisted_checksum holds a bundle but checksums.txt
 # does not mention it
 write_bundle(os.path.join(fixtures, "unlisted_checksum"))
@@ -124,7 +126,7 @@ run_gate "$fixtures/positive" &&
   ok "positive fixture passed the gate" ||
   fail "positive fixture must pass the gate"
 
-for case_name in missing_mcpb sha_mismatch darwin_missing linux_missing wrong_version unlisted_checksum; do
+for case_name in missing_mcpb sha_mismatch darwin_missing linux_missing wrong_version suffix_trick unlisted_checksum; do
   if run_gate "$fixtures/$case_name"; then
     fail "negative fixture '$case_name' passed the gate — publish would not be blocked"
   else

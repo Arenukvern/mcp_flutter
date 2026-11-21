@@ -327,8 +327,18 @@ release_publish__plan_from_state_file() {
         listed="$(release_publish__hash_for_basename_in_checksums \
           "$tmp_manifest" "$remote_name" || true)"
         if [[ -z "$listed" ]]; then
+          # Recovery for an interrupted publish: the asset was uploaded before
+          # checksums.txt, so the published manifest does not list it yet.
+          # Accept it only when a matching LOCAL asset exists and its hash
+          # equals the remote hash — the new checksums body then lists it as a
+          # strict-superset addition. Remote-only assets stay rejected.
+          local local_hash
+          local_hash="$(jq -r --arg n "$remote_name" '.local_hashes[$n] // empty' "$state_file")"
+          if [[ -n "$local_hash" && "$local_hash" == "$remote_hash" ]]; then
+            continue
+          fi
           release_publish__plan_emit_error \
-            "unlisted remote tarball $remote_name in published checksums.txt"
+            "unlisted remote asset $remote_name in published checksums.txt (no matching local asset with the same hash)"
         else
           release_publish__plan_emit_error \
             "remote hash disagrees with published checksums for $remote_name"
