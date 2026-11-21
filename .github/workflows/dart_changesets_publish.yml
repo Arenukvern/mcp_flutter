@@ -45,3 +45,8 @@ jobs:
     with:
       release_tag: ${{ github.event.inputs.tag || github.ref_name }}
     secrets: inherit
+    # The called release workflow creates the root v* tag and the GitHub
+    # release; a nested workflow cannot exceed the caller's grant, so the
+    # call must grant contents: write (workflow-level stays read + OIDC).
+    permissions:
+      contents: write
