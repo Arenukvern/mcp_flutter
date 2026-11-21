@@ -5,27 +5,50 @@ description: Where release binaries run and where your Flutter app can run.
 
 # Platform support
 
-## MCP server binaries (install.sh / GitHub Releases)
+## MCP server packages (GitHub Releases)
 
-Prebuilt archives ship only for:
+Every release ships two native install paths for:
 
 | Triple | CI / release matrix |
 | --- | --- |
 | **darwin-arm64** | Apple Silicon macOS |
 | **linux-x64** | Linux x86_64 |
 
-Source: [`.github/workflows/release.yml`](../../.github/workflows/release.yml) `matrix.include`.
+1. **MCPB bundle — `flutter-mcp-toolkit.mcpb`** (primary). One bundle with both
+   platform binaries; Claude Desktop and other MCPB-aware clients install it
+   directly, no shell required. The manifest defaults to
+   `--dart-vm-host=localhost --dart-vm-port=8181 --resources --images --dynamics`.
+2. **Tarballs** — `flutter_mcp_<version>_<triple>.tar.gz` per platform, installed by [install.sh](../../install.sh).
 
-### Intel macOS (deprecated for binaries)
+Source: [`.github/workflows/release.yml`](../../.github/workflows/release.yml) `matrix.include` and the `mcpb` job.
 
-`install.sh` **exits** on `darwin-x64` with a message that published macOS builds are **arm64 only**. Options:
+### macOS quarantine (unsigned binaries)
+
+The macOS binaries and the MCPB bundle are **unsigned** (signing and
+notarization are out of scope for this project). macOS Gatekeeper may attach a
+`com.apple.quarantine` attribute to downloaded files; if the server refuses to
+start, clear it:
+
+```bash
+xattr -d com.apple.quarantine flutter-mcp-toolkit-server
+# or for the whole extracted archive:
+xattr -dr com.apple.quarantine flutter_mcp_<version>_darwin-arm64/
+```
+
+### Intel macOS (darwin-x64): not supported
+
+**Intel macOS is not supported.** No tarball, no MCPB binary, and no future
+builds are planned for `darwin-x64`; `install.sh` exits with a clear message on
+that platform. Options:
 
 - Use Apple Silicon hardware, or
+- Run the **`linux/amd64` OCI image** under Docker Desktop ([Docker](./docker.mdx)), or
 - Build `flutter-mcp-toolkit-server` from source (`make build` in a clone).
 
 ### Windows
 
-`install.sh` does **not** support Windows as a host OS (`Unsupported OS`). On Windows:
+`install.sh` does **not** support Windows as a host OS (`Unsupported OS`), and
+no MCPB binary targets Windows. On Windows:
 
 - Use **WSL2** (Linux) and install the **linux-x64** tarball, or
 - Clone the repo and build with Flutter/Dart on Windows.
@@ -43,7 +66,7 @@ What changes per platform:
 - How you launch debug mode and VM service URLs
 - Screenshot capture paths (Flutter layer vs host window) — see [troubleshooting](../troubleshooting.mdx)
 
-The **server binary** matrix above is only about where `flutter-mcp-toolkit-server` itself runs.
+The **server package** matrix above is only about where `flutter-mcp-toolkit-server` itself runs.
 
 ## Related
 

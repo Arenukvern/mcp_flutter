@@ -1,16 +1,21 @@
 # Docker Deployment Guide
 
-This guide covers building and running the MCP Server using Docker.
+Docker is **optional** for running the MCP Server. The primary install path is
+the native binary via [install.sh](../install.sh) — or the **`.mcpb` bundle**
+(`flutter-mcp-toolkit.mcpb` from a GitHub release), which Claude Desktop and
+other MCPB-aware clients install directly. Use Docker when your MCP host
+prefers containerized servers.
 
 ## Install from GHCR (MCP Registry image)
 
 The official MCP Registry image is published to GHCR on every release:
 
 ```bash
-docker pull ghcr.io/arenukvern/flutter-mcp-toolkit:7.2.1 # x-release-please-version
+docker pull ghcr.io/arenukvern/flutter-mcp-toolkit:8.0.0 # x-release-please-version
 ```
 
-Use it in an `mcpServers` config:
+Use it in an `mcpServers` config (Docker Desktop — no extra networking flags;
+the image defaults to `--dart-vm-host=host.docker.internal`):
 
 ```json
 {
@@ -21,17 +26,18 @@ Use it in an `mcpServers` config:
         "run",
         "-i",
         "--rm",
-        "--network=host",
-        "ghcr.io/arenukvern/flutter-mcp-toolkit:7.2.1" # x-release-please-version
+        "ghcr.io/arenukvern/flutter-mcp-toolkit:8.0.0" // x-release-please-version
       ]
     }
   }
 }
 ```
 
-> `--network=host` is required on macOS/Linux so the container can reach the
-> Dart VM service of your locally running Flutter debug app. Pin the version
-> tag to the release you validated against for reproducible setups.
+> **Linux note:** on plain Linux (no Docker Desktop) `host.docker.internal`
+> does not resolve. Run with `--network=host` and override the host:
+> `docker run -i --rm --network=host <image> --dart-vm-host=localhost`.
+> Pin the version tag to the release you validated against for reproducible
+> setups.
 
 ## Overview
 
@@ -169,10 +175,19 @@ docker-compose up mcp_server_dev
 
 ### Connecting to Flutter Apps
 
-To connect to a Flutter app from the containerized MCP server:
+Your Flutter debug app runs **outside** the container. The containerized server
+must reach its **Dart VM service**:
 
 ```bash
-# App must be accessible from container network
+# Docker Desktop (macOS/Windows): host.docker.internal resolves to the host
+docker run -i \
+  mcp_server:latest \
+  --dart-vm-host=host.docker.internal \
+  --dart-vm-port=8181
+```
+
+```bash
+# Plain Linux: share the host network namespace and target localhost
 docker run -i \
   --network=host \
   mcp_server:latest \
@@ -198,11 +213,13 @@ docker run -i \
 
 ## Available Arguments
 
-All Dockerfile CMD arguments can be overridden:
+All Dockerfile CMD arguments can be overridden. The legacy `Dockerfile` /
+`Dockerfile.dev` default to `localhost`; the published **`Dockerfile.registry`**
+image defaults to `host.docker.internal` (Docker Desktop):
 
 | Argument         | Default      | Description                         |
 | ---------------- | ------------ | ----------------------------------- |
-| `--dart-vm-host` | `localhost`  | Flutter VM host                     |
+| `--dart-vm-host` | `localhost` (registry image: `host.docker.internal`) | Flutter VM host |
 | `--dart-vm-port` | `8181`       | Flutter VM port                     |
 | `--resources`    | `true`       | Enable resources support            |
 | `--images`       | `true`       | Enable images support               |
