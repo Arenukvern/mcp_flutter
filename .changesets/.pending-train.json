@@ -1,0 +1,38 @@
+[
+  {
+    "package": "flutter_mcp_toolkit_core",
+    "version": "8.0.0",
+    "tag": "flutter_mcp_toolkit_core-v8.0.0",
+    "directory": "/home/runner/work/mcp_flutter/mcp_flutter/packages/core"
+  },
+  {
+    "package": "flutter_mcp_harness",
+    "version": "8.0.0",
+    "tag": "flutter_mcp_harness-v8.0.0",
+    "directory": "/home/runner/work/mcp_flutter/mcp_flutter/packages/harness"
+  },
+  {
+    "package": "flutter_mcp_toolkit_capability_kernel",
+    "version": "8.0.0",
+    "tag": "flutter_mcp_toolkit_capability_kernel-v8.0.0",
+    "directory": "/home/runner/work/mcp_flutter/mcp_flutter/packages/server_capability_kernel"
+  },
+  {
+    "package": "flutter_mcp_toolkit_capability_core",
+    "version": "8.0.0",
+    "tag": "flutter_mcp_toolkit_capability_core-v8.0.0",
+    "directory": "/home/runner/work/mcp_flutter/mcp_flutter/packages/server_capability_core"
+  },
+  {
+    "package": "flutter_mcp_toolkit_server",
+    "version": "8.0.0",
+    "tag": "flutter_mcp_toolkit_server-v8.0.0",
+    "directory": "/home/runner/work/mcp_flutter/mcp_flutter/mcp_server_dart"
+  },
+  {
+    "package": "mcp_toolkit",
+    "version": "8.0.0",
+    "tag": "mcp_toolkit-v8.0.0",
+    "directory": "/home/runner/work/mcp_flutter/mcp_flutter/mcp_toolkit"
+  }
+]
