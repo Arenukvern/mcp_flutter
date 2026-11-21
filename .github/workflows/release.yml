@@ -4,15 +4,6 @@ on:
   push:
     tags:
       - 'v*'
-  # Called from dart_changesets_publish.yml's binaries job (needs: publish)
-  # so binary builds start only after the product package's pub publish
-  # succeeded.
-  workflow_call:
-    inputs:
-      release_tag:
-        description: 'Release tag to build assets for (e.g. v7.0.2)'
-        required: true
-        type: string
   workflow_dispatch:
     inputs:
       release_tag:
