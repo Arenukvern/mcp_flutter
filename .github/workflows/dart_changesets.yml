@@ -44,6 +44,9 @@ jobs:
           # This repo's per-tag publish workflow (the action's default
           # `publish.yml` does not exist here).
           publish-workflow: dart_changesets_publish.yml
+          # PAT tag pushes fire the publish workflow (pub.dev authorizes push
+          # events only); reuses the release-please-era secret.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
 
