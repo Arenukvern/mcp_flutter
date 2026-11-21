@@ -55,6 +55,7 @@ jobs:
       - name: Commit and push if changed
         env:
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           if git diff --quiet; then
             echo "release version touchpoints already in sync"
@@ -68,4 +69,5 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           git commit -m "chore: sync release version touchpoints"
+          gh auth setup-git
           git push origin "HEAD:refs/heads/${HEAD_REF}"

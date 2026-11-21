@@ -41,7 +41,6 @@ jobs:
   binaries:
     needs: publish
     if: >-
-      startsWith(github.event.inputs.tag || github.ref_name, 'mcp_toolkit-v') ||
       startsWith(github.event.inputs.tag || github.ref_name, 'flutter_mcp_toolkit_server-v')
     uses: ./.github/workflows/release.yml
     with:

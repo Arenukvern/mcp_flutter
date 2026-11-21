@@ -19,21 +19,12 @@ if git rev-parse "$root_tag" >/dev/null 2>&1; then
   exit 0
 fi
 
-sha="$(git rev-parse HEAD)"
+git fetch --tags origin
+sha="$(git rev-parse "$SOURCE_TAG^{commit}")"
 git tag "$root_tag" "$sha"
 git push origin "$root_tag"
 
-notes="$(python3 - "$version" <<'PY'
-import re
-import sys
-
-version = sys.argv[1]
-text = open("CHANGELOG.md", encoding="utf-8").read()
-pattern = rf"## \[{re.escape(version)}\][^\n]*\n(.*?)(?=\n## \[|\Z)"
-match = re.search(pattern, text, re.S)
-print(match.group(1).strip() if match else f"Release {version}.")
-PY
-)"
+notes="$(bash "$(dirname "${BASH_SOURCE[0]}")/extract_package_release_notes.sh" "$version")"
 
 gh release create "$root_tag" \
   --title "Flutter MCP Toolkit $version" \

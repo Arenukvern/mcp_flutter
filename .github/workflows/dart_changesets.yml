@@ -18,6 +18,10 @@ concurrency:
   group: dart-changesets-release
   cancel-in-progress: false
 
+env:
+  VERSION_BRANCH: changesets/version-packages
+  RELEASE_BOT_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -26,6 +30,35 @@ jobs:
         with:
           fetch-depth: 0
 
+      # The composite action uses github.token for version-PR git/gh pushes
+      # (same limitation as the old release-please default). A follow-up sync
+      # push uses RELEASE_PLEASE_TOKEN when set so pull_request workflows
+      # (contract gates, Android/Linux proofs) run on the version PR head.
       - uses: Arenukvern/dart_changesets@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Sync release touchpoints on version PR branch
+        env:
+          GH_TOKEN: ${{ env.RELEASE_BOT_TOKEN }}
+        run: |
+          set -euo pipefail
+          if ! git ls-remote --exit-code --heads origin "$VERSION_BRANCH" >/dev/null 2>&1; then
+            echo "No version branch on remote; skipping touchpoint sync"
+            exit 0
+          fi
+          git fetch origin "$VERSION_BRANCH"
+          git checkout -B "$VERSION_BRANCH" "origin/$VERSION_BRANCH"
+          version="$(sed -nE 's/^version:[[:space:]]*([^[:space:]#]+).*/\1/p' mcp_toolkit/pubspec.yaml | head -1)"
+          [[ -n "$version" ]] || { echo "::error::mcp_toolkit pubspec has no version"; exit 1; }
+          bash tool/release/sync_version.sh --version "$version"
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "release version touchpoints already in sync on $VERSION_BRANCH"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: sync release version touchpoints"
+          gh auth setup-git
+          git push origin "HEAD:refs/heads/$VERSION_BRANCH"
