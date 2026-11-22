@@ -70,4 +70,25 @@ else
   ok "actionlint not installed (structural grep guards only)"
 fi
 
+# Train-race hardening: per-tag publish runs wait for upstream floors.
+WAITER="$ROOT_DIR/tool/release/wait_for_train_upstream.sh"
+[[ -f "$WAITER" ]] || fail "missing tool/release/wait_for_train_upstream.sh"
+PUBLISH_WF="$ROOT_DIR/.github/workflows/dart_changesets_publish.yml"
+if ! grep -q 'wait-upstream:' "$PUBLISH_WF"; then
+  fail "dart_changesets_publish.yml must gate publish behind a wait-upstream job"
+fi
+if ! grep -q 'needs: wait-upstream' "$ROOT_DIR/.github/workflows/dart_changesets_publish.yml"; then
+  fail "dart_changesets_publish.yml publish job must need wait-upstream"
+fi
+if ! grep -q 'wait_for_train_upstream.sh' "$ROOT_DIR/.github/workflows/dart_changesets_publish.yml"; then
+  fail "dart_changesets_publish.yml must invoke wait_for_train_upstream.sh"
+fi
+if ! grep -q "github.event_name == 'workflow_dispatch'" "$WF"; then
+  fail "release.yml must run the root-tag ensure step on workflow_dispatch recovery too"
+fi
+# The waiter has its own fixture contract test wired into the gate.
+if ! grep -q 'test_wait_for_train_upstream.sh' "$ROOT_DIR/makefile"; then
+  fail "makefile must run test_wait_for_train_upstream.sh in check-contracts"
+fi
+
 ok "release workflow structure OK"

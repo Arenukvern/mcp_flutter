@@ -88,6 +88,13 @@ The `check_mcp_registry.sh` contract asserts:
   version-pinned in `MCPB_CLI_VERSION`), and its layout is pinned to the
   release matrix by `tool/contracts/test_mcpb_manifest_matrix.sh`
   (`make check-contracts`).
+- **Train race:** per-tag publish runs are dispatched concurrently, but
+  pub.dev validates dependency constraints at upload time. Every publish run
+  therefore first executes `tool/release/wait_for_train_upstream.sh`
+  (`wait-upstream` job), polling pub.dev until the package's same-train
+  dependency floors are exposed — the train converges regardless of dispatch
+  order. Preflight (`execute=false`) skips the publish itself but still
+  exercises the wait.
 - Offline contract coverage uses `MCP_REGISTRY_PUB_API_BASE` pointed at
   `tool/contracts/fixtures/mcp_registry_pub_api/`; smoke CI uses live pub.dev
   (`python3` + PyYAML + `curl` on ubuntu-latest).

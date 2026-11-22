@@ -47,6 +47,7 @@ check-contracts:
 	bash tool/contracts/test_mcp_registry_smoke_resolution.sh && \
 	bash tool/contracts/test_mcpb_manifest_matrix.sh && \
 	bash tool/contracts/test_mcpb_release_asset_gate.sh && \
+	bash tool/contracts/test_wait_for_train_upstream.sh && \
 	bash tool/contracts/check_mcp_registry.sh && \
 	bash tool/contracts/check_macos_release_shell_compat.sh && \
 	bash tool/contracts/test_verify_release_tarball_architecture.sh && \
