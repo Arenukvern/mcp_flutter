@@ -29,7 +29,31 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Per-tag publish runs are dispatched concurrently, but pub.dev validates a
+  # package's dependency constraints at upload time — `kernel 8.0.0`
+  # (requires `core ^8.0.0`) fails until core 8.0.0 is exposed. The waiter
+  # turns the train's dependency order into a poll, so every run converges
+  # regardless of dispatch order.
+  wait-upstream:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout workflow tooling (trusted SHA)
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Wait for upstream train versions on pub.dev
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          bash "tool/release/wait_for_train_upstream.sh" --tag "$RELEASE_TAG"
+
   publish:
+    needs: wait-upstream
     uses: Arenukvern/dart_changesets/.github/workflows/publish.yml@v1
     with:
       tag: ${{ github.event.inputs.tag || github.ref_name }}

@@ -58,7 +58,8 @@ jobs:
 
       - name: Ensure root v* tag and GitHub release (dart_changesets package tag)
         if: >-
-          github.event_name == 'workflow_call' &&
+          (github.event_name == 'workflow_call' ||
+           github.event_name == 'workflow_dispatch') &&
           steps.resolve.outputs.source_tag != steps.resolve.outputs.release_tag
         env:
           GH_TOKEN: ${{ github.token }}
