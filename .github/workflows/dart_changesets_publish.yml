@@ -20,9 +20,10 @@ on:
         type: boolean
         default: false
 
+# OIDC (id-token) is scoped to the publish call below — the wait-upstream
+# job never needs to mint a pub.dev token.
 permissions:
   contents: read
-  id-token: write
 
 concurrency:
   group: dart-changesets-publish-${{ github.event.inputs.tag || github.ref }}
@@ -63,6 +64,11 @@ jobs:
       execute: ${{ github.event_name == 'push' || inputs.execute }}
       flutter-version: '3.50.1'
     secrets: inherit
+    # pub.dev OIDC automated publishing: only this job may mint a token
+    # (job permissions replace the workflow-level grant).
+    permissions:
+      contents: read
+      id-token: write
 
   binaries:
     needs: publish
@@ -77,6 +83,6 @@ jobs:
     secrets: inherit
     # The called release workflow creates the root v* tag and the GitHub
     # release; a nested workflow cannot exceed the caller's grant, so the
-    # call must grant contents: write (workflow-level stays read + OIDC).
+    # call must grant contents: write (workflow-level stays read).
     permissions:
       contents: write
