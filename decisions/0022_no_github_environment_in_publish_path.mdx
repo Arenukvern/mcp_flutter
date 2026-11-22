@@ -1,0 +1,87 @@
+# ADR 0022 — No GitHub environment in the pub.dev publish path
+
+- **Status:** Accepted
+- **Date:** 2026-11-22
+- **Deciders:** flutter-mcp-toolkit maintainers
+
+> **Amended 2026-11-22:** the `wait-upstream` job referenced below was
+> retired the same day — the engine took over train convergence itself
+> (`publish-tag` dependency wait, 15-minute default, `dependency-wait-minutes`
+> input; dart_changesets PR #10 and its
+> [ADR 0002](https://github.com/Arenukvern/dart_changesets/blob/main/docs/decisions/0002-dependency-wait-owned-by-publish-tag.md)).
+> The OIDC scoping in Decision 2 is unaffected: `id-token: write` remains on
+> the `publish` call only.
+
+## Context
+
+Automated publishing authorizes a run by three checks: the repository, the
+per-package tag pattern matched against the triggering tag, and the pubspec
+version. PR #202 / dart_changesets PR #4 briefly staged a fourth element —
+`environment: pub.dev` on the reusable publish job, with pub.dev's optional
+"Require GitHub Actions environment" checkboxes left off until a train
+validated the claim path. It was removed the same day, before any train ran
+with it.
+
+A critical review (three independent lenses: security threat model, release
+ops, generational architecture) found the staged state was worse than either
+endpoint:
+
+- With the checkboxes off, the token's environment claim is never read — the
+  declaration is inert text whose only observable effect was a GitHub
+  environment object auto-created in every repo consuming the engine (six
+  repos, none authored by their owners, zero protection rules).
+- The status quo failed in the deceptive direction: flipping a checkbox would
+  have "succeeded" with zero protection (an unprotected environment
+  auto-approves), while looking hardened.
+- The threat walk found the claim stops no realistic vector: a tag-push
+  attacker rides the legitimate workflow (the claim is present anyway);
+  workflow edits are PR-gated by the `main` ruleset; the repo has exactly one
+  `id-token: write` path; and a compromised engine repo could declare the
+  environment itself.
+- The ecosystem we standardize against publishes without environments:
+  dart-lang/core is plain tag-pattern OIDC. The environment's real purpose in
+  the dart.dev recipe is anchoring required reviewers — human approval per
+  publish, which defeats the concurrent train this repo runs.
+
+## Decision
+
+1. Remove `environment: pub.dev` from the engine's reusable publish job and
+   document the deliberate absence in its README
+   (dart_changesets `docs/decisions/0001-no-github-environment-in-publish-path.md`).
+2. Close the one real gap the checkbox would have closed, without any
+   environment: `id-token: write` moves from workflow level to the `publish`
+   call only in `dart_changesets_publish.yml` — the `wait-upstream` job can no
+   longer mint a pub.dev token.
+3. Keep the pub.dev "Require GitHub Actions environment" checkboxes OFF
+   permanently. After this change a flip fails loudly (environment-mismatch
+   rejection at publish time) instead of silently no-oping.
+4. Deleted the stray auto-created `pub.dev` environment objects
+   (mcp_flutter, oka, ecsly; the other consumers never got one).
+5. Tag-protection rulesets (restrict who can push `<package>-v*` tags) are
+   the repo-local hardening route — adopted only when a genuine third-party
+   write collaborator exists. A ruleset constrains exactly the non-admin
+   collaborators (admin bypass is unconditional), so while every write account
+   is trusted it is dormant defense. Precondition before creating one: the PAT
+   that pushes train tags must belong to an admin, or the bypass breaks the
+   next train.
+
+## Consequences
+
+- Publishing authorization is exactly the documented three checks; the engine
+  and dart-lang/core now look alike.
+- Flipping an admin checkbox breaks publishing loudly instead of lying.
+- `wait-upstream` is least-privilege (`contents: read` only).
+- Environment-based reviewer gating remains available only by adding an
+  `environment` input to the engine workflow first — acceptable; no consumer
+  has asked (adding the input later is a backward-compatible `@v1` change).
+- A new package's tags sit outside any future ruleset until its pattern is
+  added — rulesets fail open and never block a train, unlike the environment,
+  whose deletion or rename would have silently bricked all packages.
+
+## References
+
+- [ADR 0021](0021_pub_dev_oidc_token_per_package.mdx) — per-package token model, unchanged by this decision
+- dart_changesets PR #5 and the `v1` force-move (the activation step — `v1` is a hand-moved floating tag, so merging alone changed nothing for consumers)
+- mcp_flutter PR #203 (OIDC scoping, skill re-point, env deletion)
+- [Automated publishing to pub.dev](https://dart.dev/tools/pub/automated-publishing)
+- dart-lang/core `.github/workflows/publish.yaml` — tag-pattern OIDC, no environment
