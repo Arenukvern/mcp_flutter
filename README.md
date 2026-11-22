@@ -13,6 +13,8 @@ _Inspect and drive a running Flutter app from your AI assistant._
 [![Contract Gates](https://github.com/Arenukvern/mcp_flutter/actions/workflows/contract_gates.yml/badge.svg?branch=main)](https://github.com/Arenukvern/mcp_flutter/actions/workflows/contract_gates.yml)
 [![intentcall eval gates](https://github.com/Arenukvern/mcp_flutter/actions/workflows/intentcall_eval.yml/badge.svg?branch=main)](https://github.com/Arenukvern/mcp_flutter/actions/workflows/intentcall_eval.yml)
 [![skill-assets-drift](https://github.com/Arenukvern/mcp_flutter/actions/workflows/skill_assets_drift.yml/badge.svg?branch=main)](https://github.com/Arenukvern/mcp_flutter/actions/workflows/skill_assets_drift.yml)
+[![release train](https://img.shields.io/github/actions/workflow/status/Arenukvern/mcp_flutter/dart_changesets.yml?branch=main&label=release%20train&logo=github)](https://github.com/Arenukvern/mcp_flutter/actions/workflows/dart_changesets.yml)
+[![release engine: dart_changesets](https://img.shields.io/badge/release_engine-dart__changesets-0175C2?logo=dart&logoColor=white)](https://github.com/Arenukvern/dart_changesets)
 [![Docs](https://img.shields.io/badge/docs-docs.page-blue)](https://docs.page/arenukvern/mcp_flutter/)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Arenukvern/mcp_flutter)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
