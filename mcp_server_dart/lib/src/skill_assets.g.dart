@@ -2011,6 +2011,8 @@ Before automated publishing can run, each package needs a first manual signed-in
 
 Config: [changesets.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/changesets.yaml); intent files in [.changesets/](https://github.com/Arenukvern/mcp_flutter/blob/main/.changesets/).
 
+**README badge discipline:** the badge row carries the **release train** badge (`dart_changesets.yml` status) and the **release engine: dart_changesets** attribution badge — snippets live in the engine README's "Show your release train (consumer badge)" section. A red train badge is the first visible signal the automation broke (usually the workflow-permission setting or a failed tag dispatch) — fix it before cutting the next release.
+
 ## Manual release (fallback)
 
 Use when release-please is unavailable or you must ship from a branch:
