@@ -66,8 +66,11 @@ jobs:
 
   binaries:
     needs: publish
+    # Preflight (execute=false) validates the publish path only — building and
+    # re-uploading release assets would just hit the full-conflict guard.
     if: >-
-      startsWith(github.event.inputs.tag || github.ref_name, 'flutter_mcp_toolkit_server-v')
+      startsWith(github.event.inputs.tag || github.ref_name, 'flutter_mcp_toolkit_server-v') &&
+      (github.event_name == 'push' || inputs.execute == true)
     uses: ./.github/workflows/release.yml
     with:
       release_tag: ${{ github.event.inputs.tag || github.ref_name }}
