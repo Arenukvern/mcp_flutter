@@ -30,6 +30,9 @@ mkdir -p "$fixture_main/mcp_server_dart/bin" "$fixture_main/mcp_server_dart/lib"
   "$fixture_tag/mcp_server_dart/bin" "$fixture_tag/mcp_server_dart/lib"
 
 cp "$MAIN_DOCKERFILE" "$fixture_main/mcp_server_dart/Dockerfile.registry"
+# Registry metadata belongs to main tooling (see overlay script boundary).
+printf '%s\n' '{"name":"io.github.Arenukvern/flutter-mcp-toolkit","version":"7.1.1"}' \
+  > "$fixture_main/mcp_server_dart/server.json"
 
 printf '%s\n' 'name: flutter_mcp_toolkit_server' 'version: 7.1.1' > "$fixture_tag/mcp_server_dart/pubspec.yaml"
 printf '%s\n' '{"name":"io.github.Arenukvern/flutter-mcp-toolkit","version":"7.1.1"}' > "$fixture_tag/mcp_server_dart/server.json"
