@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
-repo_root="$(cd "$(dirname "$0")/../.." && pwd)"
-pin="$(tr -d '[:space:]' < "$repo_root/tool/ci/oka_consumer_pin.txt")"
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+pin_file="$repo_root/tool/ci/oka_consumer_pin.txt"
 oka="$repo_root/oka"
 out="${1:-$repo_root/.native_capture/oka_consumer_provenance.json}"
 tmp="$(mktemp -d)"
@@ -11,6 +11,34 @@ fail() {
   echo "oka consumer provenance: $*" >&2
   exit 1
 }
+
+# Hosted mode: no provisional pin — record the pub.dev-resolved oka instead of
+# a pinned checkout (report_oka_consumer_provenance stays best-effort about
+# checkout provenance because there is none).
+if [[ ! -f "$pin_file" ]]; then
+  oka_cli="$(command -v oka || true)"
+  [[ -n "$oka_cli" ]] || fail "OKA_BIN not on PATH (run provision_oka_consumer_test_pin.sh first)"
+  oka_version="$(oka --version 2>&1)" || fail "oka --version failed"
+  mkdir -p "$(dirname "$out")"
+  python3 - "$out" "$oka_version" <<'PY'
+import json, sys
+out, version = sys.argv[1], sys.argv[2]
+doc = {
+    "mode": "hosted",
+    "pin": None,
+    "oka_head": None,
+    "oka_cli_version": version,
+    "note": "oka resolved from pub.dev (no provisional pin); see pubspec.lock for exact versions",
+}
+with open(out, "w", encoding="utf-8") as fh:
+    json.dump(doc, fh, indent=2)
+    fh.write("\n")
+print(f"oka consumer provenance (hosted): wrote {out}")
+PY
+  exit 0
+fi
+
+pin="$(tr -d '[:space:]' < "$pin_file")"
 
 [[ -d "$oka/.git" ]] || fail "oka checkout missing (run provision_oka_consumer_test_pin.sh)"
 
