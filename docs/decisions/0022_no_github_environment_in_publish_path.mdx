@@ -4,6 +4,14 @@
 - **Date:** 2026-11-22
 - **Deciders:** flutter-mcp-toolkit maintainers
 
+> **Amended 2026-11-22:** the `wait-upstream` job referenced below was
+> retired the same day — the engine took over train convergence itself
+> (`publish-tag` dependency wait, 15-minute default, `dependency-wait-minutes`
+> input; dart_changesets PR #10 and its
+> [ADR 0002](https://github.com/Arenukvern/dart_changesets/blob/main/docs/decisions/0002-dependency-wait-owned-by-publish-tag.md)).
+> The OIDC scoping in Decision 2 is unaffected: `id-token: write` remains on
+> the `publish` call only.
+
 ## Context
 
 Automated publishing authorizes a run by three checks: the repository, the
