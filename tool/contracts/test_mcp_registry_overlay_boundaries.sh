@@ -29,7 +29,12 @@ printf '%s\n' 'FROM ghcr.io/cirruslabs/flutter@sha256:217a3d81b124f3fab82b24633b
   > "$tag/mcp_server_dart/Dockerfile.registry"
 
 printf '%s\n' 'name: flutter_mcp_toolkit_server' 'version: 7.1.0' > "$tag/mcp_server_dart/pubspec.yaml"
-printf '%s\n' '{"name":"io.github.Arenukvern/flutter-mcp-toolkit","version":"7.1.0"}' > "$tag/mcp_server_dart/server.json"
+# Registry metadata belongs to main tooling; the tag carries a stale copy that
+# must NOT win the overlay.
+printf '%s\n' '{"name":"io.github.Arenukvern/flutter-mcp-toolkit","version":"7.1.0","marker":"main"}' \
+  > "$main/mcp_server_dart/server.json"
+printf '%s\n' '{"name":"io.github.Arenukvern/flutter-mcp-toolkit","version":"7.1.0","marker":"tag"}' \
+  > "$tag/mcp_server_dart/server.json"
 printf '%s\n' '// stub' > "$tag/mcp_server_dart/lib/stub.dart"
 printf '%s\n' '// stub' > "$tag/mcp_server_dart/bin/flutter_mcp_toolkit_server.dart"
 
@@ -40,6 +45,9 @@ grep -Fq 'storage.googleapis.com/flutter_infra_release' "$effective" || \
   fail "effective Dockerfile must remain main's tooling after overlay"
 dockerfile_registry_has_forbidden_cirruslabs_from "$effective" &&
   fail "tag Dockerfile must not replace main Dockerfile.registry (FROM cirruslabs)"
+
+grep -Fq '"marker":"main"' "$main/mcp_server_dart/server.json" || \
+  fail "server.json must remain main's registry metadata after overlay (tag copy must not win)"
 
 grep -Fq 'overlay_mcp_registry_tag_sources.sh' "$WF" || \
   fail "publish workflow must use overlay_mcp_registry_tag_sources.sh"

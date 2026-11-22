@@ -2,8 +2,14 @@
 # Overlay immutable release *sources* onto the trusted main workspace for MCP Registry publish.
 #
 # Boundary:
-#   From the tag (RELEASE_SRC): server sources, pubspec, lock, server.json
-#   From main (TOOLING_ROOT):   Dockerfile.registry, Flutter pin, scripts, contracts
+#   From the tag (RELEASE_SRC): server sources, pubspec, lock
+#   From main (TOOLING_ROOT):   Dockerfile.registry, Flutter pin, scripts, contracts, server.json
+#
+# server.json (Registry metadata) intentionally stays on main: it is version
+# metadata synced by tool/release/sync_version.sh to the release version, and a
+# tag cut before a registry-metadata change (for example the 8.0.0 tag
+# predating the mcpb package entry) must not republish stale metadata for an
+# immutable Registry version. Code and lock remain tag-immutable.
 set -euo pipefail
 
 fail() { echo "overlay_mcp_registry_tag_sources: $*" >&2; exit 1; }
@@ -21,8 +27,9 @@ dest_server="$TOOLING_ROOT/mcp_server_dart"
 [[ -d "$tag_server" ]] || fail "missing $tag_server"
 [[ -d "$dest_server" ]] || fail "missing $dest_server"
 
-# Server/runtime inputs from the tag only — never Dockerfile.registry or other build tooling.
-OVERLAY_PATHS=(bin lib pubspec.yaml server.json)
+# Server/runtime inputs from the tag only — never Dockerfile.registry,
+# server.json, or other build tooling / metadata.
+OVERLAY_PATHS=(bin lib pubspec.yaml)
 
 for rel in "${OVERLAY_PATHS[@]}"; do
   src="$tag_server/$rel"
@@ -30,6 +37,11 @@ for rel in "${OVERLAY_PATHS[@]}"; do
   rm -rf "$dest_server/$rel"
   cp -a "$src" "$dest_server/$rel"
 done
+
+# Registry metadata must exist on main (sync_version.sh keeps it at the
+# release version; check_mcp_registry.sh validates the package layout).
+[[ -f "$dest_server/server.json" ]] ||
+  fail "main checkout missing mcp_server_dart/server.json (registry metadata belongs to main tooling)"
 
 if [[ -f "$tag_server/pubspec.lock" ]]; then
   cp -a "$tag_server/pubspec.lock" "$dest_server/pubspec.lock"
