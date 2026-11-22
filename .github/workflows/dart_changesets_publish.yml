@@ -2,6 +2,11 @@
 # ref-gated, so each run publishes exactly the package its tag names; the
 # dart_changesets action dispatches one run per tag when the version PR merges.
 # Replaces pub_publish.yml (root v* tag consolidated publisher).
+#
+# Dependency-order convergence is owned by the ENGINE: publish-tag waits up
+# to 15 minutes (dependency-wait-minutes input on the reusable workflow) for
+# same-train floors to land on pub.dev, with per-poll progress logs. No local
+# waiter job — the engine behavior applies to every consumer uniformly.
 name: dart_changesets publish
 
 on:
@@ -20,8 +25,6 @@ on:
         type: boolean
         default: false
 
-# OIDC (id-token) is scoped to the publish call below — the wait-upstream
-# job never needs to mint a pub.dev token.
 permissions:
   contents: read
 
@@ -30,31 +33,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Per-tag publish runs are dispatched concurrently, but pub.dev validates a
-  # package's dependency constraints at upload time — `kernel 8.0.0`
-  # (requires `core ^8.0.0`) fails until core 8.0.0 is exposed. The waiter
-  # turns the train's dependency order into a poll, so every run converges
-  # regardless of dispatch order.
-  wait-upstream:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - name: Checkout workflow tooling (trusted SHA)
-        uses: actions/checkout@v5
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-
-      - name: Wait for upstream train versions on pub.dev
-        env:
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
-        run: |
-          bash "tool/release/wait_for_train_upstream.sh" --tag "$RELEASE_TAG"
-
   publish:
-    needs: wait-upstream
     uses: Arenukvern/dart_changesets/.github/workflows/publish.yml@v1
     with:
       tag: ${{ github.event.inputs.tag || github.ref_name }}
