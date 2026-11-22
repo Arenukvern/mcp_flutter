@@ -39,12 +39,16 @@ the tag ref (the tag tree may still carry a broken Dockerfile).
 
 ## Recovery when pub.dev publish failed mid-train
 
-`pub_publish.yml` triggers `publish_mcp_registry.yml` only after the pub.dev
-**Publish packages** step succeeds on a tag push. If that step failed after some
-packages were already uploaded (JWT expiry on v7.0.2 — see [ADR 0021](/decisions/0021_pub_dev_oidc_token_per_package.mdx) and Actions run 42410677650), registry publication is skipped.
+The pub train runs one
+[dart_changesets publish](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/dart_changesets_publish.yml)
+workflow **per package tag**, dispatched when the version PR merges; each run
+waits for its same-train dependency floors on pub.dev before uploading. The
+registry publish is never auto-triggered — it is always an explicit dispatch
+(see above). If some tags' publish runs failed after others uploaded
+(transient pub.dev errors, a red preflight on one leg):
 
-1. Re-run or **workflow_dispatch** [Publish pub.dev packages](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/pub_publish.yml) on the same `v*` tag with **execute_publish** (`--skip-existing` skips versions already on pub.dev).
-2. When all intended packages are on pub.dev, run [Publish MCP Registry server](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/publish_mcp_registry.yml) via **workflow_dispatch** on **`main`** with `release_tag` set to that `v*` tag.
+1. **workflow_dispatch** [dart_changesets publish](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/dart_changesets_publish.yml) on `main` for each failed tag with **`execute` checked** (`--skip-existing` skips versions already on pub.dev; the wait-upstream job re-checks dependency floors). Re-pushing an unchanged tag fires no workflows — dispatch is the only re-run path.
+2. When all intended packages are on pub.dev, run [Publish MCP Registry server](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/publish_mcp_registry.yml) via **workflow_dispatch** on **`main`** with `release_tag` set to the root `v*` tag.
 
 ## Pre-flight gates (run before cutting a release)
 
@@ -66,7 +70,7 @@ The `check_mcp_registry.sh` contract asserts:
   `Dockerfile.registry` for `linux/amd64` without pushing when registry paths change.
 - The smoke workflow resolves siblings from **pub.dev** when the pinned train is
   already published; otherwise it builds from a **temporary** context with path
-  overrides (release-please PRs before `pub_publish`). Production publish still
+  overrides (version PRs before the pub train lands on pub.dev). Production publish still
   uses `context: .` with **hosted-only** resolution (after pub.dev).
 - `assert_mcp_registry_no_pubspec_overrides.sh` runs immediately before the
   production OCI build and fails if `mcp_server_dart/pubspec_overrides.yaml`

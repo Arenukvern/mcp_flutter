@@ -9,7 +9,7 @@ Use when a tagged release exists but [`release.yml`](https://github.com/Arenukve
 - When a published release already has `checksums.txt`, every remote tarball must be listed with a matching SHA-256; unlisted assets, empty files, or unparseable lines fail closed. Updated `checksums.txt` on published releases must be a **strict superset** of the prior manifest (unchanged lines preserved). This proves **consistency**, not authenticity (signatures/attestation remain follow-up work).
 - When a published release has **no** `checksums.txt` yet, the first recovery run trusts the initial remote tarball download when building the new manifest (consistency against itself only on that pass).
 - Recovery does **not** create, move, or delete tags and does **not** republish pub.dev or MCP Registry packages.
-- **MCP Registry smoke CI** on release-please PRs is unrelated to tarball recovery: smoke builds use ephemeral sibling path overrides when pub.dev does not yet expose the bumped train; production registry publish remains hosted-only after `pub_publish`.
+- **MCP Registry smoke CI** on version PRs is unrelated to tarball recovery: smoke builds use ephemeral sibling path overrides when pub.dev does not yet expose the bumped train; production registry publish remains hosted-only after the pub train lands.
 
 ## How the workflow is wired
 
@@ -40,4 +40,4 @@ It skips when a **newer Release run** exists for the same tag ref, refuses to re
 
 ## Changelog convention
 
-Ship runner/dispatch hardening via conventional `fix(release):` on `main`; release-please aggregates into the next version — do not add a stranded `## [Unreleased]` block for recovery-only workflow edits.
+Ship runner/dispatch hardening via conventional `fix(release):` on `main`; the dart_changesets version PR aggregates CHANGELOG entries from `.changesets/*.md` intent files — do not add a stranded `## [Unreleased]` block for recovery-only workflow edits.
