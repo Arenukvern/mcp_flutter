@@ -1988,27 +1988,28 @@ Keep a Changelog **requires** version headings like `## [3.0.1]`. Linters treat 
 
 ```mermaid
 flowchart LR
-  main[merge_to_main] --> rp[release-please.yml]
-  rp --> pr[Release_PR]
-  pr --> sync[release_pr_sync_versions.yml]
+  main[merge_to_main] --> eng[dart_changesets.yml]
+  eng --> pr[changesets/version-packages_PR]
+  pr --> sync[dart_changesets_sync_versions.yml]
   pr --> assets[release_pr_sync_skills.yml]
-  pr --> tag[vX_Y_Z_tag]
-  tag --> rel[release.yml_binaries]
-  tag --> pub[pub_publish.yml_pubdev]
+  pr --> merge[version_PR_merge]
+  merge --> tags[per-package_tags]
+  tags --> pub[dart_changesets_publish.yml_pubdev]
+  tags --> rel[release.yml_binaries_server_tag]
 ```
 
-1. Merge PRs to `main` with conventional commits.
-2. Wait for **Release PR** from [release-please.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release-please.yml).
-3. **version train:** [release_pr_sync_versions.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release_pr_sync_versions.yml) runs `tool/release/sync_version.sh` on Release PRs and commits any drift from root `VERSION`.
-4. **skill assets:** [release_pr_sync_skills.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release_pr_sync_skills.yml) auto-commits `skill_assets.g.dart` on Release PRs when drift is detected; posts a checklist comment on PR open. If **skill-assets-drift** still fails, run `make sync-skills` locally and push.
+1. Merge PRs to `main` with conventional commits; add `.changesets/*.md` intent files (verbatim upstream-changesets format) to queue package bumps.
+2. **version PR:** [dart_changesets.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/dart_changesets.yml) assembles/updates the `changesets/version-packages` PR ("chore: version packages") from pending intent files.
+3. **version sync:** [dart_changesets_sync_versions.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/dart_changesets_sync_versions.yml) runs `tool/release/sync_version.sh` on the version PR (root `VERSION`, mcpb manifest, `server.json`).
+4. **skill assets + docs reference:** [release_pr_sync_skills.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release_pr_sync_skills.yml) regenerates on the version PR; [regen_surfaces.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/regen_surfaces.yml) is the post-merge drift safety net. If **skill-assets-drift** still fails, run `make sync-skills` locally and push.
 5. Review VERSION, CHANGELOG, pubspecs, plugin pins in that PR → merge.
-6. release-please creates `vX.Y.Z` + GitHub release notes.
-7. [release.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release.yml) asserts tag == `VERSION`, then attaches `flutter_mcp_*` tarballs (does not overwrite release body).
-8. [pub_publish.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/pub_publish.yml) publishes pub.dev packages in dependency order through OIDC: `flutter_mcp_toolkit_core` → `flutter_mcp_toolkit_capability_kernel` → `flutter_mcp_toolkit_capability_core` → `mcp_toolkit`.
+6. The merge pushes one tag per released package (`<package>-v<semver>` via `RELEASE_PLEASE_TOKEN`) and starts one [dart_changesets_publish.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/dart_changesets_publish.yml) run per tag — concurrent runs converge on pub.dev dependency-floor visibility through the upstream waiter; no manual ordering.
+7. The server tag's run chains [release.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release.yml) binaries: tarballs + `flutter-mcp-toolkit.mcpb` + root `vX.Y.Z` tag + GitHub release.
+8. MCP Registry publish is a manual dispatch: [publish_mcp_registry.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/publish_mcp_registry.yml) with the release tag (runbook: [mcp_registry_publish_runbook.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/contributing/mcp_registry_publish_runbook.mdx)).
 
-Before automated pub.dev publishing can run, each package must already have a first manual publish and pub.dev Admin must enable GitHub Actions publishing for this repository with tag pattern `v{{version}}`. Use GitHub environment `pub.dev` with required reviewers.
+Before automated publishing can run, each package needs a first manual signed-in publish and pub.dev Admin → Automated publishing enabled with a **per-package tag pattern** (`flutter_mcp_toolkit_<name>-v{{version}}`). No GitHub Actions environment is involved — repository + tag pattern + pubspec version are the authorization (see the dart_changesets engine README's "pub.dev authorization" section for the design and hardening routes).
 
-Config: [release-please-config.json](https://github.com/Arenukvern/mcp_flutter/blob/main/release-please-config.json).
+Config: [changesets.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/changesets.yaml); intent files in [.changesets/](https://github.com/Arenukvern/mcp_flutter/blob/main/.changesets/).
 
 ## Manual release (fallback)
 
