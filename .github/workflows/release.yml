@@ -286,5 +286,5 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
-          gh workflow run publish_mcp_registry.yml --ref main \
+          gh workflow run publish_mcp_registry.yml -R "$GITHUB_REPOSITORY" --ref main \
             -f "release_tag=${{ needs.prepare.outputs.release_tag }}"
