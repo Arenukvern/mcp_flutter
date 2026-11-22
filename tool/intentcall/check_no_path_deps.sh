@@ -114,13 +114,11 @@ for raw_path in sys.argv[1:]:
         "packages/server_capability_kernel/pubspec.yaml",
         "packages/server_capability_core/pubspec.yaml",
         "mcp_toolkit/pubspec.yaml",
-    }
-    # Server pins session floor after intentcall_session 1.2.1 (fj2j clash fix);
-    # other intentcall_* stay unconstrained for override/lock resolution.
-    session_floor_allow = {
-        "mcp_server_dart/pubspec.yaml": {
-            "intentcall_session": re.compile(r"^\^1\.2\.1$"),
-        },
+        # flutter_mcp_toolkit_server is published on pub.dev since 8.0.0
+        # (2026-11-21): pub.dev rejects unconstrained dependencies, so its
+        # intentcall_* deps carry hosted carets; the sibling dev loop keeps
+        # resolving through the gitignored root pubspec_overrides.yaml.
+        "mcp_server_dart/pubspec.yaml",
     }
     allow_pinned = rel in published_packages
     dep_ranges = section_ranges(lines)
