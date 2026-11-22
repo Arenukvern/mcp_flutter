@@ -295,10 +295,10 @@ packages:
     dependency: transitive
     description:
       name: from_json_to_json
-      sha256: "45e43782752a51434563a95a7a575334459b82eaa7f3b83873687449d9962b31"
+      sha256: d168f2b701a67bf87c3bb96c1d1addf282019fdec9ef8dc0ccd360241e3be139
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.2"
+    version: "0.6.1"
   frontend_server_client:
     dependency: transitive
     description:
@@ -375,10 +375,10 @@ packages:
     dependency: transitive
     description:
       name: intentcall_core
-      sha256: "5943bf2101129d2c1c7e011d5987bc873e83506c4de0245b400159011054d51a"
+      sha256: "435353e40e58771759ff5bb6a3a76c31bcb5a1cdf55a716a258a1704e41752fe"
       url: "https://pub.dev"
     source: hosted
-    version: "1.2.0"
+    version: "1.3.1"
   intentcall_hooks:
     dependency: transitive
     description:
@@ -407,18 +407,18 @@ packages:
     dependency: transitive
     description:
       name: intentcall_schema
-      sha256: "9ecb4ec9c0dbe7b8174c603b3964645f0677e0741c82c1312e98654b082e5a40"
+      sha256: "06ee493cea4bc4fa1f57fab483d7a6fd680f950f8f13f638be6d8a92d310d2a4"
       url: "https://pub.dev"
     source: hosted
-    version: "1.2.2"
+    version: "1.3.2"
   intentcall_session:
     dependency: transitive
     description:
       name: intentcall_session
-      sha256: "00b8e0a76f91e86a9e4b6a8c2f75f7ae06e3f17251ff9d8cd4fe7fed11ff945d"
+      sha256: cb43fb2c661e0e22b9bb6d09952b1aacee4536df09323d85eceb47b8e8fd2786
       url: "https://pub.dev"
     source: hosted
-    version: "1.2.1"
+    version: "1.3.1"
   intl:
     dependency: transitive
     description:
@@ -439,10 +439,10 @@ packages:
     dependency: transitive
     description:
       name: is_dart_empty_or_not
-      sha256: fa61fa7b6687a78ee3bc4cfd7d33084b9d798c1367131b8eac6f932dcb8e9fe0
+      sha256: a387c8c7d92c6ba811c165eed76abcefc7290c90ccf53f75e24ee0f435551d29
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.1"
+    version: "0.6.0"
   json_annotation:
     dependency: transitive
     description:
@@ -567,26 +567,26 @@ packages:
     dependency: transitive
     description:
       name: oka_android
-      sha256: ec6a34ed244436e72b3a5633cd176b10609e7be1444511114954fcc275decf7a
+      sha256: "59bca3e1bdc00a03d0503fa96be1260d1e93694ef19ccf61f4b46080c20daa65"
       url: "https://pub.dev"
     source: hosted
-    version: "0.11.0"
+    version: "0.12.0"
   oka_core:
     dependency: transitive
     description:
       name: oka_core
-      sha256: "044a8833c44f883fa9e62c0c51be504d35e24fc76de55677a3f2c12b28023ca2"
+      sha256: "2d72b070c15d707b479c54839fa4ec70145366052dd572c3f2ecd2b9b93cc903"
       url: "https://pub.dev"
     source: hosted
-    version: "0.11.0"
+    version: "0.12.0"
   oka_harness:
     dependency: transitive
     description:
       name: oka_harness
-      sha256: "443e3fa14e72d77d8f77e73d5c6e22f0812f049095403ecd6ac31faee1233c0c"
+      sha256: c446b7634a68c7d31759e9272547495d8c171c738765c794701ced94647ba3dc
       url: "https://pub.dev"
     source: hosted
-    version: "0.11.0"
+    version: "0.12.0"
   package_config:
     dependency: transitive
     description:
@@ -679,10 +679,10 @@ packages:
     dependency: transitive
     description:
       name: resource_composition
-      sha256: "52dd36d6dc356adbeddef1c08e3cab7f865f2dc2cf67c3db6c38e668797a4322"
+      sha256: ea369453c7dfb7eaf26204ef9fd7d3fa39cd1c8cb63408f7955add76381a4f0f
       url: "https://pub.dev"
     source: hosted
-    version: "0.11.0"
+    version: "0.12.0"
   rx:
     dependency: transitive
     description:

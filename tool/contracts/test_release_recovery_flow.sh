@@ -68,19 +68,22 @@ release_conflict__cb_run_argv() {
 EXPECTED_V702_ASSETS=(
   "flutter_mcp_7.0.2_darwin-arm64.tar.gz"
   "flutter_mcp_7.0.2_linux-x64.tar.gz"
+  "flutter-mcp-toolkit.mcpb"
   "checksums.txt"
 )
 
 contract_assert_expected_assets_include_checksums() {
   local -a names=()
   release_conflict__load_expected_asset_names 7.0.2 names
-  [[ ${#names[@]} -eq 3 ]] || fail "expected asset list must have 3 entries (got ${#names[@]})"
-  local n found=false
+  [[ ${#names[@]} -eq 4 ]] || fail "expected asset list must have 4 entries (got ${#names[@]})"
+  local n found_checksums=false found_mcpb=false
   for n in "${names[@]}"; do
-    [[ "$n" == "checksums.txt" ]] && found=true
+    [[ "$n" == "checksums.txt" ]] && found_checksums=true
+    [[ "$n" == "flutter-mcp-toolkit.mcpb" ]] && found_mcpb=true
   done
-  [[ "$found" == true ]] || fail "expected asset list must include checksums.txt"
-  ok "expected asset names include checksums.txt"
+  [[ "$found_checksums" == true ]] || fail "expected asset list must include checksums.txt"
+  [[ "$found_mcpb" == true ]] || fail "expected asset list must include flutter-mcp-toolkit.mcpb"
+  ok "expected asset names include checksums.txt and the MCPB bundle"
 }
 contract_assert_expected_assets_include_checksums
 
