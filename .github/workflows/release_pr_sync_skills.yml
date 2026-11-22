@@ -1,6 +1,9 @@
-# Regenerates skill_assets.g.dart on release-please PRs and pushes when plugin/
-# manifests drift from the embedded bundle (release-please bumps plugin JSON only).
-name: Release PR — sync skill assets
+# Regenerates the release surfaces (skill_assets.g.dart bundle + docs/reference)
+# on release version PRs and pushes when plugin manifests or the CLI surface
+# drift from the committed artifacts. Matches both trains: release-please
+# (`release-please--*`) and dart_changesets (`changesets/version-packages`,
+# "chore: version packages").
+name: Release PR — sync release surfaces
 
 on:
   pull_request:
@@ -23,14 +26,17 @@ jobs:
       is_release_pr: ${{ steps.check.outputs.is_release_pr }}
     steps:
       - id: check
-        name: Detect release-please PR
+        name: Detect release version PR (release-please or dart_changesets)
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_HEAD: ${{ github.head_ref }}
         run: |
           title="$PR_TITLE"
           head="$PR_HEAD"
-          if [[ "$head" == release-please--* ]] || [[ "$title" == *": release "* ]]; then
+          if [[ "$head" == release-please--* ]] || \
+             [[ "$head" == "changesets/version-packages" ]] || \
+             [[ "$title" == *": release "* ]] || \
+             [[ "$title" == "chore: version packages" ]]; then
             echo "is_release_pr=true" >> "$GITHUB_OUTPUT"
           else
             echo "is_release_pr=false" >> "$GITHUB_OUTPUT"
@@ -57,6 +63,14 @@ jobs:
       - name: Regenerate skill assets
         run: dart run mcp_server_dart/tool/build_skill_assets.dart
 
+      - name: Regenerate docs reference (best effort pre-publish)
+        run: |
+          if make docs-reference; then
+            echo "docs/reference regenerated"
+          else
+            echo "::warning::docs-reference generation failed — hosted deps for the new train are not on pub.dev yet; regen_surfaces picks this up post-publish"
+          fi
+
       - name: Commit and push if changed
         id: sync_commit
         env:
@@ -64,9 +78,11 @@ jobs:
         run: |
           head_sha="$(git rev-parse HEAD)"
           echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
-          if git diff --quiet -- mcp_server_dart/lib/src/skill_assets.g.dart; then
+          # status --porcelain (not git diff): a NEWLY generated reference
+          # file is untracked and git diff alone would miss it.
+          if ! git status --porcelain -- mcp_server_dart/lib/src/skill_assets.g.dart docs/reference | grep -q .; then
             echo "pushed=false" >> "$GITHUB_OUTPUT"
-            echo "skill_assets.g.dart already in sync"
+            echo "release surfaces already in sync"
             exit 0
           fi
           if [[ ! "$HEAD_REF" =~ ^[A-Za-z0-9._/-]+$ ]]; then
@@ -75,8 +91,8 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add mcp_server_dart/lib/src/skill_assets.g.dart
-          git commit -m "chore: sync skill_assets.g.dart for release PR"
+          git add mcp_server_dart/lib/src/skill_assets.g.dart docs/reference
+          git commit -m "chore: sync generated release surfaces for release PR"
           git push origin "HEAD:refs/heads/${HEAD_REF}"
           echo "pushed=true" >> "$GITHUB_OUTPUT"
           echo "head_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
@@ -84,8 +100,9 @@ jobs:
       - name: Verify idempotence on PR head
         run: |
           dart run mcp_server_dart/tool/build_skill_assets.dart
-          if ! git diff --exit-code mcp_server_dart/lib/src/skill_assets.g.dart; then
-            echo "::error::skill_assets bundle not idempotent after sync"
+          make docs-reference >/dev/null 2>&1 || true
+          if git status --porcelain -- mcp_server_dart/lib/src/skill_assets.g.dart docs/reference | grep -q .; then
+            echo "::error::generated release surfaces not idempotent after sync"
             exit 1
           fi
 
@@ -121,9 +138,9 @@ jobs:
             const body = `${marker}
             ## Release PR — skill assets
 
-            release-please bumps \`plugin/*-plugin/plugin.json\` but not the generated \`skill_assets.g.dart\` bundle.
+            Release trains bump \`plugin/*-plugin/plugin.json\` and dependency constraints but not the generated \`skill_assets.g.dart\` bundle or \`docs/reference\`.
 
-            **Automatic:** [Release PR — sync skill assets](${process.env.WORKFLOW_URL}) commits \`skill_assets.g.dart\` when drift is detected on this PR.
+            **Automatic:** [Release PR — sync release surfaces](${process.env.WORKFLOW_URL}) commits both generated surfaces when drift is detected on this PR. If \`docs/reference\` could not be regenerated pre-publish (hosted deps not out yet), the post-merge **regen_surfaces** workflow opens a follow-up PR once the train lands on pub.dev.
 
             After a bot sync push, look for commit status **skill-assets-post-sync** on the latest head SHA, then re-run **skill-assets-drift** if required checks did not auto-fire.
 

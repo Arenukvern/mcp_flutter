@@ -54,4 +54,39 @@ for wf in "$VERSIONS" "$SKILLS"; do
   fi
 done
 
+# Release surfaces: the in-PR sync bot must cover BOTH trains and BOTH surfaces.
+if ! grep -q 'changesets/version-packages' "$SKILLS"; then
+  fail "release_pr_sync_skills.yml must trigger on dart_changesets version PRs (changesets/version-packages)"
+fi
+if ! grep -q 'chore: version packages' "$SKILLS"; then
+  fail "release_pr_sync_skills.yml must trigger on the changesets version PR title"
+fi
+if ! grep -q 'docs-reference' "$SKILLS"; then
+  fail "release_pr_sync_skills.yml must regenerate docs/reference (regen owner alongside skill assets)"
+fi
+
+# Post-merge safety net for direct-to-main pushes (no PR for the bot to patch).
+REGEN="$ROOT_DIR/.github/workflows/regen_surfaces.yml"
+[[ -f "$REGEN" ]] || fail "missing regen_surfaces.yml (post-merge regen safety net)"
+if ! grep -q 'branches: \[main\]' "$REGEN"; then
+  fail "regen_surfaces.yml must run on push to main"
+fi
+if grep -q 'pull_request:' "$REGEN"; then
+  fail "regen_surfaces.yml must not run on pull_request events (in-PR sync belongs to release_pr_sync_skills.yml)"
+fi
+if grep -q 'workflow_run:' "$REGEN"; then
+  if ! grep -q 'workflows: \[dart_changesets publish\]' "$REGEN"; then
+    fail "regen_surfaces.yml workflow_run leg must pin the dart_changesets publish workflow"
+  fi
+  if ! grep -qE 'ref: main' "$REGEN"; then
+    fail "regen_surfaces.yml must always checkout refs/heads/main (never the workflow_run head)"
+  fi
+fi
+if ! grep -q 'RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN' "$REGEN"; then
+  fail "regen_surfaces.yml must use RELEASE_PLEASE_TOKEN with GITHUB_TOKEN fallback (GITHUB_TOKEN PRs do not trigger checks)"
+fi
+if ! grep -q -- '--auto' "$REGEN"; then
+  fail "regen_surfaces.yml must enable auto-merge on the regen PR"
+fi
+
 ok "release PR sync workflow structure OK"

@@ -1,0 +1,117 @@
+# Post-merge drift safety net for the generated release surfaces.
+#
+# In-PR bot sync (release_pr_sync_skills.yml) only sees release version PRs.
+# Direct feature pushes to main can change the CLI surface (docs/reference) or
+# plugin manifests (skill_assets.g.dart) without any PR to patch, so this
+# workflow regenerates both after every qualifying push and — when anything
+# drifted — opens a follow-up PR with auto-merge enabled.
+#
+# Token: RELEASE_PLEASE_TOKEN when present so the pushed branch triggers
+# workflow checks normally (GITHUB_TOKEN-created PRs do not start workflow
+# runs); falls back to GITHUB_TOKEN like the other release automations.
+#
+# workflow_run leg: a version PR can merge with docs/reference still stale
+# (hosted deps for the new train were not on pub.dev at merge time); after
+# dart_changesets_publish succeeds the train is out, so regenerate once more.
+# The checkout is ALWAYS refs/heads/main — the workflow_run event's head
+# (untrusted, fork-able) is never used.
+name: Regen release surfaces
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'VERSION'
+      - '**/pubspec.yaml'
+      - 'plugin/**'
+      - 'skills/**'
+      - 'mcp_server_dart/bin/**'
+      - 'mcp_server_dart/lib/**'
+      - 'mcp_server_dart/tool/**'
+      - 'tool/docs/**'
+      - '.github/workflows/regen_surfaces.yml'
+  workflow_run:
+    workflows: [dart_changesets publish]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  regenerate:
+    if: >-
+      github.event_name == 'push' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main')
+    # Job-level: skipped runs (failed-publish workflow_run legs) must never
+    # engage the group and cancel an in-progress regeneration.
+    concurrency:
+      group: regen-surfaces-main
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    steps:
+      # Always the default branch: push events land here anyway, and the
+      # workflow_run leg must not trust the triggering head.
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.50.1'
+          cache: true
+
+      - name: Install deps
+        run: cd mcp_server_dart && flutter pub get
+
+      - name: Regenerate skill assets
+        run: dart run mcp_server_dart/tool/build_skill_assets.dart
+
+      - name: Regenerate docs reference
+        run: make docs-reference
+
+      - name: Detect drift
+        id: drift
+        run: |
+          if git status --porcelain -- mcp_server_dart/lib/src/skill_assets.g.dart docs/reference pubspec.lock | grep -q .; then
+            echo "drifted=true" >> "$GITHUB_OUTPUT"
+            git status --porcelain
+          else
+            echo "drifted=false" >> "$GITHUB_OUTPUT"
+            echo "release surfaces already in sync"
+            # A previously opened regen PR is now redundant (drift was fixed
+            # another way) — close it instead of leaving auto-merge armed.
+            stale="$(gh pr list --repo "$GITHUB_REPOSITORY" \
+              --head "ci/regen-release-surfaces" --state open --json number --jq 'length' 2>/dev/null || echo 0)"
+            if [[ "$stale" != "0" ]]; then
+              gh pr close "ci/regen-release-surfaces" --repo "$GITHUB_REPOSITORY" \
+                --comment "Closing: regeneration finds release surfaces already in sync."
+            fi
+          fi
+
+      - name: Open regen PR (auto-merge)
+        if: steps.drift.outputs.drifted == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          branch="ci/regen-release-surfaces"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$branch"
+          git add mcp_server_dart/lib/src/skill_assets.g.dart docs/reference pubspec.lock
+          git commit -m "chore(ci): regenerate release surfaces after ${GITHUB_SHA}"
+
+          existing="$(gh pr list --repo "$GITHUB_REPOSITORY" \
+            --head "$branch" --state open --json number --jq 'length')"
+          git push origin "$branch" --force
+          if [[ "$existing" == "0" ]]; then
+            gh pr create --repo "$GITHUB_REPOSITORY" \
+              --base main --head "$branch" \
+              --title "chore(ci): regenerate release surfaces" \
+              --body "Post-merge drift detected after ${GITHUB_SHA}: regenerated \`skill_assets.g.dart\` + \`docs/reference\` (and \`pubspec.lock\` if the hosted resolution moved). Contract Gates run on this PR; auto-merge is enabled."
+          fi
+          gh pr merge "$branch" --auto --merge --repo "$GITHUB_REPOSITORY"
