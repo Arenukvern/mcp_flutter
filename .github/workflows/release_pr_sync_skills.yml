@@ -78,7 +78,9 @@ jobs:
         run: |
           head_sha="$(git rev-parse HEAD)"
           echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
-          if git diff --quiet -- mcp_server_dart/lib/src/skill_assets.g.dart docs/reference; then
+          # status --porcelain (not git diff): a NEWLY generated reference
+          # file is untracked and git diff alone would miss it.
+          if ! git status --porcelain -- mcp_server_dart/lib/src/skill_assets.g.dart docs/reference | grep -q .; then
             echo "pushed=false" >> "$GITHUB_OUTPUT"
             echo "release surfaces already in sync"
             exit 0
@@ -99,7 +101,7 @@ jobs:
         run: |
           dart run mcp_server_dart/tool/build_skill_assets.dart
           make docs-reference >/dev/null 2>&1 || true
-          if ! git diff --exit-code mcp_server_dart/lib/src/skill_assets.g.dart docs/reference; then
+          if git status --porcelain -- mcp_server_dart/lib/src/skill_assets.g.dart docs/reference | grep -q .; then
             echo "::error::generated release surfaces not idempotent after sync"
             exit 1
           fi

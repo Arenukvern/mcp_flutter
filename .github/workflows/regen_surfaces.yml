@@ -38,16 +38,17 @@ permissions:
   contents: write
   pull-requests: write
 
-concurrency:
-  group: regen-surfaces-main
-  cancel-in-progress: true
-
 jobs:
   regenerate:
     if: >-
       github.event_name == 'push' ||
       (github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.head_branch == 'main')
+    # Job-level: skipped runs (failed-publish workflow_run legs) must never
+    # engage the group and cancel an in-progress regeneration.
+    concurrency:
+      group: regen-surfaces-main
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     steps:
       # Always the default branch: push events land here anyway, and the
@@ -81,6 +82,14 @@ jobs:
           else
             echo "drifted=false" >> "$GITHUB_OUTPUT"
             echo "release surfaces already in sync"
+            # A previously opened regen PR is now redundant (drift was fixed
+            # another way) — close it instead of leaving auto-merge armed.
+            stale="$(gh pr list --repo "$GITHUB_REPOSITORY" \
+              --head "ci/regen-release-surfaces" --state open --json number --jq 'length' 2>/dev/null || echo 0)"
+            if [[ "$stale" != "0" ]]; then
+              gh pr close "ci/regen-release-surfaces" --repo "$GITHUB_REPOSITORY" \
+                --comment "Closing: regeneration finds release surfaces already in sync."
+            fi
           fi
 
       - name: Open regen PR (auto-merge)
@@ -105,4 +114,4 @@ jobs:
               --title "chore(ci): regenerate release surfaces" \
               --body "Post-merge drift detected after ${GITHUB_SHA}: regenerated \`skill_assets.g.dart\` + \`docs/reference\` (and \`pubspec.lock\` if the hosted resolution moved). Contract Gates run on this PR; auto-merge is enabled."
           fi
-          gh pr merge "$branch" --auto --squash --repo "$GITHUB_REPOSITORY"
+          gh pr merge "$branch" --auto --merge --repo "$GITHUB_REPOSITORY"
