@@ -47,7 +47,7 @@ registry publish is never auto-triggered — it is always an explicit dispatch
 (see above). If some tags' publish runs failed after others uploaded
 (transient pub.dev errors, a red preflight on one leg):
 
-1. **workflow_dispatch** [dart_changesets publish](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/dart_changesets_publish.yml) on `main` for each failed tag with **`execute` checked** (`--skip-existing` skips versions already on pub.dev; the wait-upstream job re-checks dependency floors). Re-pushing an unchanged tag fires no workflows — dispatch is the only re-run path.
+1. **workflow_dispatch** [dart_changesets publish](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/dart_changesets_publish.yml) on `main` for each failed tag with **`execute` checked** (`--skip-existing` skips versions already on pub.dev; the engine's publish-tag re-checks dependency floors, waiting up to 15 minutes — `dependency-wait-minutes` on the reusable workflow tunes it). Re-pushing an unchanged tag fires no workflows — dispatch is the only re-run path.
 2. When all intended packages are on pub.dev, run [Publish MCP Registry server](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/publish_mcp_registry.yml) via **workflow_dispatch** on **`main`** with `release_tag` set to the root `v*` tag.
 
 ## Pre-flight gates (run before cutting a release)
@@ -93,12 +93,12 @@ The `check_mcp_registry.sh` contract asserts:
   release matrix by `tool/contracts/test_mcpb_manifest_matrix.sh`
   (`make check-contracts`).
 - **Train race:** per-tag publish runs are dispatched concurrently, but
-  pub.dev validates dependency constraints at upload time. Every publish run
-  therefore first executes `tool/release/wait_for_train_upstream.sh`
-  (`wait-upstream` job), polling pub.dev until the package's same-train
-  dependency floors are exposed — the train converges regardless of dispatch
-  order. Preflight (`execute=false`) skips the publish itself but still
-  exercises the wait.
+  pub.dev validates dependency constraints at upload time. The engine's
+  `publish-tag` therefore waits (default 15 minutes, progress logged per
+  poll, `dependency-wait-minutes` input to tune) until the package's
+  same-train dependency floors are exposed on pub.dev — the train converges
+  regardless of dispatch order, uniformly for every consumer repo. Preflight
+  (`execute=false`) skips the publish itself but still exercises the wait.
 - Offline contract coverage uses `MCP_REGISTRY_PUB_API_BASE` pointed at
   `tool/contracts/fixtures/mcp_registry_pub_api/`; smoke CI uses live pub.dev
   (`python3` + PyYAML + `curl` on ubuntu-latest).
