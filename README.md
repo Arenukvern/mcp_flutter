@@ -111,9 +111,9 @@ Full steps: [docs/quickstart.mdx](docs/quickstart.mdx).
 | Custom MCP tools in your app | [Custom tools](docs/use-cases/custom-tools.mdx) |
 | Scripts / CI one-shots | [CI and scripts](docs/use-cases/ci-and-scripts.mdx) |
 | Checked-in E2E | [E2E scenarios](docs/use-cases/e2e-scenarios.mdx) |
+| Several apps at once | [Multiple apps](docs/use-cases/multiple-apps.mdx) |
 
 ![Harness automating a Flutter web debug target through flutter_mcp_harness](docs/assets/gifs/harness-web.gif)
-| Several apps at once | [Multiple apps](docs/use-cases/multiple-apps.mdx) |
 
 ## Packages
 
