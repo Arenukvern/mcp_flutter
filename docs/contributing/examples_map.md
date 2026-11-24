@@ -33,7 +33,7 @@ Canonical index of runnable samples. ADR: [0025](../decisions/0025_canonical_sho
 | --- | --- | --- | --- | --- |
 | `mcp_toolkit` | `example/fibonacci_tool_example.dart` | pub.dev consumer | Yes | **Canonical custom tool** runnable app |
 | `mcp_toolkit` | `example/agent_call_entry_starter.dart` | pub.dev consumer | Snippet | Hand-written entry pattern |
-| `mcp_toolkit` | `lib/example_fibonacci.dart` | Apps + integration | Yes | Shared `buildCalculateFibonacciTool()` |
+| `mcp_toolkit` | `lib/src/examples/example_fibonacci.dart` | Apps + integration | Yes | Shared `buildCalculateFibonacciTool()` (not barrel-exported) |
 | `flutter_mcp_toolkit_core` | `example/main.dart` | pub.dev consumer | Yes | Prints version + `ToolkitExtensionNames` |
 | `flutter_mcp_toolkit_capability_core` | `example/main.dart` | pub.dev consumer | Yes | Capability type anchor |
 | `flutter_mcp_toolkit_capability_kernel` | `example/main.dart` | pub.dev consumer | Yes | Kernel contract pointer |
@@ -112,7 +112,7 @@ IntentCall entity semantics (`greeting_form`, `feature_switch`, `counter_demo`) 
 
 | Registration | Delayed? | Location |
 | --- | --- | --- |
-| `calculate_fibonacci` | initial | `mcp_toolkit/lib/example_fibonacci.dart` (`buildCalculateFibonacciTool()`) |
+| `calculate_fibonacci` | initial | `mcp_toolkit/lib/src/examples/example_fibonacci.dart` (`buildCalculateFibonacciTool()`) |
 | `app_state` resource | initial | `main.dart` |
 | `get_agent_showcase_state` | initial | `main.dart` |
 | `intentcall_bridge_ping`, `set_greeting`, `enable_switch` | initial | `intentcall_showcase_entries.dart` |

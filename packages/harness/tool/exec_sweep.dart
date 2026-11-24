@@ -186,6 +186,7 @@ final class ExecSweepRunner {
 
     await runTool('semantic_snapshot', '{}');
     await runTool('navigate', '{"action":"push","route":"/qa"}');
+    await waitForQaSemantics(identifier: 'app_title_text');
 
     await runTool(
       'reveal_search',
@@ -561,6 +562,36 @@ final class ExecSweepRunner {
     final text = buffer.toString();
     stdout.write(text);
     await summaryFile.writeAsString(text);
+  }
+
+  /// After [navigate] to `/qa`, poll until a QA-lab identifier is discoverable.
+  Future<void> waitForQaSemantics({
+    required String identifier,
+    int maxAttempts = 20,
+  }) async {
+    for (var attempt = 0; attempt < maxAttempts; attempt++) {
+      final outfile = File(p.join(outdir, 'wait_qa_$attempt.json'));
+      final result = await _toolkit([
+        'exec',
+        '--name',
+        'reveal_search',
+        '--args',
+        '{"query":"$identifier","matchBy":"identifier","direction":"$revealDownDirection",'
+        '"maxAttempts":2,"distance":120}',
+      ]);
+      await outfile.writeAsString('${result.stdout}');
+      if (result.exitCode == 0 && jsonOk(outfile)) {
+        final success = jsonField(outfile, 'data.success');
+        if (success == 'true' || success == 'True') {
+          stdout.writeln('PASS: /qa ready ($identifier)');
+          pass++;
+          results.add('PASS qa_route_ready');
+          return;
+        }
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 400));
+    }
+    missingRequiredTool('navigate', '/qa route did not expose $identifier');
   }
 
   Future<bool> runTool(String name, String args) async {

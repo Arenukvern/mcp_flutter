@@ -334,11 +334,25 @@ void main() {
 
         // Canonical showcase boots `/` (product journey); toolkit fixtures
         // (platform view panel, greeting field, …) live on `/qa`.
-        await dispatch('fmt_navigate', {
+        final navigateResp = await dispatch('fmt_navigate', {
           'action': 'push',
           'route': '/qa',
           'connection': connection,
         });
+        final navigateData = _decodeToolJsonPayload(navigateResp);
+        final navigatePayload = navigateData['data'];
+        if (navigatePayload is Map<String, dynamic>) {
+          expect(
+            navigatePayload['success'],
+            isTrue,
+            reason: 'fmt_navigate push /qa must succeed',
+          );
+        }
+        await _waitForQaIdentifier(
+          connection: connection,
+          dispatch: dispatch,
+          identifier: 'app_title_text',
+        );
 
         // 1. semantic_snapshot — must succeed; provides refs for interaction
         // tools below.
@@ -648,6 +662,32 @@ String? _extractVmServiceWsUri(String line) {
       ? '${httpUri.path}ws'
       : '${httpUri.path}/ws';
   return httpUri.replace(scheme: 'ws', path: pathWithWs).toString();
+}
+
+Future<void> _waitForQaIdentifier({
+  required Map<String, Object?> connection,
+  required Future<Map<String, dynamic>> Function(
+    String name,
+    Map<String, Object?> arguments,
+  ) dispatch,
+  required String identifier,
+}) async {
+  for (var attempt = 0; attempt < 20; attempt++) {
+    final revealResp = await dispatch('fmt_reveal_search', {
+      'query': identifier,
+      'matchBy': 'identifier',
+      'direction': 'down',
+      'maxAttempts': 2,
+      'distance': 120,
+      'connection': connection,
+    });
+    final revealData = _decodeToolJsonPayload(revealResp);
+    if (revealData['success'] == true) {
+      return;
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+  }
+  fail('/qa did not expose semantics identifier $identifier');
 }
 
 Map<String, dynamic> _decodeToolJsonPayload(

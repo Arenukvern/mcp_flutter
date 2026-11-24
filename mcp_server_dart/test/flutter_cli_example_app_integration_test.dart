@@ -480,10 +480,23 @@ void main() {
         final connection = {'uri': _globalVmServiceWsUri};
         final connArgs = jsonEncode({'connection': connection});
 
-        await exec(
+        final navigate = await exec(
           'navigate',
           {'action': 'push', 'route': '/qa', 'connection': connection},
           requireOk: true,
+        );
+        final navigateData = navigate['data'];
+        if (navigateData is Map<String, dynamic>) {
+          expect(
+            navigateData['success'],
+            isTrue,
+            reason: 'navigate push /qa must succeed',
+          );
+        }
+        await _waitForQaIdentifierCli(
+          connection: connection,
+          exec: exec,
+          identifier: 'app_title_text',
         );
 
         // 1. semantic_snapshot — must succeed; provides refs.
@@ -611,6 +624,37 @@ void main() {
       },
     );
   });
+}
+
+Future<void> _waitForQaIdentifierCli({
+  required Map<String, dynamic> connection,
+  required Future<Map<String, dynamic>> Function(
+    String name,
+    Map<String, Object?> arguments, {
+    bool requireOk,
+  }) exec,
+  required String identifier,
+}) async {
+  for (var attempt = 0; attempt < 20; attempt++) {
+    final reveal = await exec(
+      'reveal_search',
+      {
+        'query': identifier,
+        'matchBy': 'identifier',
+        'direction': 'down',
+        'maxAttempts': 2,
+        'distance': 120,
+        'connection': connection,
+      },
+      requireOk: true,
+    );
+    final data = reveal['data'];
+    if (data is Map<String, dynamic> && data['success'] == true) {
+      return;
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+  }
+  fail('/qa did not expose semantics identifier $identifier');
 }
 
 String? _globalVmServiceWsUri;

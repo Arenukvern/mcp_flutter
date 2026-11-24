@@ -51,12 +51,14 @@ make web-showcase
 # or: dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart webmcp chrome-args
 ```
 
-VM URI (prefer runner-session over log grep):
+VM URI (prefer runner-session over log grep; requires **jq** on PATH):
 
 ```bash
 export WS_URI="$(jq -r .vm_service_uri showcase/flutter_test_app/.flutter_mcp/runner-session.json)"
 # Some batteries still expect WS_URI in the environment.
 ```
+
+> **Follow-up:** port `tool/evals/run_runtime_enter_text_greeting.sh` to Dart (same pattern as `packages/harness/tool/exec_sweep.dart`); the bash script still encodes the enter-text adoption proof today.
 
 **Web (plain Chrome — WebMCP API usually inactive):**
 

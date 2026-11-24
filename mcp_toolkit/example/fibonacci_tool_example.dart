@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
+import 'package:mcp_toolkit/src/examples/example_fibonacci.dart';
 
 Future<void> main() async {
   await MCPToolkitBinding.instance.addEntries(entries: _starterEntries);
