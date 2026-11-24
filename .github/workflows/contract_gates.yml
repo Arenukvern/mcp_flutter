@@ -55,7 +55,7 @@ jobs:
 
       - name: native_layer_capture_fixture analyze and widget tests
         run: |
-          cd showcase/native_layer_capture_fixture
+          cd showcase/fixtures/native_layer_capture_fixture
           flutter pub get
           dart analyze .
           flutter test
