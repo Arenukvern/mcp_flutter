@@ -2616,6 +2616,8 @@ exit(passed ? 0 : 1);
 Console output stays the default (`printSummary`). Agents and CI opt in:
 
 ```dart
+import '../tool/harness_report_argv.dart'; // composition roots only
+
 final reportArgs = requireHarnessReportArgs(platformArgs);
 passed = await scenario.run(runOptions: reportArgs.toRunOptions());
 scenario.report.printSummary();
@@ -2651,8 +2653,8 @@ dart run packages/harness/tool/scenario_report.dart --smoke \
 ```
 
 For real E2E, run a checked-in composition root with the same flags;
-`requireHarnessReportArgs(args)` in `main` for validation (library uses
-`HarnessReportParseResult.parse` without calling `exit`).
+`requireHarnessReportArgs` from `packages/harness/tool/harness_report_argv.dart`
+in `main` (library: `HarnessReportParseResult.parse` only).
 
 ## Driving widgets (`ToolkitDriver`)
 

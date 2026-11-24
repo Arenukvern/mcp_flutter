@@ -38,8 +38,9 @@ final class Scenario {
   final EvidenceCollector? evidence;
   final String? evidenceDir;
 
-  /// Runs steps in order; stops at the first failure (a thrown error or a
-  /// failing check). Returns whether all steps passed.
+  /// Runs steps in order; stops at the first thrown error or failed check
+  /// ([CheckStatus.fail]). Skips and not_run do not halt. Returns whether no
+  /// check failed.
   ///
   /// When [runOptions] sets [ScenarioRunOptions.format] and
   /// [ScenarioRunOptions.reportOut], writes a machine-readable report after
@@ -68,7 +69,7 @@ final class Scenario {
         }
         break;
       }
-      if (!report.allPassed) {
+      if (report.hasFailures) {
         await _dumpEvidence();
         stop = true;
         for (var j = i + 1; j < steps.length; j++) {

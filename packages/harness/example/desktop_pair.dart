@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
 import 'package:path/path.dart' as p;
 
+import '../tool/harness_report_argv.dart';
+
 /// Two-instance desktop pair E2E (the shape proven in the vosges project).
 ///
 /// Instance A hosts; instance B launches in a "controller" role via an env
