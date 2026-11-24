@@ -34,8 +34,8 @@ toolkit's tool catalog onto that registry is the tracked bridge.
 
 ```bash
 make web-showcase
-# WS_URI from .showcase/web_app.log (re-grep after hot reload)
-grep -Eo 'ws://127\.0\.0\.1:[0-9]+/[A-Za-z0-9_=-]+/ws' .showcase/web_app.log | tail -1
+# vm_service_uri from runner-session (re-read after hot reload if needed)
+jq -r .vm_service_uri showcase/flutter_test_app/.flutter_mcp/runner-session.json
 ```
 
 ```bash

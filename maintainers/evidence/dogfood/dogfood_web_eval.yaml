@@ -189,7 +189,7 @@ iterations:
       - .showcase/eval_runs/20260526T174543Z/web/validate-runtime.json
       - .showcase/eval_runs/20260526T174543Z/webmcp_verify.json
       - mcp_server_dart/lib/src/cli/webmcp_command.dart
-      - scripts/run_web_showcase.sh
+      - packages/harness/tool/showcase.dart
       - .github/workflows/intentcall_eval.yml
 
   - iteration: 7

@@ -41,7 +41,8 @@ Task Progress:
 
 ```bash
 make web-showcase
-export WS_URI="$(grep -Eo 'ws://127\.0\.0\.1:[0-9]+/[A-Za-z0-9_=-]+/ws' .showcase/web_app.log | tail -1)"
+# VM URI: showcase/flutter_test_app/.flutter_mcp/runner-session.json → vm_service_uri
+# Or: dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart --runner-session-file showcase/flutter_test_app/.flutter_mcp/runner-session.json …
 bash tool/evals/run_dogfood_eval.sh --ws-uri "$WS_URI" --merge --skip-visual   # yq or dart fallback
 # or without merge:
 bash tool/evals/run_dogfood_eval.sh --ws-uri "$WS_URI"

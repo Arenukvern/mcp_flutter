@@ -78,7 +78,7 @@ await binding.addEntries(
 await binding.bootstrapFlutter(runApp: () => runApp(const MyApp()));
 ```
 
-Full example: [fibonacci_tool_example.dart](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_toolkit/example/fibonacci_tool_example.dart).
+Full example (pub.dev `example/`): [fibonacci_tool_example.dart](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_toolkit/example/fibonacci_tool_example.dart). Shared registration: `buildCalculateFibonacciTool()`.
 
 Agent discovery: `fmt_list_client_tools_and_resources` / `fmt_client_tool`.
 

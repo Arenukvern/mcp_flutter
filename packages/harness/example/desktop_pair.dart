@@ -21,7 +21,10 @@ import '../tool/harness_report_argv.dart';
 Future<void> main(List<String> args) async {
   final reportArgs = requireHarnessReportArgs(args);
   final build = !args.contains('--skip-build');
-  final appDir = 'flutter_test_app'; // adapt: your Flutter desktop project
+  final repoRoot = p.normalize(
+    p.join(p.dirname(Platform.script.toFilePath()), '..', '..', '..'),
+  );
+  final appDir = p.join(repoRoot, 'showcase', 'flutter_test_app');
   final binary = p.join(
     appDir,
     'build',
@@ -29,10 +32,10 @@ Future<void> main(List<String> args) async {
     'Build',
     'Products',
     'Debug',
-    'Your App.app', // adapt: build/.../YourApp.app/Contents/MacOS/YourApp
+    'test_app.app',
     'Contents',
     'MacOS',
-    'Your App',
+    'test_app',
   );
 
   LaunchedApp? host;

@@ -256,7 +256,7 @@ make showcase-stop   # kill stray sessions, free VM port 8181 (idempotent)
   `INTENTCALL_ROOT`, sibling checkouts, or `PATH`.
 - Interactive mode tees every line to the log (which `make exec-sweep` greps)
   and tears the session down on exit or Ctrl-C.
-- WS URI for follow-up calls: `grep -Eo 'ws://127\.0\.0\.1:[0-9]+/[A-Za-z0-9_=-]+/ws' .showcase/flutter_app.log | tail -1`.
+- VM URI for follow-up calls: read `showcase/flutter_test_app/.flutter_mcp/runner-session.json` field `vm_service_uri` (or `dart run packages/harness/tool/showcase.dart --web --detach`, then exec from the app directory with runner discovery).
 
 ## Hard boundaries
 

@@ -7,8 +7,8 @@ import 'package:mcp_toolkit/mcp_toolkit.dart';
 import 'package:test_app/agent_state.dart';
 import 'package:test_app/platform_view_showcase.dart';
 
-/// Showcase page for MCP Flutter — a single-page demonstration of every
-/// built-in interaction tool.
+/// Maintainer QA lab — every built-in interaction tool in one scroll surface.
+/// Reach via route `/qa` (ADR-0025); not the default product home.
 ///
 /// The design is deliberately restrained: type and whitespace do the work,
 /// sections are flat, and every interactive widget has a Semantics

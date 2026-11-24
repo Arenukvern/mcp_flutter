@@ -12,6 +12,6 @@ Set Theme "GitHub Dark"
 Set PlaybackSpeed 2.0
 Set MarginFill "#0d1117"
 
-Type "make drive-flutter-chrome"
+Type "dart run showcase/drivers/bin/drive_flutter.dart --device chrome"
 Enter
 Sleep 38s
