@@ -50,6 +50,13 @@ jobs:
           flutter-version: '3.50.1'
           cache: true
 
+      - name: Checkout intentcall (showcase path deps)
+        run: |
+          set -euo pipefail
+          bash tool/ci/checkout_intentcall.sh
+          ln -snf "$(pwd)/intentcall" "$(dirname "$(pwd)")/intentcall"
+          test -d ../intentcall/packages/intentcall_webmcp
+
       - name: Regenerate GIFs
         env:
           DISPLAY: ':99'

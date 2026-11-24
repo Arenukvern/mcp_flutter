@@ -42,6 +42,7 @@ Future<void> main(List<String> args) async {
   await _prebuildWeb('$root/showcase/flutter_demo');
   await _prebuildWeb('$root/showcase/flutter_test_app');
   await _stopShowcaseProcesses(root);
+  await _checkDisplayBeforeVhs();
 
   for (final tape in ['harness-flutter', 'harness-web', 'cli-exec']) {
     await _run('vhs', ['$gifsDir/$tape.tape']);
@@ -127,19 +128,37 @@ Future<void> _checkDisplayReady() async {
 
 Future<void> _checkoutIntentcall(String root) async {
   final script = '$root/tool/ci/checkout_intentcall.sh';
-  if (!File(script).existsSync()) return;
-  await _checkDisplayReady();
+  if (!File(script).existsSync()) {
+    stderr.writeln('regenerate_cli_gifs: missing $script');
+    exit(1);
+  }
   await _run('bash', [script]);
+  final target = '$root/intentcall';
+  final webmcp = '$target/packages/intentcall_webmcp';
+  if (!Directory(webmcp).existsSync()) {
+    stderr.writeln(
+      'regenerate_cli_gifs: intentcall checkout incomplete (expected $webmcp)',
+    );
+    exit(1);
+  }
   final parent = Directory(root).parent.path;
   final link = '$parent/intentcall';
-  final target = '$root/intentcall';
-  if (!File(target).existsSync()) return;
-  if (File(link).existsSync() || Link(link).existsSync()) return;
-  try {
-    await Link(link).create(target, recursive: true);
-  } on Object {
-    // intentcall sibling symlink optional on this host
+  if (!Link(link).existsSync() && !File(link).existsSync()) {
+    final linkResult = await _runProcess(
+      'ln',
+      ['-snf', target, link],
+      allowFailure: true,
+    );
+    if (linkResult.exitCode != 0) {
+      stderr.writeln('regenerate_cli_gifs: could not link $link -> $target');
+      exit(linkResult.exitCode);
+    }
   }
+  stdout.writeln('regenerate_cli_gifs: intentcall path ok ($link -> $target)');
+}
+
+Future<void> _checkDisplayBeforeVhs() async {
+  await _checkDisplayReady();
 }
 
 Future<void> _prebuildWeb(String appDir) async {
