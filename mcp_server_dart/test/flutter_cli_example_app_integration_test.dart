@@ -486,13 +486,16 @@ void main() {
           requireOk: true,
         );
         final navigateData = navigate['data'];
-        if (navigateData is Map<String, dynamic>) {
-          expect(
-            navigateData['success'],
-            isTrue,
-            reason: 'navigate push /qa must succeed',
-          );
-        }
+        expect(
+          navigateData,
+          isA<Map<String, dynamic>>(),
+          reason: 'navigate must return structured data map',
+        );
+        expect(
+          navigateData['success'],
+          isTrue,
+          reason: 'navigate push /qa must succeed',
+        );
         await _waitForQaIdentifierCli(
           connection: connection,
           exec: exec,

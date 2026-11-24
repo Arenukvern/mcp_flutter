@@ -1,6 +1,11 @@
-/// Shared Fibonacci custom-tool registration for docs and integration tests.
+/// **Demo helper only** — not exported from [mcp_toolkit.dart] and not part of
+/// the supported public API. May change or be removed without semver notice.
 ///
-/// Canonical runnable UI: [example/fibonacci_tool_example.dart](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_toolkit/example/fibonacci_tool_example.dart).
+/// Shared Fibonacci custom-tool registration for the package example app,
+/// docs, and showcase integration catalog checks.
+///
+/// Canonical runnable UI:
+/// [fibonacci_tool_example.dart](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_toolkit/example/fibonacci_tool_example.dart).
 library;
 
 import 'package:mcp_toolkit/mcp_toolkit.dart';

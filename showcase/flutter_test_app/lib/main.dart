@@ -4,7 +4,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
-import 'package:mcp_toolkit/src/examples/example_fibonacci.dart';
+import 'package:mcp_toolkit/examples/fibonacci.dart';
 import 'package:test_app/agent_dogfood_entries.dart';
 import 'package:test_app/agent_state.dart';
 import 'package:test_app/agent_web_mcp_dogfood.dart';

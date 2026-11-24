@@ -341,13 +341,16 @@ void main() {
         });
         final navigateData = _decodeToolJsonPayload(navigateResp);
         final navigatePayload = navigateData['data'];
-        if (navigatePayload is Map<String, dynamic>) {
-          expect(
-            navigatePayload['success'],
-            isTrue,
-            reason: 'fmt_navigate push /qa must succeed',
-          );
-        }
+        expect(
+          navigatePayload,
+          isA<Map<String, dynamic>>(),
+          reason: 'fmt_navigate must return structured data map',
+        );
+        expect(
+          navigatePayload['success'],
+          isTrue,
+          reason: 'fmt_navigate push /qa must succeed',
+        );
         await _waitForQaIdentifier(
           connection: connection,
           dispatch: dispatch,
