@@ -332,6 +332,14 @@ void main() {
           return response;
         }
 
+        // Canonical showcase boots `/` (product journey); toolkit fixtures
+        // (platform view panel, greeting field, …) live on `/qa`.
+        await dispatch('fmt_navigate', {
+          'action': 'push',
+          'route': '/qa',
+          'connection': connection,
+        });
+
         // 1. semantic_snapshot — must succeed; provides refs for interaction
         // tools below.
         final snapResp = await dispatch('fmt_semantic_snapshot', {

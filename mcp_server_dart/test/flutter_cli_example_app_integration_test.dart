@@ -480,6 +480,12 @@ void main() {
         final connection = {'uri': _globalVmServiceWsUri};
         final connArgs = jsonEncode({'connection': connection});
 
+        await exec(
+          'navigate',
+          {'action': 'push', 'route': '/qa', 'connection': connection},
+          requireOk: true,
+        );
+
         // 1. semantic_snapshot — must succeed; provides refs.
         final snap = await exec('semantic_snapshot', connArgs, requireOk: true);
         final snapData = snap['data'] as Map<String, dynamic>;

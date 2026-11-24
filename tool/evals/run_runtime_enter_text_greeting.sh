@@ -182,6 +182,18 @@ PY
 }
 
 run_tool doctor --json >"${work_dir}/doctor.json"
+
+# Canonical showcase boots `/`; interaction fixtures live at `/qa` (ADR-0025).
+run_tool exec --name navigate \
+  --args '{"action":"push","route":"/qa"}' \
+  >"${work_dir}/navigate_qa.json" \
+  2>"${work_dir}/navigate_qa.stderr"
+if ! json_ok "${work_dir}/navigate_qa.json"; then
+  echo "navigate push /qa failed; cannot reach greeting_input_field on canonical home." >&2
+  cat "${work_dir}/navigate_qa.stderr" >&2
+  exit 1
+fi
+
 if ! run_tool exec --name reveal_search \
   --args '{"query":"greeting_input_field","matchBy":"identifier","direction":"down","maxAttempts":4,"distance":220}' \
   >"${work_dir}/reveal_search.json"; then
