@@ -1,5 +1,10 @@
 # Changelog
 
+## 8.1.0
+
+### Minor Changes
+
+- Add machine-readable harness scenario reports for agents and CI (ADR-0023): `--report=agent|json|junit`, JSON Schema contract, compact agent JSONL with failure-only expansion and optional diff vs previous run. Console output unchanged by default.
 ## 8.0.0
 
 ### Major Changes
@@ -294,4 +299,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   extensions), `BinaryAppTarget`/`LaunchedApp` with `MacosAppTarget` and
   `WindowsAppTarget` presets, and `ToolkitExtensions` (the extension verb
   name list).
+
 
