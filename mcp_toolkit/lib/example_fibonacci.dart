@@ -24,7 +24,7 @@ AgentCallEntry buildCalculateFibonacciTool() => mcpToolkitTool(
       required: ['n'],
     ),
   ),
-  handler: (final request) {
+  handler: (request) {
     final n = int.tryParse(request['n'] ?? '0') ?? 0;
     if (n < 0) {
       return MCPCallResult(
