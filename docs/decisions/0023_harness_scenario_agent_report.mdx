@@ -64,9 +64,9 @@ stays the default (unchanged).
 
 | Fixture | Console (B) | ~tok | Agent (B) | ~tok | Full JSON (B) | ~tok |
 | ------- | ------------: | ---: | --------: | ---: | -------------: | ---: |
-| All-pass (10 checks) | see test | | **< console** | | — | |
-| ADR fixture (10+2 fail, 1 step not run) | ~285–330 | ~71–83 | ~400–520 | ~100–130 | ~750–950 | ~190–240 |
-| 24 pass + 1 fail | see test | | **< console** | | — | |
+| All-pass (10 checks) | 282 | ~71 | 72 | ~18 | — | — |
+| ADR fixture (10+2 fail, 1 step not run) | 285 | ~71 | 478 | ~120 | 1232 | ~308 |
+| 24 pass + 1 fail | 413 | ~103 | 207 | ~52 | — | — |
 
 All-pass agent is a single header line (~50–60 B); console prints every
 `PASS:` line (~280 B for 10 checks).
