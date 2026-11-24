@@ -45,7 +45,7 @@ AgentCallEntry buildCalculateFibonacciTool() => mcpToolkitTool(
   },
 );
 
-int _fibonacci(final int n) {
+int _fibonacci(int n) {
   if (n <= 1) return n;
   var a = 0;
   var b = 1;

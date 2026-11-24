@@ -638,7 +638,7 @@ final class ExecSweepRunner {
       args,
     ]);
     await outfile.writeAsString('${result.stdout}');
-    await File(p.join(outdir, '$name.stderr')).writeAsString(result.stderr);
+    await File(p.join(outdir, '$name.stderr')).writeAsString('${result.stderr}');
     if (result.exitCode == 0 && jsonOk(outfile)) {
       stdout.writeln('PASS: $name');
       pass++;
@@ -665,8 +665,8 @@ final class ExecSweepRunner {
         '--args',
         argsWithoutSnapshot,
       ]);
-      await outfile.writeAsString(retry.stdout);
-      await File(p.join(outdir, '$name.stderr')).writeAsString(retry.stderr);
+      await outfile.writeAsString('${retry.stdout}');
+      await File(p.join(outdir, '$name.stderr')).writeAsString('${retry.stderr}');
       if (retry.exitCode == 0 && jsonOk(outfile)) {
         stdout.writeln('PASS: $name (retry without stale snapshot)');
         pass++;
@@ -713,7 +713,7 @@ final class ExecSweepRunner {
       '{}',
     ]);
     await outfile.writeAsString('${result.stdout}');
-    await File(p.join(outdir, '$label.stderr')).writeAsString(result.stderr);
+    await File(p.join(outdir, '$label.stderr')).writeAsString('${result.stderr}');
     if (result.exitCode == 0 && jsonOk(outfile)) {
       return outfile.path;
     }
@@ -803,7 +803,7 @@ final class ExecSweepRunner {
       ]);
       await revealFile.writeAsString('${result.stdout}');
       await File(p.join(outdir, 'reveal_${identifier}_$dir.stderr'))
-          .writeAsString(result.stderr);
+          .writeAsString('${result.stderr}');
       if (result.exitCode != 0) continue;
       if (writeRevealRefs(revealFile, outfile)) return true;
     }

@@ -138,4 +138,4 @@ Capture (platform view) · Visual reconstruct link · Tap/counter · Type/greeti
 
 - Delete `flutter_demo` after canonical drives switch target (breaking for minimal harness).
 - Move `native_layer_capture_fixture` under `showcase/fixtures/`.
-- Merge harness 25 tools into a single documented index page with tier tags.
+- Merge harness exec tools into a single documented index page with tier tags (tool-count-allow: deferred roadmap item, not a live count).
