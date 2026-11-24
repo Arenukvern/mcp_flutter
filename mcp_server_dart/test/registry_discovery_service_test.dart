@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dart_mcp/server.dart';
+import 'package:dtd/dtd.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/dynamic_registry.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/server.dart';
 import 'package:stream_channel/stream_channel.dart';
@@ -192,5 +193,62 @@ void main() {
       expect(registry.getToolEntry('new_tool'), isNotNull);
       expect(registry.getToolEntry('old_tool'), isNull);
     });
+
+    test('duplicate registration payload is idempotent', () async {
+      final payload = _registrationPayload(tools: [_validToolMap()]);
+
+      await discovery.processRegistrationResponseForTesting(payload);
+      await discovery.processRegistrationResponseForTesting(payload);
+
+      expect(registry.appInfo?.toolCount, 1);
+      expect(registry.getToolEntry('custom_tool'), isNotNull);
+    });
+  });
+
+  group('RegistryDiscoveryService MCP event handling', () {
+    late MCPToolkitServer server;
+    late DynamicRegistry registry;
+    late RegistryDiscoveryService discovery;
+
+    setUp(() {
+      server = _createDiscoveryTestServer();
+      // ignore: invalid_use_of_protected_member
+      server.initializeDynamicRegistry(mcpToolkitServer: server);
+      registry = server.dynamicRegistryForTesting!;
+      discovery = RegistryDiscoveryService(
+        dynamicRegistry: registry,
+        server: server,
+      );
+    });
+
+    test(
+      'repeated ServiceExtensionStateChanged registered is a no-op for tools',
+      () async {
+        registry.registerTool(
+          Tool(
+            name: 'held_tool',
+            description: 'held',
+            inputSchema: ObjectSchema(),
+          ),
+          const DynamicAppId('held_app'),
+        );
+
+        await discovery.handleMCPToolkitEventForTesting(
+          DTDEvent(
+            'MCPToolkit',
+            'ServiceExtensionStateChanged',
+            {
+              'kind': 'ServiceExtensionStateChanged',
+              'extension': 'ext.mcp.toolkit.my_custom_tool',
+              'value': 'registered',
+            },
+            DateTime.now().millisecondsSinceEpoch,
+          ),
+        );
+
+        expect(registry.appInfo?.toolCount, 1);
+        expect(registry.getToolEntry('held_tool'), isNotNull);
+      },
+    );
   });
 }

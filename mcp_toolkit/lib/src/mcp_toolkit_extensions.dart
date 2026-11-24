@@ -18,6 +18,15 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
   var _debugServiceExtensionsRegistered = false;
   final _registeredEntryKeys = <String>{};
 
+  /// Live entry per VM extension name ([AgentCallEntry.serviceExtensionName]).
+  ///
+  /// When `methodName` is unset, that equals [AgentCallEntry.key] (the tool
+  /// `name`). Handlers are resolved here because the Dart VM cannot unregister
+  /// or replace a registered service extension; a later `addEntries` with the
+  /// same extension must update behavior without calling
+  /// [registerServiceExtension] again.
+  final _entriesByExtensionName = <String, AgentCallEntry>{};
+
   /// Accumulated entries from all addEntries calls
   final _allEntries = <AgentCallEntry>{};
 
@@ -66,13 +75,7 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
       name: ToolkitExtensionNames.agentInvoke,
       callback: (parameters) async {
         final name = parameters['name'] ?? '';
-        AgentCallEntry? entry;
-        for (final candidate in _allEntries) {
-          if (candidate.hasTool && candidate.name == name) {
-            entry = candidate;
-            break;
-          }
-        }
+        final entry = _resolveToolEntryForInvoke(name);
         if (entry == null) {
           return <String, Object?>{
             'success': false,
@@ -133,16 +136,28 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
     // Dynamic registration is a debug-only VM-service surface; release apps
     // should not depend on these service extensions being present.
     assert(() {
-      final allEntries = {..._allEntries, ...entries};
-      final uniqueEntries = <AgentCallEntry>{};
-      for (final entry in allEntries) {
-        if (!uniqueEntries.any((e) => e.key == entry.key)) {
-          uniqueEntries.add(entry);
+      final mergedByKey = <Object, AgentCallEntry>{
+        for (final entry in _allEntries) entry.key: entry,
+      };
+      for (final entry in entries) {
+        final prior = mergedByKey[entry.key];
+        if (prior != null && prior.value.namespace != entry.value.namespace) {
+          throw StateError(
+            'Duplicate tool name "${entry.key}" in namespaces '
+            '"${prior.value.namespace}" and "${entry.value.namespace}".',
+          );
         }
+        mergedByKey[entry.key] = entry;
       }
+      final mergedEntries = Set<AgentCallEntry>.from(mergedByKey.values);
+      final mergedByExtension = _entriesByExtensionNameFrom(mergedEntries);
+
       _allEntries
         ..clear()
-        ..addAll(uniqueEntries);
+        ..addAll(mergedEntries);
+      _entriesByExtensionName
+        ..clear()
+        ..addAll(mergedByExtension);
 
       for (final projection in projections) {
         projection.entriesChanged(_allEntries);
@@ -156,16 +171,23 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
         registerServiceExtension(
           name: extensionName,
           callback: (parameters) async {
+            final current = _entriesByExtensionName[extensionName];
+            if (current == null) {
+              return <String, Object?>{
+                'success': false,
+                'error': 'unregistered extension: $extensionName',
+              };
+            }
             final wireArgs = mcpToolkitArgumentsFromServiceExtensionParameters(
               parameters,
             );
-            final registration = entry.toRegistration();
+            final registration = current.toRegistration();
             final args = coerceArgumentsForSchema(
               registration.descriptor.inputSchema,
               wireArgs,
             );
             registration.validate(args);
-            final result = await entry.value.handler(args);
+            final result = await current.value.handler(args);
             return agentResultToServiceExtensionMap(result);
           },
         );
@@ -190,6 +212,41 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
     }());
 
     _postToolRegistrationEvent(entries);
+  }
+
+  Map<String, AgentCallEntry> _entriesByExtensionNameFrom(
+    Iterable<AgentCallEntry> entries,
+  ) {
+    final byExtension = <String, AgentCallEntry>{};
+    for (final entry in entries) {
+      final extensionName = entry.serviceExtensionName;
+      final incumbent = byExtension[extensionName];
+      if (incumbent != null && incumbent.key != entry.key) {
+        throw StateError(
+          'Duplicate VM service extension "$extensionName" for registry keys '
+          '"${incumbent.key}" and "${entry.key}". Give one tool a unique '
+          'methodName or rename the tool.',
+        );
+      }
+      byExtension[extensionName] = entry;
+    }
+    return byExtension;
+  }
+
+  /// Resolves a tool for [agent_invoke] using the same live table as VM
+  /// extensions when the invoke name matches [serviceExtensionName], then falls
+  /// back to registry [AgentCallEntry.name].
+  AgentCallEntry? _resolveToolEntryForInvoke(String name) {
+    final byExtension = _entriesByExtensionName[name];
+    if (byExtension != null && byExtension.hasTool) {
+      return byExtension;
+    }
+    for (final candidate in _allEntries) {
+      if (candidate.hasTool && candidate.name == name) {
+        return candidate;
+      }
+    }
+    return null;
   }
 
   @visibleForTesting
