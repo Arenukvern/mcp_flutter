@@ -16,10 +16,11 @@ const String semanticSnapshotToolDescription =
 
 /// Shared tool description for [wait_for] / `fmt_wait_for`.
 const String waitForToolDescription =
-    'Wait until a UI predicate holds (or timeout) and return a fresh semantic '
-    'snapshot envelope. Prefer changed or diff over keyword filters on a static '
-    'snapshot when you do not know the text in advance. Default timeout 5000ms, '
-    'max 30000ms.';
+    'Wait until a UI predicate holds (or timeout) and return a semantic snapshot '
+    'envelope. Matched successes include nodes; `changed` with `settled:false` '
+    'attaches the last peek (refBound:false, refs stripped) plus delta. Prefer '
+    'changed or diff over keyword filters on a static snapshot when you do not '
+    'know the text in advance. Default timeout 5000ms, max 30000ms.';
 
 /// Predicate shapes documented in the wait_for JSON Schema.
 const String waitForPredicateKindsDescription =
@@ -33,4 +34,6 @@ const String waitForPredicateKindsDescription =
     '{kind:"stable", stableWindowMs:int} | {kind:"noError"} | '
     '{kind:"changed", since:<snapshotId>, settleMs?:int} — diffs against a '
     'prior public snapshot in the observation ring (capacity 32; '
-    'baseline_evicted when since was evicted).';
+    'baseline_evicted when since was evicted). When the tree moved but '
+    'settleMs could not complete before timeout, matched:true, settled:false '
+    'returns delta plus a peek snapshot envelope (refBound:false).';

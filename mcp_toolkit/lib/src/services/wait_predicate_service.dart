@@ -269,14 +269,16 @@ class WaitPredicateService {
               lastPeek!,
               filter: filter.isEmpty ? null : filter,
             );
-            return <String, Object?>{
-              'matched': true,
-              'settled': false,
-              'predicate': predicate,
-              'elapsedMs': stopwatch.elapsedMilliseconds,
-              'since': since,
-              ...cappedDeltaRender(late.diff(baseline)),
-            };
+            return _successWithSnapshot(
+              predicate,
+              stopwatch.elapsedMilliseconds,
+              lastPeek!,
+              measured: <String, Object?>{
+                'settled': false,
+                'since': since,
+                ...cappedDeltaRender(late.diff(baseline)),
+              },
+            );
           }
           final settle = await _settleForMs(
             binding: binding,
@@ -292,14 +294,16 @@ class WaitPredicateService {
               lastPeek!,
               filter: filter.isEmpty ? null : filter,
             );
-            return <String, Object?>{
-              'matched': true,
-              'settled': false,
-              'predicate': predicate,
-              'elapsedMs': stopwatch.elapsedMilliseconds,
-              'since': since,
-              ...cappedDeltaRender(late.diff(baseline)),
-            };
+            return _successWithSnapshot(
+              predicate,
+              stopwatch.elapsedMilliseconds,
+              lastPeek!,
+              measured: <String, Object?>{
+                'settled': false,
+                'since': since,
+                ...cappedDeltaRender(late.diff(baseline)),
+              },
+            );
           }
         }
         final finalSnapshot = await SemanticSnapshotService.buildSemanticSnapshot(

@@ -40,21 +40,24 @@ Future<Map<String, Object?>> runWithAwaitChange(
     timeoutMs: timeoutMs,
   );
 
-  final settled = waitResult['matched'] == true;
+  final matched = waitResult['matched'] == true;
+  final settled = matched && waitResult['settled'] != false;
   final elapsed = (waitResult['elapsedMs'] as num?)?.toInt() ?? 0;
+
+  final observation = <String, Object?>{
+    if (waitResult['delta'] != null) 'delta': waitResult['delta'],
+    if (waitResult['added'] != null) 'added': waitResult['added'],
+    if (waitResult['removed'] != null) 'removed': waitResult['removed'],
+    if (waitResult['changed'] != null) 'changed': waitResult['changed'],
+    if (waitResult['deltaTruncated'] == true) 'deltaTruncated': true,
+    if (waitResult['partial'] == true) 'partial': true,
+  };
 
   return <String, Object?>{
     'settled': settled,
     'observedAfterMs': elapsed,
     'changeBaselineId': since,
-    if (settled) ...<String, Object?>{
-      if (waitResult['delta'] != null) 'delta': waitResult['delta'],
-      if (waitResult['added'] != null) 'added': waitResult['added'],
-      if (waitResult['removed'] != null) 'removed': waitResult['removed'],
-      if (waitResult['changed'] != null) 'changed': waitResult['changed'],
-      if (waitResult['deltaTruncated'] == true) 'deltaTruncated': true,
-      if (waitResult['partial'] == true) 'partial': true,
-    },
-    if (!settled) 'changeWait': waitResult,
+    if (matched) ...observation,
+    if (!matched) 'changeWait': waitResult,
   };
 }

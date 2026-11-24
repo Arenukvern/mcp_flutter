@@ -95,6 +95,13 @@ void main() {
     expect(result['settled'], isFalse);
     expect(result['delta'], isA<String>());
     expect(result['delta'], isNot('# no change'));
+    expect(result['nodes'], isA<List<Object?>>());
+    expect(result['refBound'], isFalse);
+    final nodes = (result['nodes']! as List<Object?>)
+        .cast<Map<String, Object?>>();
+    for (final node in nodes) {
+      expect(node.containsKey('ref'), isFalse);
+    }
   });
 
   test('timeout carries observedRevision and capped delta', () {

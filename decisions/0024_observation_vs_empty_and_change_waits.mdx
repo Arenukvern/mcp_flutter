@@ -64,7 +64,10 @@ Contract names belong in `Semantics(identifier:)`, not `label`.
 5. **`changed` predicate:** `{kind:"changed", since:<snapshotId>, settleMs?}`;
    ring buffer of 32 public observations (filtered baselines re-peeked with the
    recorded filter); evicted `since` → `baseline_evicted` with
-   `publicSnapshotsSince`; uses `Observation.diff` only.
+   `publicSnapshotsSince`; uses `Observation.diff` only. When the tree changed
+   but `settleMs` cannot finish before the wait deadline,
+   `matched:true`, `settled:false` still returns delta plus the last peek
+   snapshot (`refBound:false`, refs stripped), not a full public snapshot.
 
 6. **`labelPrefix`:** Filter + `nearLabels` hint when `identifierPrefix` would
    match nothing but labels share the prefix.
@@ -77,7 +80,9 @@ Contract names belong in `Semantics(identifier:)`, not `label`.
 
 9. **`awaitChange` on actions (PR B):** Optional `{settleMs, timeoutMs}` on
    `tap_widget`, `enter_text`, `press_key`, `fill_form` — baseline before act,
-   delta in response.
+   delta in response. `settled:true` only when the nested `wait_for` matched and
+   did not report `settled:false`; an unsettled change still returns `settled:false`
+   with delta (and `changeWait` only on timeout).
 
 10. **Revision listener spike (not shipped):** Frame-boundary sampling did not
     justify a persistent semantics callback hook; findings stay in Implementation
