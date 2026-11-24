@@ -2,6 +2,7 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intentcall_core/intentcall_core.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
 void main() {
@@ -84,7 +85,9 @@ void main() {
       expect(invoke['rev'], 2);
     });
 
-    test('fresh binding re-registers every extension (hot restart)', () {
+    test(
+      'a new binding instance starts with an empty extension registry (unit stand-in, not a hot restart)',
+      () {
       final first = _CapturingToolkitBinding();
       first.initializeServiceExtensions(
         errorMonitor: _TestErrorMonitor(),
@@ -99,16 +102,115 @@ void main() {
 
       expect(first.callbacks, isNot(same(second.callbacks)));
       expect(second.callbacks.keys, contains('ping'));
+      },
+    );
+  });
+
+  group('service extension name collisions', () {
+    test('default tools use registry key equal to service extension name', () {
+      final entry = _pingTool(revision: 1);
+      expect(entry.key, entry.serviceExtensionName);
+      expect(entry.key, 'ping');
+    });
+
+    test('duplicate tool name across namespaces fails closed', () {
+      final binding = _CapturingToolkitBinding();
+      binding.initializeServiceExtensions(
+        errorMonitor: _TestErrorMonitor(),
+        entries: {
+          _pingTool(revision: 1, namespace: 'team_a'),
+        },
+      );
+
+      expect(
+        () => binding.initializeServiceExtensions(
+          errorMonitor: _TestErrorMonitor(),
+          entries: {
+            _pingTool(revision: 2, namespace: 'team_b'),
+          },
+        ),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Duplicate tool name'),
+          ),
+        ),
+      );
+    });
+
+    test('duplicate VM extension from different registry keys fails closed', () {
+      final binding = _CapturingToolkitBinding();
+
+      expect(
+        () => binding.initializeServiceExtensions(
+          errorMonitor: _TestErrorMonitor(),
+          entries: {
+            AgentCallEntry.tool(
+              namespace: 'a',
+              name: 'wire_a',
+              description: 'a',
+              inputSchema: _emptyObjectSchema,
+              methodName: 'shared_vm_ext',
+              handler: (_) async => AgentResult.success(),
+            ),
+            AgentCallEntry.tool(
+              namespace: 'b',
+              name: 'wire_b',
+              description: 'b',
+              inputSchema: _emptyObjectSchema,
+              methodName: 'shared_vm_ext',
+              handler: (_) async => AgentResult.success(),
+            ),
+          },
+        ),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Duplicate VM service extension'),
+          ),
+        ),
+      );
+    });
+
+    test('VM and agent_invoke agree on handler for custom methodName', () async {
+      final binding = _CapturingToolkitBinding();
+      binding.initializeServiceExtensions(
+        errorMonitor: _TestErrorMonitor(),
+        entries: {
+          AgentCallEntry.tool(
+            namespace: 'demo',
+            name: 'catalog_name',
+            description: 'test',
+            inputSchema: _emptyObjectSchema,
+            methodName: 'vm_ext_name',
+            handler: (_) async => AgentResult.success(
+              data: {'via': 'catalog'},
+            ),
+          ),
+        },
+      );
+
+      final vm = await binding.callbacks['vm_ext_name']!({});
+      expect(vm['via'], 'catalog');
+
+      final invoke = await binding.callbacks['agent_invoke']!({
+        'name': 'vm_ext_name',
+        'json': '{}',
+      });
+      expect(invoke['via'], 'catalog');
     });
   });
 }
 
 AgentCallEntry _pingTool({
   required int revision,
+  String namespace = 'demo',
   MCPCallHandler? handler,
 }) {
   return mcpToolkitTool(
-    namespace: 'demo',
+    namespace: namespace,
     definition: MCPToolDefinition(
       name: 'ping',
       description: 'Health check rev $revision',
@@ -136,3 +238,9 @@ final class _CapturingToolkitBinding extends MCPToolkitBindingBase
 }
 
 final class _TestErrorMonitor with ErrorMonitor {}
+
+const _emptyObjectSchema = {
+  'type': 'object',
+  'additionalProperties': false,
+  'properties': <String, Object?>{},
+};

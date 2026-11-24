@@ -18,9 +18,12 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
   var _debugServiceExtensionsRegistered = false;
   final _registeredEntryKeys = <String>{};
 
-  /// Live entry per VM extension name. Handlers are resolved here because the
-  /// Dart VM cannot unregister or replace a registered service extension; a
-  /// later `addEntries` with the same name must update behavior without calling
+  /// Live entry per VM extension name ([AgentCallEntry.serviceExtensionName]).
+  ///
+  /// When `methodName` is unset, that equals [AgentCallEntry.key] (the tool
+  /// `name`). Handlers are resolved here because the Dart VM cannot unregister
+  /// or replace a registered service extension; a later `addEntries` with the
+  /// same extension must update behavior without calling
   /// [registerServiceExtension] again.
   final _entriesByExtensionName = <String, AgentCallEntry>{};
 
@@ -72,13 +75,7 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
       name: ToolkitExtensionNames.agentInvoke,
       callback: (parameters) async {
         final name = parameters['name'] ?? '';
-        AgentCallEntry? entry;
-        for (final candidate in _allEntries) {
-          if (candidate.hasTool && candidate.name == name) {
-            entry = candidate;
-            break;
-          }
-        }
+        final entry = _resolveToolEntryForInvoke(name);
         if (entry == null) {
           return <String, Object?>{
             'success': false,
@@ -143,15 +140,20 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
         for (final entry in _allEntries) entry.key: entry,
       };
       for (final entry in entries) {
+        final prior = byKey[entry.key];
+        if (prior != null && prior.value.namespace != entry.value.namespace) {
+          throw StateError(
+            'Duplicate tool name "${entry.key}" in namespaces '
+            '"${prior.value.namespace}" and "${entry.value.namespace}".',
+          );
+        }
         byKey[entry.key] = entry;
       }
       _allEntries
         ..clear()
         ..addAll(byKey.values);
 
-      for (final entry in _allEntries) {
-        _entriesByExtensionName[entry.serviceExtensionName] = entry;
-      }
+      _rebuildEntriesByExtensionName();
 
       for (final projection in projections) {
         projection.entriesChanged(_allEntries);
@@ -206,6 +208,38 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
     }());
 
     _postToolRegistrationEvent(entries);
+  }
+
+  void _rebuildEntriesByExtensionName() {
+    _entriesByExtensionName.clear();
+    for (final entry in _allEntries) {
+      final extensionName = entry.serviceExtensionName;
+      final incumbent = _entriesByExtensionName[extensionName];
+      if (incumbent != null && incumbent.key != entry.key) {
+        throw StateError(
+          'Duplicate VM service extension "$extensionName" for registry keys '
+          '"${incumbent.key}" and "${entry.key}". Give one tool a unique '
+          'methodName or rename the tool.',
+        );
+      }
+      _entriesByExtensionName[extensionName] = entry;
+    }
+  }
+
+  /// Resolves a tool for [agent_invoke] using the same live table as VM
+  /// extensions when the invoke name matches [serviceExtensionName], then falls
+  /// back to registry [AgentCallEntry.name].
+  AgentCallEntry? _resolveToolEntryForInvoke(String name) {
+    final byExtension = _entriesByExtensionName[name];
+    if (byExtension != null && byExtension.hasTool) {
+      return byExtension;
+    }
+    for (final candidate in _allEntries) {
+      if (candidate.hasTool && candidate.name == name) {
+        return candidate;
+      }
+    }
+    return null;
   }
 
   @visibleForTesting

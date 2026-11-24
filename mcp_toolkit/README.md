@@ -46,8 +46,10 @@ Debug mode only (assert-guarded).
 The Dart VM **cannot unregister** service extensions. `addEntries` therefore:
 
 - Registers each `ext.mcp.toolkit.*` extension **once** per isolate.
-- On a later `addEntries` with the same tool name, updates the **registry and handler** without calling the VM again (safe after hot reload when `main` re-calls `addEntries`).
-- **Hot restart** (new isolate) clears toolkit state; extensions are registered again from scratch.
+- Handler updates apply only when app code calls **`addEntries` again** with a new [AgentCallEntry] for that tool. `main()` does **not** re-run on hot reload, so tools registered once in `main()` keep the **same entry object** until the next `addEntries` — even though Dart may hot-reload new function bodies elsewhere.
+- A later `addEntries` with the same tool name replaces the **live handler** without re-registering the VM extension (VM and `agent_invoke` both read the same live table).
+- **Hot restart** starts a **new isolate** with a clean registry; extensions register from scratch.
+- **Removed tools** stay callable on the VM until hot restart — entries are never deleted from the registry or unregistered from the VM.
 
 After changing bootstrap wiring (first `initialize` / `addEntries` in `main`), use **hot restart** or a full rerun — not hot reload alone.
 
