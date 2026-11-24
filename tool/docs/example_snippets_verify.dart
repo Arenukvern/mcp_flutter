@@ -227,11 +227,23 @@ String? _extractFence(String doc, String id, String lang) {
     contentStart += 2;
   }
   final afterOpen = tail.substring(contentStart);
-  final close = afterOpen.indexOf('```');
-  if (close < 0) {
-    return null;
+  final bodyLines = <String>[];
+  for (final line in afterOpen.split('\n')) {
+    if (_isMarkdownClosingFence(line)) {
+      return bodyLines.join('\n').trimRight();
+    }
+    bodyLines.add(line);
   }
-  return afterOpen.substring(0, close).trimRight();
+  return null;
+}
+
+bool _isMarkdownClosingFence(String line) {
+  final trimmed = line.trimRight();
+  if (trimmed.length < 3 || !trimmed.startsWith('```')) {
+    return false;
+  }
+  final afterMarker = trimmed.substring(3);
+  return afterMarker.isEmpty || RegExp(r'^[ \t]*$').hasMatch(afterMarker);
 }
 
 List<String> _linesAfterSentinel(String source, String id) {

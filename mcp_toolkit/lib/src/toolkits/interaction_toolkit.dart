@@ -11,6 +11,7 @@ import '../services/gesture_interaction_service.dart';
 import '../services/log_capture_service.dart';
 import '../services/reveal_search_service.dart';
 import '../services/semantic_snapshot_service.dart';
+import '../services/await_change.dart';
 import '../services/wait_predicate_service.dart';
 
 /// The refusal every interaction returns when the `snapshotId` it was given
@@ -59,6 +60,25 @@ const _refSourceHint =
     'node in that snapshot. Call one of them and pass the ref from its '
     'result, together with its snapshotId.';
 
+Map<String, Object?>? _awaitChangeMap(Object? raw) {
+  if (raw is! Map) return null;
+  return raw.map((key, value) => MapEntry('$key', value));
+}
+
+Future<Map<String, Object?>> _mergeAwaitChange(
+  Map<String, Object?> parameters,
+  Future<Map<String, Object?>> Function() run,
+) async {
+  final awaitChange = _awaitChangeMap(parameters['awaitChange']);
+  if (awaitChange == null) return run();
+
+  late Map<String, Object?> actionResult;
+  final delta = await runWithAwaitChange(awaitChange, () async {
+    actionResult = await run();
+  });
+  return <String, Object?>{...actionResult, ...delta};
+}
+
 /// Returns the set of MCP entries for the interaction toolkit:
 /// semantic snapshot, gestures, and log capture.
 Set<AgentCallEntry> getInteractionToolkitEntries() => {
@@ -93,8 +113,15 @@ extension type OnSemanticSnapshotEntry._(AgentCallEntry entry)
     final entry = mcpToolkitTool(
       handler: (parameters) async {
         final filter = SemanticSnapshotFilter.fromJson(parameters);
+        final render = jsonDecodeBool(parameters['render']);
+        final diff = jsonDecodeBool(parameters['diff']);
+        final lensRaw = parameters['lens'];
+        final lens = lensRaw is String && lensRaw.isNotEmpty ? lensRaw : null;
         final snapshot = await SemanticSnapshotService.buildSemanticSnapshot(
           filter: filter.isEmpty ? null : filter,
+          render: render,
+          diff: diff,
+          lens: lens,
         );
         return MCPCallResult(
           message: snapshot['success'] == false
@@ -105,14 +132,7 @@ extension type OnSemanticSnapshotEntry._(AgentCallEntry entry)
       },
       definition: MCPToolDefinition(
         name: ToolkitExtensionNames.semanticSnapshot,
-        description:
-            'Get compact semantic tree of interactive widgets with refs '
-            'for interaction tools (tap_widget, enter_text, etc.). '
-            'Narrow it with identifierPrefix, subtreeOf (a ref or an '
-            'identifier) and fields; refs are those of the full tree. '
-            'A control that appears only under the pointer is absent here: '
-            'on desktop and web, hover the element that should own it and '
-            'snapshot again.',
+        description: semanticSnapshotToolDescription,
         inputSchema: ObjectSchema.fromMap(semanticSnapshotInputSchema()),
       ),
     );
@@ -148,7 +168,10 @@ extension type OnTapWidgetEntry._(AgentCallEntry entry)
             snapshotId != SemanticSnapshotService.currentSnapshotId) {
           return _staleSnapshot(snapshotId);
         }
-        final result = await GestureInteractionService.tapAtRef(ref);
+        final result = await _mergeAwaitChange(
+          parameters,
+          () => GestureInteractionService.tapAtRef(ref),
+        );
         return MCPCallResult(
           message: result['success'] == true
               ? 'Tapped widget at ref "$ref".'
@@ -202,9 +225,9 @@ extension type OnEnterTextEntry._(AgentCallEntry entry)
             snapshotId != SemanticSnapshotService.currentSnapshotId) {
           return _staleSnapshot(snapshotId);
         }
-        final result = await GestureInteractionService.enterTextAtRef(
-          ref,
-          text,
+        final result = await _mergeAwaitChange(
+          parameters,
+          () => GestureInteractionService.enterTextAtRef(ref, text),
         );
         return MCPCallResult(
           message: result['success'] == true
@@ -610,14 +633,7 @@ extension type OnWaitForEntry._(AgentCallEntry entry)
       },
       definition: MCPToolDefinition(
         name: ToolkitExtensionNames.waitFor,
-        description:
-            'Wait for a UI predicate (text/noText/node/time/stable/noError) '
-            'and return a fresh semantic snapshot. text matches any string in '
-            'the tree, including the label of a tab that is not open — wait '
-            'on state with node: '
-            '{"kind":"node","identifier":"…","selected":true}, or add '
-            '"absent":true to wait for it to go away. '
-            'Default timeout 5000ms, max 30000ms.',
+        description: waitForToolDescription,
         inputSchema: ObjectSchema.fromMap(waitForInputSchema()),
       ),
     );
@@ -643,12 +659,15 @@ extension type OnPressKeyEntry._(AgentCallEntry entry)
     final entry = mcpToolkitTool(
       handler: (parameters) async {
         final key = jsonDecodeString(parameters['key']);
-        final result = await ControlFlowService.pressKey(
-          key: key,
-          ctrl: jsonDecodeBool(parameters['ctrl']),
-          shift: jsonDecodeBool(parameters['shift']),
-          alt: jsonDecodeBool(parameters['alt']),
-          meta: jsonDecodeBool(parameters['meta']),
+        final result = await _mergeAwaitChange(
+          parameters,
+          () => ControlFlowService.pressKey(
+            key: key,
+            ctrl: jsonDecodeBool(parameters['ctrl']),
+            shift: jsonDecodeBool(parameters['shift']),
+            alt: jsonDecodeBool(parameters['alt']),
+            meta: jsonDecodeBool(parameters['meta']),
+          ),
         );
         return MCPCallResult(
           message: result['success'] == true

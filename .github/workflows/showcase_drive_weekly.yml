@@ -37,6 +37,9 @@ jobs:
           flutter-version: '3.50.1'
           cache: true
 
+      - name: Install Xvfb (headed Chrome on runner)
+        run: sudo apt-get update && sudo apt-get install -y -qq xvfb
+
       - name: Checkout intentcall (showcase path deps)
         run: |
           set -euo pipefail
@@ -46,9 +49,14 @@ jobs:
 
       - name: drive_flutter
         env:
+          DISPLAY: ':99'
           CHROME_EXECUTABLE: ${{ steps.setup-chrome.outputs.chrome-path }}
           CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
-        run: dart run showcase/drivers/bin/drive_flutter.dart --device chrome
+        run: |
+          set -euo pipefail
+          Xvfb :99 -screen 0 1280x720x24 &
+          sleep 2
+          dart run showcase/drivers/bin/drive_flutter.dart --device chrome
 
   drive-web:
     name: drive_web

@@ -965,7 +965,12 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
         args: {
           if (command.identifierPrefix != null)
             'identifierPrefix': command.identifierPrefix,
+          if (command.labelPrefix != null) 'labelPrefix': command.labelPrefix,
           if (command.subtreeOf != null) 'subtreeOf': command.subtreeOf,
+          if (command.maxNodes != null) 'maxNodes': command.maxNodes,
+          if (command.render) 'render': true,
+          if (command.diff) 'diff': true,
+          if (command.lens != null) 'lens': command.lens,
           // Extension parameters travel as strings; the app decodes a
           // list from JSON, not from List.toString().
           if (command.fields != null) 'fields': jsonEncode(command.fields),
@@ -993,6 +998,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
         args: {
           'ref': command.ref,
           if (command.snapshotId != null) 'snapshotId': command.snapshotId,
+          if (command.awaitChange != null)
+            'awaitChange': jsonEncode(command.awaitChange),
         },
       );
       return routeInteractionResponse('tap_widget', _map(result.json));
@@ -1015,6 +1022,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           'ref': command.ref,
           'text': command.text,
           if (command.snapshotId != null) 'snapshotId': command.snapshotId,
+          if (command.awaitChange != null)
+            'awaitChange': jsonEncode(command.awaitChange),
         },
       );
       return routeInteractionResponse('enter_text', _map(result.json));
@@ -1414,6 +1423,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           'shift': command.shift,
           'alt': command.alt,
           'meta': command.meta,
+          if (command.awaitChange != null)
+            'awaitChange': jsonEncode(command.awaitChange),
         },
       );
       final data = _map(result.json);
@@ -1507,6 +1518,15 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       );
     }
 
+    int? changeBaselineId;
+    final awaitChange = command.awaitChange;
+    if (awaitChange != null) {
+      final baseline = await _semanticSnapshot(const SemanticSnapshotCommand());
+      if (!baseline.ok) return baseline;
+      changeBaselineId =
+          (_map(baseline.data)['snapshot_id'] as num?)?.toInt();
+    }
+
     final results = <Map<String, Object?>>[];
     for (var i = 0; i < command.fields.length; i++) {
       final field = command.fields[i];
@@ -1555,13 +1575,53 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       }
     }
 
-    return CoreResult.success(
-      data: <String, Object?>{
-        'success': true,
-        'fieldCount': command.fields.length,
-        'results': results,
-      },
-    );
+    var successData = <String, Object?>{
+      'success': true,
+      'fieldCount': command.fields.length,
+      'results': results,
+    };
+
+    if (changeBaselineId != null) {
+      final settleMs = (awaitChange!['settleMs'] as num?)?.toInt() ?? 250;
+      final timeoutMs = (awaitChange['timeoutMs'] as num?)?.toInt() ?? 5000;
+      final waitResult = await _waitFor(
+        WaitForCommand(
+          predicate: <String, Object?>{
+            'kind': 'changed',
+            'since': changeBaselineId,
+            'settleMs': settleMs,
+          },
+          timeoutMs: timeoutMs,
+        ),
+      );
+      if (waitResult.ok) {
+        final waitData = _map(waitResult.data);
+        if (waitData['matched'] == true) {
+          successData = <String, Object?>{
+            ...successData,
+            if (waitData['delta'] != null) 'delta': waitData['delta'],
+            if (waitData['rendered'] != null) 'rendered': waitData['rendered'],
+            if (waitData['deltaTruncated'] == true)
+              'deltaTruncated': true,
+            'changeBaselineId': changeBaselineId,
+          };
+        } else {
+          successData = <String, Object?>{
+            ...successData,
+            'changeWait': waitData,
+            'changeBaselineId': changeBaselineId,
+          };
+        }
+      } else {
+        successData = <String, Object?>{
+          ...successData,
+          'changeWaitError': waitResult.error?.message,
+          'changeBaselineId': changeBaselineId,
+        };
+      }
+    }
+
+    return CoreResult.success(data: successData);
   }
 
   Future<CoreResult> _hover(HoverCommand command) async {

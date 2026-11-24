@@ -27,7 +27,8 @@ jobs:
           persist-credentials: false
 
       - name: Setup Flutter SDK
-        uses: subosito/flutter-action@v2
+        # subosito/flutter-action@v2 (2026-03-25)
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
         with:
           channel: stable
           flutter-version: '3.50.1'
@@ -66,12 +67,14 @@ jobs:
 
       - name: Setup Chrome
         id: setup-chrome
-        uses: browser-actions/setup-chrome@v1
+        # browser-actions/setup-chrome@v1 (2025-01-25)
+        uses: browser-actions/setup-chrome@c785b87e244131f27c9f19c1a33e2ead956ab7ce
         with:
           chrome-version: stable
 
       - name: Setup Flutter SDK
-        uses: subosito/flutter-action@v2
+        # subosito/flutter-action@v2 (2026-03-25)
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
         with:
           channel: stable
           flutter-version: '3.50.1'

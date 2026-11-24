@@ -1,0 +1,122 @@
+# ADR 0024 — Observation vs empty, and waiting for unknown UI change
+
+- **Status:** Accepted
+- **Date:** 2026-11-24
+- **Supersedes (in part):** [0003](/decisions/0003_p0_wait_for_design) — `time` return shape, timeout fields, predicate catalog
+- **PR split:** A (items 1–3, 5–7 + schema/docs gates) · B (items 4, 9, 10) · C (items 8)
+
+## Context
+
+An agent drove a macOS chat app, waited for a reply, and keyword-filtered a
+semantic snapshot. The reply was already on screen (`label` carried the text)
+but the agent treated “no matching keyword in my filter” as “screen empty.”
+Separately, `wait_for` polling via `peekSemanticSnapshot()` was rebinding
+public `s_N` refs while leaving `snapshot_id` unchanged, so a stale
+`snapshotId` check could pass and tap the wrong widget.
+
+Toolkit gaps:
+
+- `time` promised a fresh snapshot in ADR 0003 / skills but returned
+  `_successNoSnapshot`.
+- Timeout `lastSnapshotId` echoed the non-incrementing peek id — the same
+  number the caller already held — so “not observed” read as “unchanged.”
+- `semantic_snapshot` had `diff` wired internally but not on schema or handler.
+- No `changed` predicate; agents resorted to re-snapshot + substring search.
+- `identifierPrefix` does not search labels (correct); agents needed
+  `labelPrefix` and guidance.
+
+## General rule (agents and wire shape)
+
+**An absent key never means empty.**
+
+| Key | Absent | Present empty | Present null |
+| --- | --- | --- | --- |
+| `nodes` | Tree not observed (e.g. `time` with `observe:false`) | N/A | N/A |
+| `delta` | Diff not requested or not computed | N/A | `delta: null` + `baseline: null` + `baselineReason` when diff asked but no baseline |
+| `observed` | Success path assumed observed tree | N/A | `observed: false` explicit opt-out |
+
+Agents must use `changed`, timeout `delta`, or `semantic_snapshot` with
+`diff: true` — not keyword filters on a static snapshot — to discover text they
+do not know in advance.
+
+Contract names belong in `Semantics(identifier:)`, not `label`.
+
+## Key design decisions
+
+1. **Peek vs public snapshots:** Only `buildSemanticSnapshot` (`incrementId:
+   true`) rebinds `_lastRefMap`. Peeks use ephemeral local maps for predicate
+   evaluation only. Every build bumps `observedRevision` (tree walk counter);
+   public builds also bump `snapshot_id`.
+
+2. **Timeouts:** `lastSnapshotId` is the caller’s public id at wait start;
+   `observedRevision` is the latest peek revision. Capped timeout `delta` (~20
+   rows) vs baseline observation at wait start.
+
+3. **`time` + `observe`:** Default `observe: true` — peek snapshot envelope (no
+   `snapshot_id` bump, no ref rebind, no ring slot); `observe: false` returns
+   `observed: false` and omits `nodes`. **Semver:** minor; default still returns
+   full node payloads after the delay (token cost).
+
+4. **`semantic_snapshot` `diff` / `render`:** Schema + handler; `baseline: null`
+   plus `baselineReason` when no prior observation for the filter key; otherwise
+   `baseline` is the prior public snapshot id (`int`).
+
+5. **`changed` predicate:** `{kind:"changed", since:<snapshotId>, settleMs?}`;
+   ring buffer of 32 public observations (filtered baselines re-peeked with the
+   recorded filter); evicted `since` → `baseline_evicted` with
+   `publicSnapshotsSince`; uses `Observation.diff` only. When the tree changed
+   but `settleMs` cannot finish before the wait deadline,
+   `matched:true`, `settled:false` still returns delta plus the last peek
+   snapshot (`refBound:false`, refs stripped), not a full public snapshot.
+
+6. **`labelPrefix`:** Filter + `nearLabels` hint when `identifierPrefix` would
+   match nothing but labels share the prefix.
+
+7. **Descriptions:** Single source in `packages/core` (`interaction_tool_descriptions.dart`);
+   server + app import it; contract tests lock skill/schema/service parity.
+
+8. **Warnings (PR C):** `warnings:[{ref, reason}]` for tappable-without-name and
+   label-as-identifier smell; doctor warns when connected.
+
+9. **`awaitChange` on actions (PR B):** Optional `{settleMs, timeoutMs}` on
+   `tap_widget`, `enter_text`, `press_key`, `fill_form` — baseline before act,
+   delta in response. `settled:true` only when the nested `wait_for` matched and
+   did not report `settled:false`; an unsettled change still returns `settled:false`
+   with delta (and `changeWait` only on timeout).
+
+10. **Revision listener spike (not shipped):** Frame-boundary sampling did not
+    justify a persistent semantics callback hook; findings stay in Implementation
+    notes below — no `SemanticRevisionProbe` in production code.
+
+11. **`maxNodes`:** Added to JSON Schema (already supported in filter).
+
+## Semver (dart_changesets)
+
+| Package | Bump | Trigger |
+| --- | --- | --- |
+| `flutter_mcp_toolkit` | patch | Ref-binding fix |
+| `flutter_mcp_toolkit` | minor | `time` observe default, `changed`, `awaitChange`, diff/render/labelPrefix/warnings |
+| `flutter_mcp_toolkit_core` | minor | Schema + shared descriptions |
+| `flutter_mcp_toolkit_server` | minor | CLI/doctor/schema parity |
+
+## Tool-surface changes
+
+- `semantic_snapshot`: `diff`, `render`, `lens`, `labelPrefix`, `maxNodes`; output
+  `delta`, `baseline`, `nearLabels`, `warnings`.
+- `wait_for`: predicates `changed`; `time.observe`; timeout `observedRevision`,
+  `delta`, `deltaTruncated`.
+- `tap_widget`, `enter_text`, `press_key`, `fill_form`: optional `awaitChange`.
+
+## Follow-ups
+
+- Structured `ObservationDelta` JSON in `universal_automation_semantics` (wire
+  uses local maps until upstream adds `toJson()` on delta rows).
+- Android emulator proof for `changed` / timeout delta (Linux desktop covered in
+  harness tests).
+
+## Implementation notes (revision listener spike)
+
+Prototype code compared frame-boundary semantics scheduling to full walks. It
+could not reliably distinguish intra-frame mutations, so `stable`/`changed` keep
+walking the tree. The spike was removed from the toolkit; rely on peek/build
+snapshots and the public observation ring instead.

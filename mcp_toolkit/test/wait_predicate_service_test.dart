@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
+import 'package:mcp_toolkit/src/services/semantic_observation_history.dart';
+import 'package:universal_automation_semantics/universal_automation_semantics.dart';
 
 void main() {
   // The `time` predicate is a pure delay with no widget interaction. Use
@@ -30,6 +32,59 @@ void main() {
       timeoutMs: 500,
     );
     expect((result['predicate']! as Map)['ms'], 50);
+  });
+
+  testWidgets('wait_for time observe peeks without bumping snapshot_id', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Semantics(
+            identifier: 'tick',
+            button: true,
+            label: 'tick',
+            child: const SizedBox(width: 40, height: 40),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final baseline = await _snapshotAfterPump(tester);
+    final publicId = baseline['snapshot_id']! as int;
+    final ref = (baseline['nodes']! as List<Object?>)
+        .cast<Map<String, Object?>>()
+        .single['ref']! as String;
+    final bound = SemanticSnapshotService.resolveRef(ref);
+
+    final resultFuture = WaitPredicateService.waitFor(
+      predicate: const {'kind': 'time', 'ms': 1},
+      timeoutMs: 500,
+    );
+    await tester.pump(const Duration(milliseconds: 20));
+    await tester.pump();
+    await tester.pump();
+    final result = await resultFuture;
+
+    expect(result['matched'], isTrue);
+    expect(result['nodes'], isA<List<Object?>>());
+    expect(SemanticSnapshotService.currentSnapshotId, publicId);
+    expect(SemanticSnapshotService.resolveRef(ref), same(bound));
+    expect(
+      SemanticObservationHistory.instance.lookupSince(publicId),
+      isNotNull,
+    );
+  });
+
+  test('wait_for time observe false skips nodes', () async {
+    final result = await WaitPredicateService.waitFor(
+      predicate: const {'kind': 'time', 'ms': 1, 'observe': false},
+      timeoutMs: 500,
+    );
+    expect(result['matched'], isTrue);
+    expect(result['observed'], isFalse);
+    expect(result.containsKey('nodes'), isFalse);
   });
 
   test('wait_for rejects an impossible stable timeout budget', () async {
@@ -72,6 +127,103 @@ void main() {
       expect(result['matched'], isTrue);
       expect(result['snapshot_id'], isA<int>());
       expect(result['nodes'], isA<List<Object?>>());
+    },
+  );
+
+  testWidgets(
+    'wait_for text after filtered snapshot searches the full tree',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Column(
+              children: [
+                Semantics(
+                  identifier: 'alpha',
+                  button: true,
+                  label: 'Alpha only',
+                  child: const SizedBox(width: 40, height: 40),
+                ),
+                Semantics(
+                  identifier: 'beta',
+                  button: true,
+                  label: 'Beta needle',
+                  child: const SizedBox(width: 40, height: 40),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final filterFuture = SemanticSnapshotService.buildSemanticSnapshot(
+        filter: SemanticSnapshotFilter(labelPrefix: 'Alpha'),
+      );
+      await tester.pump();
+      await tester.pump();
+      final filtered = await filterFuture;
+      expect(
+        ((filtered['nodes']! as List).cast<Map<String, Object?>>()).length,
+        1,
+      );
+
+      final waitFuture = WaitPredicateService.waitFor(
+        predicate: const {'kind': 'text', 'text': 'Beta needle'},
+        timeoutMs: 2000,
+      );
+      for (var i = 0; i < 15; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      final result = await waitFuture;
+      expect(result['matched'], isTrue);
+    },
+  );
+
+  testWidgets(
+    'wait_for stable succeeds after a filtered public snapshot',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Semantics(
+              identifier: 'alpha',
+              button: true,
+              label: 'Alpha hold',
+              child: const SizedBox(width: 40, height: 40),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final filterFuture = SemanticSnapshotService.buildSemanticSnapshot(
+        filter: SemanticSnapshotFilter(labelPrefix: 'Alpha'),
+      );
+      await tester.pump();
+      await tester.pump();
+      final filtered = await filterFuture;
+      expect(filtered['snapshot_id'], isA<int>());
+
+      var stableDone = false;
+      final waitFuture = WaitPredicateService.waitFor(
+        predicate: const {'kind': 'stable', 'stableWindowMs': 100},
+        timeoutMs: 2000,
+      ).whenComplete(() => stableDone = true);
+      for (var i = 0; i < 10; i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 25)),
+        );
+        await tester.pump();
+      }
+      if (!stableDone) {
+        for (var i = 0; i < 20 && !stableDone; i++) {
+          await tester.pump(const Duration(milliseconds: 50));
+        }
+      }
+      final result = await waitFuture;
+      expect(result['matched'], isTrue);
+      expect(result['stableFor'], isA<Map<String, Object?>>());
     },
   );
 
@@ -131,17 +283,35 @@ void main() {
     // builder — driving the full waitFor loop deterministically under
     // testWidgets is impractical because the deadline check uses a
     // real-time Stopwatch that does not advance under fake-async pumps.
+    final baselineNodes = <Map<String, Object?>>[
+      <String, Object?>{'ref': 's_0', 'label': 'x', 'type': 'text'},
+    ];
+    final baselineObs = Observation.of(
+      familySnapshotFromNodes(
+        baselineNodes,
+        snapshotId: 4,
+        capturedAt: DateTime.utc(2026),
+      ),
+      const SemanticView(),
+    );
     final result = WaitPredicateService.buildTimeoutResponseForTesting(
       predicate: const {'kind': 'text', 'text': 'never_appears'},
       elapsedMs: 50,
+      waitStartSnapshotId: 4,
+      waitStartBaseline: baselineObs,
       lastSnapshot: const <String, Object?>{
         'snapshot_id': 7,
-        'nodes': <Object?>[],
+        'observedRevision': 19,
+        'nodes': <Object?>[
+          <String, Object?>{'ref': 's_0', 'label': 'x', 'type': 'text'},
+        ],
       },
     );
     expect(result['matched'], isFalse);
     expect(result['elapsedMs'], 50);
-    expect(result['lastSnapshotId'], 7);
+    expect(result['lastSnapshotId'], 4);
+    expect(result['observedRevision'], 19);
+    expect(result['delta'], isA<String>());
     expect(
       result.containsKey('lastSnapshot'),
       isFalse,
@@ -582,6 +752,13 @@ class _DelayedClear extends StatefulWidget {
   const _DelayedClear();
   @override
   State<_DelayedClear> createState() => _DelayedClearState();
+}
+
+Future<Map<String, Object?>> _snapshotAfterPump(WidgetTester tester) async {
+  final future = SemanticSnapshotService.buildSemanticSnapshot();
+  await tester.pump();
+  await tester.pump();
+  return future;
 }
 
 class _DelayedClearState extends State<_DelayedClear> {

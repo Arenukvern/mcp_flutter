@@ -694,8 +694,13 @@ final class CommandCatalog {
           }
           return SemanticSnapshotCommand(
             identifierPrefix: _nullableStringArg(args, 'identifierPrefix'),
+            labelPrefix: _nullableStringArg(args, 'labelPrefix'),
             subtreeOf: _nullableStringArg(args, 'subtreeOf'),
             fields: fields,
+            lens: _nullableStringArg(args, 'lens'),
+            maxNodes: _nullableIntArg(args, 'maxNodes'),
+            render: _boolArg(args, 'render', fallback: false),
+            diff: _boolArg(args, 'diff', fallback: false),
           );
         },
       ),
@@ -712,6 +717,7 @@ final class CommandCatalog {
         build: (args) => TapWidgetCommand(
           ref: _stringArg(args, 'ref', fallback: ''),
           snapshotId: _nullableIntArg(args, 'snapshotId', alias: 'snapshot-id'),
+          awaitChange: _awaitChangeArg(args),
         ),
       ),
       CommandSpec(
@@ -728,6 +734,7 @@ final class CommandCatalog {
           ref: _stringArg(args, 'ref', fallback: ''),
           text: _stringArg(args, 'text', fallback: ''),
           snapshotId: _nullableIntArg(args, 'snapshotId', alias: 'snapshot-id'),
+          awaitChange: _awaitChangeArg(args),
         ),
       ),
       CommandSpec(
@@ -922,6 +929,7 @@ final class CommandCatalog {
           shift: _boolArg(args, 'shift', fallback: false),
           alt: _boolArg(args, 'alt', fallback: false),
           meta: _boolArg(args, 'meta', fallback: false),
+          awaitChange: _awaitChangeArg(args),
         ),
       ),
       CommandSpec(
@@ -989,9 +997,17 @@ final class CommandCatalog {
                     .toList(growable: false)
               : const <Map<String, Object?>>[];
           final snapshotIdRaw = _intArg(args, 'snapshotId', fallback: 0);
+          final awaitChangeRaw = args['awaitChange'];
+          Map<String, Object?>? awaitChange;
+          if (awaitChangeRaw is Map<String, Object?>) {
+            awaitChange = awaitChangeRaw;
+          } else if (awaitChangeRaw is Map) {
+            awaitChange = awaitChangeRaw.cast<String, Object?>();
+          }
           return FillFormCommand(
             fields: list,
             snapshotId: snapshotIdRaw == 0 ? null : snapshotIdRaw,
+            awaitChange: awaitChange,
           );
         },
       ),
@@ -1198,6 +1214,16 @@ final class CommandCatalog {
       return value.cast<String, Object?>();
     }
     return const <String, Object?>{};
+  }
+
+  static Map<String, Object?>? _awaitChangeArg(Map<String, Object?> args) {
+    final raw = _findArg(args, 'awaitChange');
+    if (raw == null) return null;
+    if (raw is Map<String, Object?>) return raw;
+    if (raw is Map) return raw.cast<String, Object?>();
+    throw ArgumentError(
+      'Invalid type for "awaitChange": expected object',
+    );
   }
 
   static bool _boolArg(
