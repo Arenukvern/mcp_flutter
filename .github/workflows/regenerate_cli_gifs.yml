@@ -39,6 +39,7 @@ jobs:
           sudo dpkg -i /tmp/vhs.deb
 
       - name: Setup Chrome
+        id: setup-chrome
         uses: browser-actions/setup-chrome@v1
         with:
           chrome-version: stable
@@ -51,6 +52,9 @@ jobs:
           cache: true
 
       - name: Checkout intentcall (showcase path deps)
+        env:
+          # Repo pin is behind mcp_toolkit's floor; GIF proof needs a compatible train.
+          INTENTCALL_REF: main
         run: |
           set -euo pipefail
           bash tool/ci/checkout_intentcall.sh
@@ -60,6 +64,8 @@ jobs:
       - name: Regenerate GIFs
         env:
           DISPLAY: ':99'
+          INTENTCALL_REF: main
+          CHROME_EXECUTABLE: ${{ steps.setup-chrome.outputs.chrome-path }}
         run: |
           set -euo pipefail
           Xvfb :99 -screen 0 1280x720x24 &
