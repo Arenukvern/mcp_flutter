@@ -6,6 +6,7 @@
 ///
 /// <!-- example-snippet: e2e_drive_flutter_bash -->
 /// dart run showcase/drivers/bin/drive_flutter.dart --device chrome
+/// <!-- example-snippet-end: e2e_drive_flutter_bash -->
 ///
 /// Steps: observe (semantic tree on `/qa`) → act (tap Increment ×3, type a name,
 /// push the `/profile` named route) → verify (rendered text) → capture

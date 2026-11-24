@@ -18,6 +18,7 @@
 ///
 /// <!-- example-snippet: e2e_drive_web_bash -->
 /// dart run showcase/drivers/bin/drive_web.dart
+/// <!-- example-snippet-end: e2e_drive_web_bash -->
 library;
 
 import 'dart:async';

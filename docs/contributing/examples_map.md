@@ -55,7 +55,7 @@ Canonical index of runnable samples. ADR: [0025](../decisions/0025_canonical_sho
 | Custom tools inline Dart | Partial duplicate of `mcp_toolkit` example | **Deduped** — link to fibonacci example |
 | Tool list | `docs/reference/tools.mdx` | Generated via `make docs-reference` |
 
-**Convention:** add an entry to `tool/docs/example_snippets.yaml`, a matching HTML comment before the fenced block in the doc, and (for commands) a sentinel comment in the driver source. CI runs `dart run tool/docs/check_example_snippets.dart` via `make check-contracts`.
+**Convention:** add an entry to `tool/docs/example_snippets.yaml`, a matching HTML comment before the fenced block in the doc, and (for commands) start/end sentinel comments in the driver source (`example-snippet` / `example-snippet-end`). CI **Docs contracts** job runs `dart run tool/docs/check_example_snippets.dart` and `dart run tool/docs/check_example_snippets_mutations.dart` (`make check-contracts` includes both).
 
 ### Skills (`skills/`, synced to plugin)
 
