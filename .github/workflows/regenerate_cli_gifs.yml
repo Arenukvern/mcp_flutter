@@ -11,12 +11,38 @@ permissions:
   contents: read
 
 jobs:
+  preflight:
+    if: github.event_name == 'pull_request'
+    name: GIF regenerate preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: regenerate-cli-gifs-preflight-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Setup Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.50.1'
+          cache: true
+
+      - name: Preflight (compile, PATH, tapes)
+        run: dart run docs/assets/gifs/regenerate.dart --preflight
+
   vhs-gifs:
     name: vhs CLI/harness GIFs
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     concurrency:
-      group: regenerate-cli-gifs-${{ github.event.pull_request.number || github.ref }}
+      group: regenerate-cli-gifs-dispatch-${{ github.run_id }}
       cancel-in-progress: true
 
     steps:
@@ -52,9 +78,6 @@ jobs:
           cache: true
 
       - name: Checkout intentcall (showcase path deps)
-        env:
-          # Repo pin is behind mcp_toolkit's floor; GIF proof needs a compatible train.
-          INTENTCALL_REF: main
         run: |
           set -euo pipefail
           bash tool/ci/checkout_intentcall.sh
@@ -64,7 +87,6 @@ jobs:
       - name: Regenerate GIFs
         env:
           DISPLAY: ':99'
-          INTENTCALL_REF: main
           CHROME_EXECUTABLE: ${{ steps.setup-chrome.outputs.chrome-path }}
           CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
         run: |

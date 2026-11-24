@@ -158,9 +158,9 @@ class _NewShipmentScreenState extends State<NewShipmentScreen> {
               ),
             ),
             if (_submitting)
-              const Positioned.fill(
+              Positioned.fill(
                 child: ColoredBox(
-                  color: Color(0x66000000),
+                  color: const Color(0x66000000),
                   child: Center(
                     child: Semantics(
                       liveRegion: true,
@@ -168,10 +168,10 @@ class _NewShipmentScreenState extends State<NewShipmentScreen> {
                       label: 'Creating shipment',
                       child: Card(
                         child: Padding(
-                          padding: EdgeInsets.all(24),
+                          padding: const EdgeInsets.all(24),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
-                            children: [
+                            children: const [
                               CircularProgressIndicator(),
                               SizedBox(height: 16),
                               Text('Booking label…'),

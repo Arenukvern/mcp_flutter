@@ -1,10 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 repo_root="$(cd "$(dirname "$0")/../.." && pwd)"
-ref="${INTENTCALL_REF:-}"
-if [[ -z "$ref" ]]; then
-  ref="$(tr -d '[:space:]' < "$repo_root/tool/ci/intentcall_ref.txt")"
-fi
+ref="$(tr -d '[:space:]' < "$repo_root/tool/ci/intentcall_ref.txt")"
 dest="$repo_root/intentcall"
 if [[ -d "$dest/.git" ]]; then
   git -C "$dest" fetch --depth 1 origin "$ref"

@@ -15,7 +15,7 @@ dart run docs/assets/gifs/regenerate.dart
 
 `regenerate.dart` compiles the workspace CLI (`mcp_server_dart/make compile`), provisions intentcall when available, prebuilds web assets, runs vhs, and enforces the **GIF size budget on every committed GIF** under `docs/` (including `docs/view_screenshots.gif`).
 
-Pull requests that touch `docs/assets/gifs/**` or this workflow run **Regenerate CLI GIFs** on GitHub Actions (artifact upload only; `contents: read`, no repo writes).
+Pull requests that touch `docs/assets/gifs/**` or this workflow run **GIF regenerate preflight** only (`dart run docs/assets/gifs/regenerate.dart --preflight` — compile, PATH, tape checks; no vhs). Full vhs regeneration is **workflow_dispatch** only (artifact upload; `contents: read`, no repo writes).
 
 Default showcase app: `showcase/flutter_test_app` (`SHOWCASE_APP_DIR` overrides).
 
