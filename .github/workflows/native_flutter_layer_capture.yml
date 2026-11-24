@@ -49,9 +49,9 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p "$GITHUB_WORKSPACE/.native_capture"
-          cd showcase/native_layer_capture_fixture
+          cd showcase/fixtures/native_layer_capture_fixture
           flutter pub get
-          dart run ../../packages/harness/tool/oka_android_build_probe.dart | tee "$GITHUB_WORKSPACE/.native_capture/android_oka_build_probe.json"
+          dart run ../../../packages/harness/tool/oka_android_build_probe.dart | tee "$GITHUB_WORKSPACE/.native_capture/android_oka_build_probe.json"
           test -f .oka_cache/build/debug/run_session.json
           test -f .oka_cache/build/debug/app-debug.apk
         continue-on-error: false
@@ -113,7 +113,7 @@ jobs:
           LDFLAGS: -L/usr/lib/gcc/x86_64-linux-gnu/12 -L/usr/lib/gcc/x86_64-linux-gnu/13
           CPATH: /usr/include/c++/12:/usr/include/x86_64-linux-gnu/c++/12
         run: |
-          cd showcase/native_layer_capture_fixture
+          cd showcase/fixtures/native_layer_capture_fixture
           flutter pub get
           xvfb-run -a flutter build linux --debug
 

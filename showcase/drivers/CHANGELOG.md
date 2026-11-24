@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `bin/drive_flutter.dart` + `bin/drive_web.dart`: live end-to-end drives
-  for `showcase/flutter_demo` and `showcase/web_demo` — one
+  for `showcase/flutter_test_app` and `showcase/web_demo` — one
   `AutomationDriver` contract across the instrumented and browser tiers
   (`make drive-flutter` / `drive-flutter-chrome` / `drive-web`), with
   screencast receipts under `.showcase/` and hint-routed invocation via

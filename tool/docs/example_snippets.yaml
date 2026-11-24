@@ -1,0 +1,17 @@
+# Docs ↔ example snippet contract (checked by tool/docs/check_example_snippets.dart).
+# In each doc, place <!-- example-snippet: <id> --> immediately before a fenced block.
+
+snippets:
+  - id: e2e_drive_flutter_bash
+    doc: docs/use-cases/e2e-scenarios.mdx
+    language: bash
+    source: showcase/drivers/bin/drive_flutter.dart
+    lines:
+      - dart run showcase/drivers/bin/drive_flutter.dart --device chrome
+
+  - id: e2e_drive_web_bash
+    doc: docs/use-cases/e2e-scenarios.mdx
+    language: bash
+    source: showcase/drivers/bin/drive_web.dart
+    lines:
+      - dart run showcase/drivers/bin/drive_web.dart

@@ -174,14 +174,13 @@ Future<void> _prebuildWeb(String appDir) async {
 Future<void> _stopShowcaseProcesses(String root) async {
   final killed = await _killRunnerSessionPids(root);
   if (!killed) {
-    await _runProcess('pkill', ['-f', 'flutter run.*flutter_demo'], allowFailure: true);
     await _runProcess('pkill', ['-f', 'flutter run.*flutter_test_app'], allowFailure: true);
   }
 }
 
 Future<bool> _killRunnerSessionPids(String root) async {
   var any = false;
-  for (final rel in ['showcase/flutter_test_app', 'showcase/flutter_demo']) {
+  for (final rel in ['showcase/flutter_test_app']) {
     final sessionFile = File('$root/$rel/.flutter_mcp/runner-session.json');
     if (!sessionFile.existsSync()) continue;
     try {

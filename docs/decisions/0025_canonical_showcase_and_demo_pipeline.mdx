@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted (2026-11-24)
+Accepted (2026-11-24). P2–P4 follow-ups landed: `flutter_demo` removed; drives target
+`flutter_test_app`; fixture under `showcase/fixtures/`; snippet CI;
+`.github/workflows/showcase_drive_weekly.yml` (non-gating). P2 GIF re-record still open.
 
 ## Context
 
@@ -23,8 +25,8 @@ each kind of example lives without weakening integration or exec-sweep gates.
 - Maintainer **QA lab** (former kitchen-sink `ShowcaseScreen`) lives at **`/qa`**.
   Exec sweep and interaction regression targets navigate to `/qa` before driving
   legacy identifiers (`greeting_input_field`, counters, scroll fixtures).
-- **`showcase/flutter_demo`** remains the **minimal harness target** for
-  `showcase/drivers` — not the public hero app.
+- **`showcase/flutter_test_app`** is also the **instrumented drive target**
+  (`/qa` lab + `/profile`); the former `flutter_demo` minimal app was removed.
 - **`showcase/web_demo`** stays the CDP tier; its GIF is **advanced** E2E docs
   only.
 
@@ -67,12 +69,12 @@ Dart tools only.
 | --- | --- |
 | **P1 (this ADR)** | App split `/` vs `/qa`; tapes + `regenerate.dart`; Dart exec sweep; examples map; Fibonacci single implementation |
 | **P2** | Re-record GIFs; `view-screenshots.tape`; G1 asset in repo |
-| **P3** | Snippet extraction contract for docs ↔ compiled examples |
-| **P4** | Weekly `drive_*` CI gate |
+| **P3** | **Done** — `tool/docs/example_snippets.yaml` + `check_docs_example_snippets.sh` |
+| **P4** | **Done** — weekly `showcase_drive_weekly.yml` (read-only, not PR-gating) |
 
 ### Key design decisions
 
-1. **Do not merge** `flutter_demo` into `flutter_test_app` — harness stays fast.
+1. **One instrumented app** — product `/` stays fast; `/qa` holds harness semantics (no second app).
 2. **QA route** preserves exec-sweep identifiers without polluting the product home.
 3. **One Fibonacci registration** via `mcp_toolkit` `buildCalculateFibonacciTool()`; showcase keeps it only for integration catalog tests.
 
@@ -83,14 +85,13 @@ Full table: `docs/contributing/examples_map.md` (repo path; see parity section t
 | Kind | Canonical location | Audience |
 | --- | --- | --- |
 | Product showcase | `showcase/flutter_test_app` | Agent user, docs hero |
-| Minimal harness app | `showcase/flutter_demo` | Maintainer, `ToolkitDriver` |
 | CDP static page | `showcase/web_demo` | Maintainer, advanced docs |
 | Custom tool (pub.dev) | `mcp_toolkit/example/fibonacci_tool_example.dart` + `lib/examples/fibonacci.dart` (demo helper) | Package consumer |
 | AgentCallEntry snippet | `mcp_toolkit/example/agent_call_entry_starter.dart` | Package consumer |
 | Harness scenario template | `packages/harness/example/desktop_pair.dart` | Maintainer |
 | Harness tools | `packages/harness/tool/*.dart` | Maintainer |
 | Driver compositions | `showcase/drivers/bin/*.dart` | Maintainer, docs G3 |
-| CI capture fixture | `showcase/native_layer_capture_fixture` | CI only |
+| CI capture fixture | `showcase/fixtures/native_layer_capture_fixture` | CI only |
 | Package stubs → real minimal | `packages/*/example/main.dart` | pub.dev consumer |
 
 **Convention (enforced going forward):**
@@ -99,12 +100,11 @@ Full table: `docs/contributing/examples_map.md` (repo path; see parity section t
 - **One source of truth per concept** — custom tools: `mcp_toolkit` example; E2E:
   `showcase/drivers`; session discovery: ADR-0014 runner-session; showcase app:
   `flutter_test_app`.
-- Docs link to paths in `examples_map.md`; phase 3 adds contract tests that
-  snippets match compiled example sources where feasible.
+- Docs link to paths in `examples_map.md`; snippet fences are gated by
+  `check_docs_example_snippets.sh` (start with E2E driver commands).
 
-**Deferred (needs Anton):** deleting `flutter_demo`, moving `native_layer_capture_fixture`
-path, consolidating all harness `tool/` into a separate package, extracting
-docs snippets to generated blocks.
+**Deferred:** consolidating all harness `tool/` into a separate package;
+full docs snippet extraction beyond the curated manifest.
 
 ## Consequences
 

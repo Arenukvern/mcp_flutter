@@ -15,6 +15,10 @@
 /// The Chrome session is owned (isolated profile) and torn down at the
 /// end; a Chrome already answering on the port is adopted as a borrowed
 /// lease and left running.
+///
+/// <!-- example-snippet: e2e_drive_web_bash -->
+/// dart run showcase/drivers/bin/drive_web.dart
+/// <!-- example-snippet-end: e2e_drive_web_bash -->
 library;
 
 import 'dart:async';

@@ -9,5 +9,5 @@ workspace:
   - mcp_server_dart
   - jaspr_web_example
   - showcase/drivers
-  - showcase/native_layer_capture_fixture
+  - showcase/fixtures/native_layer_capture_fixture
 

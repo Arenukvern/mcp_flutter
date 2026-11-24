@@ -1,7 +1,7 @@
 // CI/local probe: `oka build apk --debug` + `checkDevSession` with full trace.
 //
-// Run from `showcase/native_layer_capture_fixture`:
-// dart run ../../packages/harness/tool/oka_android_build_probe.dart
+// Run from `showcase/fixtures/native_layer_capture_fixture`:
+// dart run ../../../packages/harness/tool/oka_android_build_probe.dart
 library;
 
 import 'dart:convert';

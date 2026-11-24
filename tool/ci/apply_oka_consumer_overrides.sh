@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Writes workspace-root pubspec_overrides.yaml for the pinned oka consumer graph.
-# Workspace members (packages/*, showcase/native_layer_capture_fixture) must not
+# Workspace members (packages/*, showcase/fixtures/native_layer_capture_fixture) must not
 # carry their own pubspec_overrides — pub applies overrides from the repo root only.
 #
 # Root pubspec_overrides.yaml is a maintainer-local slot (gitignored). This script
@@ -84,6 +84,6 @@ assert_may_write_root_override "$out"
 
 remove_oka_generated_override_if_present "$repo_root/packages/harness/pubspec_overrides.yaml"
 remove_oka_generated_override_if_present \
-  "$repo_root/showcase/native_layer_capture_fixture/pubspec_overrides.yaml"
+  "$repo_root/showcase/fixtures/native_layer_capture_fixture/pubspec_overrides.yaml"
 
 echo "pubspec_overrides.yaml applied at workspace root (full oka graph, pin $pin)"
