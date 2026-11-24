@@ -22,7 +22,7 @@ Implementation uses conditional imports: `lib/platform_view_showcase_{stub,macos
 | **Interactive dev** — keep Chrome running, run tools manually | `make web-showcase` (terminal 1), then `export WS_URI=…` and `make exec-sweep-web` (terminal 2) |
 | **CI / one-shot battery** — launch, doctor, validate-runtime, webmcp, enter-text proof, exec sweep, teardown | `make web-showcase-tests` |
 
-Scripts: `scripts/run_web_showcase.sh` (launch), `scripts/run_exec_sweep.sh` (per-tool exec), `scripts/run_web_showcase_tests.sh` (all-in-one). Artifacts land in `.showcase/tool_verify/web/`.
+Harness: `dart run packages/harness/tool/showcase.dart --web` (launch), `dart run packages/harness/tool/exec_sweep.dart` (per-tool exec), `make web-showcase-tests` (all-in-one). Artifacts land in `.showcase/tool_verify/web/`.
 
 **macOS exec sweep** (showcase already running):
 

@@ -5,16 +5,18 @@ import 'dart:io';
 Directory showcaseRepoRoot() =>
     Directory('${Directory.current.path}/..').absolute;
 
-File _stopShowcaseScript() =>
-    File('${showcaseRepoRoot().path}/scripts/stop_showcase.sh');
-
 /// Kills stray showcase / integration Flutter and MCP server processes.
 Future<void> stopShowcaseProcesses() async {
-  final script = _stopShowcaseScript();
-  if (!script.existsSync()) {
-    return;
-  }
-  await Process.run('bash', <String>[script.path]);
+  final root = showcaseRepoRoot();
+  await Process.run(
+    'dart',
+    <String>[
+      'run',
+      '${root.path}/packages/harness/tool/showcase.dart',
+      '--stop',
+    ],
+    workingDirectory: root.path,
+  );
 }
 
 /// Waits until [port] is not listening (or [timeout] elapses).

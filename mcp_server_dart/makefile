@@ -33,7 +33,7 @@ inspect-verbose:
 .PHONY: cleanup
 cleanup:
 	@echo "🧹 Cleaning up background processes..."
-	@bash ../scripts/stop_showcase.sh
+	@dart run ../packages/harness/tool/showcase.dart --stop
 	@echo "✅ Cleanup complete"
 
 # Docker targets

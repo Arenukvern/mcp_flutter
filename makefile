@@ -107,16 +107,14 @@ endif
 
 .PHONY: exec-sweep exec-sweep-web
 exec-sweep:
-	@test -n "$$WS_URI" || (echo "Set WS_URI from: grep ws .showcase/flutter_app.log" && exit 1)
-	PLATFORM=macos bash $(CURDIR)/scripts/run_exec_sweep.sh
+	@cd $(CURDIR) && PLATFORM=macos dart run packages/harness/tool/exec_sweep.dart
 
 exec-sweep-web:
-	@test -n "$$WS_URI" || (echo "Set WS_URI from: grep ws .showcase/web_app.log" && exit 1)
-	PLATFORM=web bash $(CURDIR)/scripts/run_exec_sweep.sh
+	@cd $(CURDIR) && PLATFORM=web dart run packages/harness/tool/exec_sweep.dart
 
 .PHONY: web-showcase-tests
 web-showcase-tests:
-	@bash $(CURDIR)/scripts/run_web_showcase_tests.sh
+	@cd $(CURDIR) && dart run packages/harness/tool/web_showcase_tests.dart
 
 .PHONY: sync-skills
 sync-skills:
