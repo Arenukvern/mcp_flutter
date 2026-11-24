@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
 import 'package:path/path.dart' as p;
 
+import '../tool/harness_report_argv.dart';
+
 /// Two-instance desktop pair E2E (the shape proven in the vosges project).
 ///
 /// Instance A hosts; instance B launches in a "controller" role via an env
@@ -15,7 +17,9 @@ import 'package:path/path.dart' as p;
 ///
 /// Usage:
 ///   dart run example/desktop_pair.dart [--skip-build]
+///   dart run example/desktop_pair.dart --report=agent --report-out=/tmp/pair.jsonl
 Future<void> main(List<String> args) async {
+  final reportArgs = requireHarnessReportArgs(args);
   final build = !args.contains('--skip-build');
   final appDir = 'flutter_test_app'; // adapt: your Flutter desktop project
   final binary = p.join(
@@ -108,7 +112,7 @@ Future<void> main(List<String> args) async {
       ),
     ]);
 
-    passed = await scenario.run();
+    passed = await scenario.run(runOptions: reportArgs.toRunOptions());
     scenario.report.printSummary();
     if (!passed) {
       stdout.writeln('---- host tail ----');

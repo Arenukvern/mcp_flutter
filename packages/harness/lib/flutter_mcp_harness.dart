@@ -27,6 +27,7 @@ export 'src/intent_driver_router.dart';
 export 'src/flutter_web_cdp.dart';
 export 'src/log_tap.dart';
 export 'src/scenario.dart';
+export 'src/scenario_report.dart';
 export 'src/toolkit_driver.dart';
 export 'src/toolkit_extension_unavailable.dart';
 export 'src/toolkit_extensions.dart';

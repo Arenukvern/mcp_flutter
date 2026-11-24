@@ -19,8 +19,8 @@ _Inspect and drive a running Flutter app from your AI assistant._
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Arenukvern/mcp_flutter)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Flutter](https://img.shields.io/badge/Flutter-%3E%3D3.44-blue.svg)](https://flutter.dev)
-[![smithery badge](https://smithery.ai/badge/@Arenukvern/mcp_flutter)](https://smithery.ai/server/@Arenukvern/mcp_flutter)
 [![Official MCP Registry](https://img.shields.io/badge/MCP_Registry-io.github.Arenukvern%2Fflutter--mcp--toolkit-blue?logo=modelcontextprotocol&logoColor=white)](https://registry.modelcontextprotocol.io/v0/servers/io.github.Arenukvern%2Fflutter-mcp-toolkit/versions)
+[![Glama MCP](https://img.shields.io/badge/Glama-mcp__flutter-5c61f0?logo=glama&logoColor=white)](https://glama.ai/mcp/servers/Arenukvern/mcp_flutter)
 [![All Contributors](https://img.shields.io/github/all-contributors/Arenukvern/mcp_flutter?color=ee8449&style=flat-square)](https://github.com/Arenukvern/mcp_flutter#contributors-)
 <a title="Discord" href="https://discord.com/invite/y54DpJwmAn" ><img src="https://img.shields.io/discord/696688204476055592.svg" /></a>
 [![maintained with Skill Steward](https://raw.githubusercontent.com/Arenukvern/skill_steward/main/docs/brand/assets/svg/badge-light.svg)](https://github.com/Arenukvern/skill_steward)
@@ -35,7 +35,13 @@ Docs: [docs.page/arenukvern/mcp_flutter](https://docs.page/arenukvern/mcp_flutte
 
 The picture's story: the toolkit gives an AI assistant a shared window and control loop into a running Flutter app, so it can inspect state, act like a user, hot reload, read proof, and use custom tools from your app instead of guessing.
 
-![Screen recording of fmt_get_screenshots capturing a running Flutter debug app and returning UI frames to an AI assistant.](docs/view_screenshots.gif)
+![Screen recording of the flutter-mcp-toolkit harness driving a debug Flutter app and returning UI frames to an AI assistant.](docs/assets/gifs/harness-flutter.gif)
+
+## See it in Cursor (~6 MB)
+
+An early capture of the toolkit in Cursor: the agent grabs a screenshot of a running debug app and reads the UI back. Today's tool is `fmt_get_screenshots`; a fresh recording is coming with the demo rethink.
+
+![Early screen recording of Cursor's agent calling the toolkit's screenshot tool (then named view_screenshots) on a running Flutter debug app and describing the captured UI.](docs/view_screenshots.gif)
 
 ## See it in action
 
@@ -97,6 +103,8 @@ First agent prompt: *“Discover debug Flutter apps, connect, and return a seman
 
 Full steps: [docs/quickstart.mdx](docs/quickstart.mdx).
 
+![Screen recording of flutter-mcp-toolkit exec invoking a fmt_* tool against a connected debug app](docs/assets/gifs/cli-exec.gif)
+
 ## What do you want to do?
 
 | Goal | Start here |
@@ -108,6 +116,8 @@ Full steps: [docs/quickstart.mdx](docs/quickstart.mdx).
 | Scripts / CI one-shots | [CI and scripts](docs/use-cases/ci-and-scripts.mdx) |
 | Checked-in E2E | [E2E scenarios](docs/use-cases/e2e-scenarios.mdx) |
 | Several apps at once | [Multiple apps](docs/use-cases/multiple-apps.mdx) |
+
+![Harness automating a Flutter web debug target through flutter_mcp_harness](docs/assets/gifs/harness-web.gif)
 
 ## Packages
 
@@ -132,7 +142,7 @@ Debug-mode only by design. Overview: [how it works](docs/concepts/how-it-works.m
 
 [![MseeP.ai Security Assessment Badge](https://mseep.net/pr/arenukvern-mcp-flutter-badge.png)](https://mseep.ai/app/arenukvern-mcp-flutter)
 
-Smithery listing is currently unavailable (404 as of 2026-11); use the [official MCP Registry](https://registry.modelcontextprotocol.io) or marketplace install. Relisting requires owner action on Smithery.
+Listings: [official MCP Registry](https://registry.modelcontextprotocol.io), [Glama](https://glama.ai/mcp/servers/Arenukvern/mcp_flutter), [MseeP](https://mseep.ai/app/arenukvern-mcp-flutter), and marketplace installs above.
 
 ## Contributing
 

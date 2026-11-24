@@ -56,6 +56,12 @@ Use [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:
 
 **Skill Steward release contract:** cross-repo binary/changelog norms live in Skill Steward’s `release-changelog-harness` skill; **this repo** is the reference implementation for installable MCP/CLI binaries (see repo [CONTRIBUTING.md](https://github.com/Arenukvern/mcp_flutter/blob/main/CONTRIBUTING.md)).
 
+## Docs media (GIF vs video)
+
+- Prefer lightweight GIFs under `docs/assets/gifs/` (~150–220 KB) for README and docs.page heroes.
+- Keep the early Cursor demo in `docs/view_screenshots.gif` (~6 MB; TS-era recording, legacy `view_screenshots` tool name). **Inline it** in the root README under **See it in Cursor (~6 MB)** with honest captions; elsewhere prefer lightweight heroes and link instead of inlining multi‑MB assets.
+- Regenerate demos with the VHS workflow (see `make` / `.github/workflows/regenerate_cli_gifs.yml`); use YouTube walkthroughs for long-form narrative.
+
 ## Pull request checklist
 
 - Tests pass for touched packages.

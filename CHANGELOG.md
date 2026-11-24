@@ -5,6 +5,16 @@
 
 ## [Unreleased]
 
+### Bug Fixes
+
+* **mcp_toolkit:** Re-`addEntries` for an existing tool name updates the live VM extension handler (registry indirection) without re-registering the Dart VM extension — fixes stale closures after hot reload when `main` re-registers tools.
+
+### Documentation
+
+* Lighter README/docs hero GIFs; link the full `view_screenshots.gif`; remove broken Smithery badge/listing claims.
+
+## [8.0.0](https://github.com/Arenukvern/mcp_flutter/compare/v7.2.1...v8.0.0) (2026-11-22)
+
 ### ⚠ BREAKING CHANGES
 
 * **cli:** global port flags (`--dart-vm-port`, `--web-browser-debugging-port`, `--web-port`, and CDP-related CLI options) now reject leading-zero decimals (`08181`), signed (`+8181`), hex (`0x1F`), whitespace-padded, and out-of-range values with exit **64** and a JSON envelope; **7.2.1** used `int.tryParse` and **accepted** `08181`, hex, `+`, and whitespace on **every** CLI port flag.

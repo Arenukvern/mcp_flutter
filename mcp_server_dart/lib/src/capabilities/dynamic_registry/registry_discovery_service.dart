@@ -310,4 +310,9 @@ final class RegistryDiscoveryService {
   Future<void> processRegistrationResponseForTesting(
     Map<String, dynamic> data,
   ) => _processRegistrationResponse(data);
+
+  /// Test hook for [_handleMCPToolkitEvent].
+  @visibleForTesting
+  Future<void> handleMCPToolkitEventForTesting(DTDEvent event) =>
+      _handleMCPToolkitEvent(event);
 }

@@ -74,6 +74,30 @@ void main() {
     });
   });
 
+  group('ScenarioReport', () {
+    test('skip does not halt the scenario or fail the verdict', () async {
+      var secondRan = false;
+      final scenario = Scenario('skips ok', steps: [
+        (
+          'one',
+          (context) async {
+            context.report.skip('optional probe', 'not applicable');
+          },
+        ),
+        (
+          'two',
+          (context) async {
+            secondRan = true;
+            context.report.pass('continued');
+          },
+        ),
+      ]);
+      expect(await scenario.run(), isTrue);
+      expect(secondRan, isTrue);
+      expect(scenario.report.hasFailures, isFalse);
+    });
+  });
+
   group('Scenario', () {
     test('records passes and returns true when all steps pass', () async {
       final scenario = Scenario('happy', steps: [

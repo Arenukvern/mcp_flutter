@@ -1,0 +1,106 @@
+# ADR 0023: Harness scenario report — agent-first, CI-second
+
+## Status
+
+Accepted (2026-11-24)
+
+## Context
+
+`flutter_mcp_harness` ends a [Scenario] with console `PASS`/`FAIL` lines
+(`ScenarioReport.printSummary`) and, on failure, a best-effort evidence
+directory (`EvidenceCollector` + `scenario.dart`). CI and AI agents must
+parse that console text to learn which checks passed, what was expected vs
+observed, and where artifacts live. That is noisy for humans, expensive in
+tokens for agents, and brittle for junit-compatible CI reporters.
+
+Issue [#180](https://github.com/Arenukvern/mcp_flutter/issues/180) asks for
+machine-readable output. The primary consumer is an **autonomous agent**
+triaging a failed gate: it needs a one-line verdict, expanded failures only,
+stable ids for re-run comparison, and **paths** to evidence — never inlined
+blobs. JSON and JUnit are secondary surfaces for dashboards and CI uploaders.
+
+## Decision
+
+Add an optional report artifact selected by format and path. Console output
+stays the default (unchanged).
+
+### Key design decisions
+
+1. **Agent format first** — `HarnessReportFormat.agent` emits compact
+   JSONL: line 1 is `v` + `sid` + verdict + collapsed count vector `n`; only
+   failure records follow; optional final `kind:diff` line when
+   `--report-diff=<prev>` is set (prev may be full JSON or agent JSONL).
+   Missing baseline → `{kind:diff, baseline:missing}`; unreadable baseline →
+   `{kind:diff, baseline:unreadable}`. No timestamps on the hot path.
+2. **Full JSON + JUnit for CI** — `json` is schema-complete (`checks[]` with
+   `id` + `status` for every check); `junit` emits one `<testcase>` per check.
+3. **Explicit absence** — agent failure lines **omit** `obs` when nothing was
+   observed; `obs:false` is only a literal boolean false. Full JSON lists
+   `checks[]` statuses; failure objects include `observed` only when set.
+4. **Stable ids** — `scenarioId` slug + per-check `$scenarioId:$slug`, with
+   `#2`… suffix on slug collision within a run (no run index). Explicit
+   `Check.id` overrides. Inserting a new check with the **same name** as an
+   existing one renumbers the `#n` suffix on duplicates — ids before the
+   insertion stay unchanged.
+5. **Evidence by reference** — `evidenceDir` only when failures exist.
+6. **Report flags** — `HarnessReportParseResult.parse` returns errors (library,
+   no `exit`). Composition roots import
+   `packages/harness/tool/harness_report_argv.dart` for
+   `requireHarnessReportArgs` (exit 2 + usage in `main` only).
+7. **Schema contract** — `packages/harness/schema/harness_scenario_report_v1.schema.json`
+   locked by `packages/harness/test/scenario_report_test.dart`.
+8. **Report smoke check** — `dart run packages/harness/tool/scenario_report.dart
+   --smoke` runs a **synthetic** scenario to validate report shape only; it
+   does not drive a real app. Agents obtain reports from **checked-in
+   composition roots** (`HarnessReportArgs` flags on `dart run …` entrypoints).
+   MCP / `fmt_*` surface is **unchanged** in this ADR.
+
+### Follow-up (not in this PR)
+
+- A real runner: e.g. a CLI subcommand that executes a scenario module/file
+  with `--report=agent`, or an MCP tool that returns agent JSONL after a
+  harness run.
+
+### Report shapes (sketch)
+
+**Agent JSONL (header + failures):**
+
+```jsonl
+{"v":1,"sid":"checkout-e2e","verdict":"fail","n":[10,2,0,0,1],"stepsNotRun":["teardown"],"evidenceDir":"/tmp/..."}
+{"id":"checkout-e2e:total-rendered","exp":"total in snapshot","obs":false,"step":"assert cart","det":"..."}
+{"id":"checkout-e2e:pay-button","exp":"Pay enabled","obs":"Pay disabled","ev":["/tmp/.../host.log"]}
+```
+
+### Token budget (measured in `scenario_report_test.dart`)
+
+| Fixture | Console (B) | ~tok | Agent (B) | ~tok | Full JSON (B) | ~tok |
+| ------- | ------------: | ---: | --------: | ---: | -------------: | ---: |
+| All-pass (10 checks) | 282 | ~71 | 72 | ~18 | — | — |
+| ADR fixture (10+2 fail, 1 step not run) | 285 | ~71 | 478 | ~120 | 1232 | ~308 |
+| 24 pass + 1 fail | 413 | ~103 | 207 | ~52 | — | — |
+
+All-pass agent is a single header line (~50–60 B); console prints every
+`PASS:` line (~280 B for 10 checks).
+
+### Entry points
+
+| Surface | How to get the report |
+| ------- | --------------------- |
+| Dart scenario | `await scenario.run(runOptions: ScenarioRunOptions(…))` |
+| Composition root | `requireHarnessReportArgs(args)` from `tool/harness_report_argv.dart`, then `scenario.run(runOptions: …)` |
+| Report smoke check | `dart run packages/harness/tool/scenario_report.dart --smoke --report=…` (shape only) |
+| MCP / interactive | Unchanged — composition roots; no new `fmt_*` |
+
+## Consequences
+
+- **Minor** semver bump on `flutter_mcp_harness`.
+- Invalid report flags fail fast (exit 2 + usage at `main`).
+- CI can upload `--report=junit` without parsing stdout.
+
+## Notes
+
+- ADR files are mirrored under `decisions/` (canonical for docs.page sync) and
+  `docs/decisions/` per `check_decisions_docs_sync.sh`.
+- Diff compares failure **ids** only; pass sets are not diffed.
+- `--report-diff` accepts prior full JSON (including `JsonEncoder.withIndent`)
+  or agent JSONL; load tries whole-document JSON decode first.

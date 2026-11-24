@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'check.dart';
 import 'evidence.dart';
+import 'scenario_report.dart';
 
 /// A named unit of scenario work: prepare, act, assert.
 ///
@@ -16,11 +17,20 @@ typedef Step = Future<void> Function(HarnessContext context);
 typedef NamedStep = (String, Step);
 
 final class Scenario {
-  Scenario(this.name, {required this.steps, this.evidence, this.evidenceDir});
+  Scenario(
+    this.name, {
+    required this.steps,
+    this.evidence,
+    this.evidenceDir,
+    this.scenarioId,
+  });
 
   final String name;
   final List<NamedStep> steps;
   final ScenarioReport report = ScenarioReport();
+
+  /// Stable id for report diffing; defaults to a slug of [name].
+  final String? scenarioId;
 
   /// Failure evidence: when a step fails and this is set, the collected
   /// buffers/files are dumped under [evidenceDir] (default:
@@ -28,22 +38,60 @@ final class Scenario {
   final EvidenceCollector? evidence;
   final String? evidenceDir;
 
-  /// Runs steps in order; stops at the first failure (a thrown error or a
-  /// failing check). Returns whether all steps passed.
-  Future<bool> run() async {
+  /// Runs steps in order; stops at the first thrown error or failed check
+  /// ([CheckStatus.fail]). Skips and not_run do not halt. Returns whether no
+  /// check failed.
+  ///
+  /// When [runOptions] sets [ScenarioRunOptions.format] and
+  /// [ScenarioRunOptions.reportOut], writes a machine-readable report after
+  /// the run (console output unchanged unless the caller prints it).
+  Future<bool> run({ScenarioRunOptions? runOptions}) async {
     // ignore: avoid_print
     print('$name:');
     final context = HarnessContext(report);
-    for (final (title, step) in steps) {
+    final stepsNotRun = <String>[];
+    var stop = false;
+    for (var i = 0; i < steps.length; i++) {
+      if (stop) {
+        stepsNotRun.add(steps[i].$1);
+        continue;
+      }
+      final (title, step) = steps[i];
+      report.setCurrentStep(title);
       try {
         await step(context);
       } on Object catch (error) {
         report.fail(title, '$error');
         await _dumpEvidence();
+        stop = true;
+        for (var j = i + 1; j < steps.length; j++) {
+          stepsNotRun.add(steps[j].$1);
+        }
         break;
       }
-      if (!report.allPassed) break;
+      if (report.hasFailures) {
+        await _dumpEvidence();
+        stop = true;
+        for (var j = i + 1; j < steps.length; j++) {
+          stepsNotRun.add(steps[j].$1);
+        }
+        break;
+      }
     }
+    await writeScenarioReportIfRequested(
+      scenarioName: name,
+      report: report,
+      stepsNotRun: stepsNotRun,
+      evidenceDir: report.evidenceDir,
+      options: runOptions == null
+          ? null
+          : ScenarioRunOptions(
+              format: runOptions.format,
+              reportOut: runOptions.reportOut,
+              diffAgainst: runOptions.diffAgainst,
+              scenarioId: runOptions.scenarioId ?? scenarioId,
+            ),
+    );
     return report.allPassed;
   }
 
@@ -55,6 +103,7 @@ final class Scenario {
           '${Directory.systemTemp.path}/'
               '${name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-')}';
       final path = await collector.dump(Directory(base));
+      report.evidenceDir = path;
       // ignore: avoid_print
       print('evidence: $path');
     } on Object {

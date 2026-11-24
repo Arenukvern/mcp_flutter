@@ -2619,6 +2619,51 @@ exit(passed ? 0 : 1);
 - `retry(action)` polls until non-null (for app-side readiness races).
 - Full two-instance composition root: `packages/harness/example/desktop_pair.dart`.
 
+## Machine-readable report (ADR-0023)
+
+Console output stays the default (`printSummary`). Agents and CI opt in:
+
+```dart
+import '../tool/harness_report_argv.dart'; // composition roots only
+
+final reportArgs = requireHarnessReportArgs(platformArgs);
+passed = await scenario.run(runOptions: reportArgs.toRunOptions());
+scenario.report.printSummary();
+```
+
+CLI flags (composition roots): `--report=agent|json|junit`,
+`--report-out=<path>`, optional `--report-diff=<prev.json>`,
+`--scenario-id=<slug>`.
+
+**How agents should read results**
+
+1. Run the checked-in `dart run …` entrypoint with `--report=agent` and
+   `--report-out=<path>` (or `json` / `junit` for CI uploaders).
+2. Read line 1 of the agent JSONL for the one-line verdict and collapsed
+   counts (`n: [pass, fail, skip, not_run, steps_not_run]`).
+3. Expand only failure lines (`exp`, `obs`, `det`, `delta`, `ev` paths —
+   never inlined blobs). Use `evidenceDir` + `ev` for on-disk artifacts.
+4. Agent failure lines omit `obs` when nothing was observed; `obs: false` is
+   only a real boolean false. Full JSON lists every check in `checks[]` with
+   `status`, and failures spell out `observed` only when set.
+5. Re-runs: pass `--report-diff` pointing at the previous full JSON export to
+   get a trailing `kind: diff` line with new/resolved failure ids.
+
+Schema: `packages/harness/schema/harness_scenario_report_v1.schema.json`
+(locked by `packages/harness/test/scenario_report_test.dart`).
+
+**Report smoke check** (synthetic scenario — validates report shape only, not a
+real app run):
+
+```bash
+dart run packages/harness/tool/scenario_report.dart --smoke \
+  --report=agent --report-out=/tmp/harness-smoke.jsonl
+```
+
+For real E2E, run a checked-in composition root with the same flags;
+`requireHarnessReportArgs` from `packages/harness/tool/harness_report_argv.dart`
+in `main` (library: `HarnessReportParseResult.parse` only).
+
 ## Driving widgets (`ToolkitDriver`)
 
 - `attachDriver(app)` → a `ToolkitDriver` over the app's VM service.
