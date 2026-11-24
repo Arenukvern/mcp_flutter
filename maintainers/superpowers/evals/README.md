@@ -58,7 +58,7 @@ export WS_URI="$(jq -r .vm_service_uri showcase/flutter_test_app/.flutter_mcp/ru
 # Some batteries still expect WS_URI in the environment.
 ```
 
-> **Follow-up:** port `tool/evals/run_runtime_enter_text_greeting.sh` to Dart (same pattern as `packages/harness/tool/exec_sweep.dart`); the bash script still encodes the enter-text adoption proof today.
+> The enter-text adoption proof is `dart run tool/evals/run_runtime_enter_text_greeting.dart` (Dart port of the former bash script; same steps and acceptance check).
 
 **Web (plain Chrome — WebMCP API usually inactive):**
 

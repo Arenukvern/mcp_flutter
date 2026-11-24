@@ -68,8 +68,8 @@ Dart tools only.
 | Phase | Work |
 | --- | --- |
 | **P1 (this ADR)** | App split `/` vs `/qa`; tapes + `regenerate.dart`; Dart exec sweep; examples map; Fibonacci single implementation |
-| **P2** | Re-record GIFs; `view-screenshots.tape`; G1 asset in repo |
-| **P3** | **Done** — `tool/docs/example_snippets.yaml` + `check_docs_example_snippets.sh` |
+| **P2** | **Partial** — CLI/harness GIFs re-recorded with `regenerate.dart`; `view-screenshots.tape` and the G1 asset in repo still pending |
+| **P3** | **Done** — `tool/docs/example_snippets.yaml` + `dart run tool/docs/check_example_snippets.dart` (Docs contracts CI) |
 | **P4** | **Done** — weekly `showcase_drive_weekly.yml` (read-only, not PR-gating) |
 
 ### Key design decisions
@@ -101,7 +101,7 @@ Full table: `docs/contributing/examples_map.md` (repo path; see parity section t
   `showcase/drivers`; session discovery: ADR-0014 runner-session; showcase app:
   `flutter_test_app`.
 - Docs link to paths in `examples_map.md`; snippet fences are gated by
-  `check_docs_example_snippets.sh` (start with E2E driver commands).
+  `dart run tool/docs/check_example_snippets.dart` (start with E2E driver commands).
 
 **Deferred:** consolidating all harness `tool/` into a separate package;
 full docs snippet extraction beyond the curated manifest.

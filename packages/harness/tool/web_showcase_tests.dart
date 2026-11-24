@@ -173,15 +173,16 @@ Future<void> main(List<String> arguments) async {
 
   await runStep('runtime-enter-text', () async {
     final evalScript =
-        p.join(repoRoot, 'tool', 'evals', 'run_runtime_enter_text_greeting.sh');
+        p.join(repoRoot, 'tool', 'evals', 'run_runtime_enter_text_greeting.dart');
     if (!File(evalScript).existsSync()) {
       await File(p.join(out, 'runtime-enter-text.stderr'))
           .writeAsString('missing $evalScript\n');
       return 1;
     }
     final result = await Process.run(
-      'bash',
+      Platform.resolvedExecutable,
       [
+        'run',
         evalScript,
         '--ws-uri',
         wsUri,
