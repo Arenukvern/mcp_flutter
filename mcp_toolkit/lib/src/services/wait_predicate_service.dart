@@ -814,6 +814,16 @@ class WaitPredicateService {
   static String _serialiseNodes(Map<String, Object?> snapshot) {
     final nodes = snapshot['nodes'];
     if (nodes is! List) return '';
-    return nodes.map((n) => n.toString()).join('|');
+    return nodes
+        .map((n) {
+          if (n is! Map) return n.toString();
+          final copy = Map<String, Object?>.from(n.cast<String, Object?>());
+          // Peeks omit ref/children; public builds include them. Stable/settle
+          // compares semantic content, not bind generation.
+          copy.remove('ref');
+          copy.remove('children');
+          return copy.toString();
+        })
+        .join('|');
   }
 }
