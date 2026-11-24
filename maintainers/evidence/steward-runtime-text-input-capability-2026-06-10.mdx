@@ -29,11 +29,11 @@ Evidence artifact:
 
 - `maintainers/evidence/generated/mcp_flutter.runtime-enter-text-greeting.redacted.json`
 
-Reproduction entrypoint:
+Reproduction entrypoint (ported from bash to Dart after this evidence was recorded; same steps and acceptance):
 
 ```bash
 WS_URI='ws://127.0.0.1:<port>/<token>/ws' \
-  tool/evals/run_runtime_enter_text_greeting.sh
+  dart run tool/evals/run_runtime_enter_text_greeting.dart
 ```
 
 Runtime target:
@@ -78,7 +78,7 @@ The runtime path passed again in the current checkout:
 ```bash
 make showcase
 WS_URI='ws://127.0.0.1:<port>/<token>/ws' \
-  tool/evals/run_runtime_enter_text_greeting.sh
+  dart run tool/evals/run_runtime_enter_text_greeting.dart
 ```
 
 Evidence artifact:

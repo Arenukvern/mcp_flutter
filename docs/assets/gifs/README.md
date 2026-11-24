@@ -13,7 +13,9 @@ export DISPLAY=:99   # Xvfb works headless
 dart run docs/assets/gifs/regenerate.dart
 ```
 
-`regenerate.dart` compiles the workspace CLI (`mcp_server_dart/make compile`), provisions intentcall when available, prebuilds web assets, runs vhs, and enforces the **GIF size budget on every committed GIF** under `docs/` (including `docs/view_screenshots.gif`).
+`regenerate.dart` compiles the workspace CLI (`mcp_server_dart/make compile`), provisions intentcall when available (via `tool/ci/checkout_intentcall.sh` into `intentcall/`), prebuilds web assets, runs vhs, and enforces the **GIF size budget** on the three vhs GIFs (2MB warning, 5MB hard cap; a missing output fails the run). The legacy manual recording `docs/view_screenshots.gif` (~6 MB, restored in #214) is reported but not capped, because vhs cannot regenerate it; Phase 2 `view-screenshots.tape` replaces it.
+
+If a sibling `../intentcall` checkout already exists, it must be at the commit in `tool/ci/intentcall_ref.txt` (showcase path deps resolve through that link). `regenerate.dart` exits with a clear error otherwise.
 
 Pull requests that touch `docs/assets/gifs/**` or this workflow run **GIF regenerate preflight** only (`dart run docs/assets/gifs/regenerate.dart --preflight` — compile, PATH, tape checks; no vhs). Full vhs regeneration is **workflow_dispatch** only (artifact upload; `contents: read`, no repo writes).
 

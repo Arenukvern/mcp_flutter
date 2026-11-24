@@ -22,6 +22,7 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
@@ -54,13 +55,23 @@ Future<void> main(final List<String> arguments) async {
   // page, so reruns don't fight it. Otherwise serve IN-PROCESS: same
   // 20 lines as showcase/web_demo/serve.dart (kept for humans), minus
   // an entire child-process failure class.
+  final page = File(
+    p.join(repoRoot, 'showcase', 'web_demo', 'index.html'),
+  );
   HttpServer? server;
   if (await _portOpen(servePort)) {
+    // Reuse only a server that actually serves the demo page; anything else
+    // on the port (another tool, a proxy) would be driven as if it were the
+    // demo and the run would observe an error page instead of failing.
+    if (!await _servesDemoPage(servePort, page)) {
+      stderr.writeln(
+        '[drive_web] port $servePort is held by something that does not '
+        'serve showcase/web_demo/index.html; free the port and rerun.',
+      );
+      exit(1);
+    }
     log('reusing server already answering on port $servePort');
   } else {
-    final page = File(
-      p.join(repoRoot, 'showcase', 'web_demo', 'index.html'),
-    );
     server = await HttpServer.bind(InternetAddress.loopbackIPv4, servePort);
     unawaited(
       server.forEach((request) async {
@@ -182,6 +193,28 @@ Future<bool> _portOpen(final int port) async {
   }
 }
 
+/// True when GET / on [port] returns the same `<title>` as [page].
+Future<bool> _servesDemoPage(final int port, final File page) async {
+  final title = RegExp(
+    '<title>(.*?)</title>',
+  ).firstMatch(page.readAsStringSync())?.group(1);
+  if (title == null) return false;
+  final client = HttpClient()..connectionTimeout = const Duration(seconds: 2);
+  try {
+    final request = await client.getUrl(Uri.parse('http://127.0.0.1:$port/'));
+    final response = await request.close().timeout(const Duration(seconds: 2));
+    if (response.statusCode != HttpStatus.ok) return false;
+    final body = await response
+        .transform(utf8.decoder)
+        .join()
+        .timeout(const Duration(seconds: 2));
+    return body.contains('<title>$title</title>');
+  } on Object {
+    return false;
+  } finally {
+    client.close(force: true);
+  }
+}
 
 Future<bool> _textPresent(final CdpDriver driver, final String needle) async {
   for (var attempt = 0; attempt < 10; attempt++) {

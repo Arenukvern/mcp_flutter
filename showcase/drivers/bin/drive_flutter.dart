@@ -72,9 +72,37 @@ Future<void> main(final List<String> arguments) async {
     _printTree(snapshot, log);
 
     // -- act ----------------------------------------------------------------
+    // `/qa` is taller than a 1280x720 (Xvfb/CI) Chrome window: Increment and
+    // the Name field start below the fold, so the app refuses an off-viewport
+    // tap (target_outside_viewport) and leaves the field out of the semantic
+    // tree. Reveal each target through the toolkit's own reveal_search before
+    // acting on it, exactly as that refusal hint instructs.
+    Future<void> reveal(final String identifier, final String what) async {
+      final raw = await client.callExtension(
+        ToolkitExtensions.revealSearch,
+        args: {
+          'query': identifier,
+          'matchBy': 'identifier',
+          'direction': 'down',
+          'maxAttempts': 6,
+          'distance': 220,
+        },
+      );
+      final data = (raw['data'] ?? raw) as Map<String, Object?>;
+      if (data['success'] != true) {
+        throw StateError(
+          'reveal_search could not bring $what ($identifier) into view: '
+          '${data['error']} — ${data['hint'] ?? 'no hint'}',
+        );
+      }
+      log('revealed $what (reveal_search)');
+    }
+
+    await reveal('stateful_counter_increment_button', 'Increment');
     for (var i = 0; i < 3; i++) {
       await driver.perform(const ClickAction(name: 'Increment'));
     }
+    await reveal('greeting_input_field', 'Name');
     await driver.perform(const TypeAction('Ada', css: 'Name'));
     log('acted: tapped Increment ×3, typed "Ada" into Name');
 

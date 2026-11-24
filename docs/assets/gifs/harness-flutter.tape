@@ -1,5 +1,5 @@
 # Regenerate: vhs docs/assets/gifs/harness-flutter.tape
-# Prereq: regenerate_cli_gifs.sh prebuilds web + intentcall symlink.
+# Prereq: regenerate.dart prebuilds web + intentcall symlink.
 Output docs/assets/gifs/harness-flutter.gif
 
 Require make

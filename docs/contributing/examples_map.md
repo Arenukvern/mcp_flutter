@@ -50,7 +50,7 @@ Canonical index of runnable samples. ADR: [0025](../decisions/0025_canonical_sho
 
 | Area | Source of truth today | Drift risk |
 | --- | --- | --- |
-| E2E `dart run showcase/drivers/…` | `tool/docs/example_snippets.yaml` + `check_docs_example_snippets.sh` | **Gated** — `<!-- example-snippet: id -->` fences |
+| E2E `dart run showcase/drivers/…` | `tool/docs/example_snippets.yaml` + `dart run tool/docs/check_example_snippets.dart` | **Gated** — `<!-- example-snippet: id -->` fences |
 | Quickstart `main()` bootstrap | Generated / hand-maintained in quickstart | Medium |
 | Custom tools inline Dart | Partial duplicate of `mcp_toolkit` example | **Deduped** — link to fibonacci example |
 | Tool list | `docs/reference/tools.mdx` | Generated via `make docs-reference` |
@@ -81,7 +81,7 @@ No `example/` dir. Integration proof: `test/flutter_cli_example_app_integration_
 | Runner | `/qa` navigation |
 | --- | --- |
 | `packages/harness/tool/exec_sweep.dart` | `navigate` push `/qa` before widget sweeps |
-| `tool/evals/run_runtime_enter_text_greeting.sh` | `navigate` push `/qa` before `greeting_input_field` |
+| `tool/evals/run_runtime_enter_text_greeting.dart` | `navigate` push `/qa` before `greeting_input_field` |
 | `mcp_server_dart/test/flutter_*_example_app_integration_test.dart` | `navigate` push `/qa` before snapshot/capture |
 | `showcase_reactivity_test.dart` | pumps `ShowcaseScreen` directly (no route) |
 | `drive_flutter` | `NavigateAction` → `/qa` at start of scenario |

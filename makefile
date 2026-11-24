@@ -33,7 +33,7 @@ check-contracts:
 	bash tool/contracts/test_hardcoded_tool_counts_fixtures.sh && \
 	bash tool/contracts/check_no_hardcoded_tool_counts.sh && \
 	bash tool/contracts/check_docs_links.sh && \
-	bash tool/contracts/check_docs_example_snippets.sh && \
+	dart run tool/docs/check_example_snippets.dart && \
 	dart run tool/docs/check_example_snippets_mutations.dart && \
 	bash tool/contracts/check_decisions_docs_sync.sh && \
 	bash tool/contracts/check_no_personal_paths.sh && \
