@@ -19,3 +19,6 @@ slot — refs and `changed` baselines stay stable.
 **Included patch scope:** peek snapshots no longer rebind public `s_N` refs
 while `snapshot_id` is frozen; timeouts report `lastSnapshotId` at wait start
 and `observedRevision` from the latest peek.
+
+**Note:** `wait_for` text/node/stable predicates always evaluate on the full
+tree; filter keys apply only to `changed` and timeout delta baselines.

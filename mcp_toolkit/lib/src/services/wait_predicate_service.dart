@@ -84,11 +84,7 @@ class WaitPredicateService {
     if (kind == 'noError') {
       final binding = WidgetsBinding.instance;
       final deadline = Duration(milliseconds: timeoutMs);
-      Map<String, Object?>? lastPeek;
       while (stopwatch.elapsed < deadline) {
-        lastPeek = await SemanticSnapshotService.peekSemanticSnapshot(
-          filter: waitFilter?.isEmpty == false ? waitFilter : null,
-        );
         if (_errorMonitorIsEmpty()) {
           final finalSnapshot =
               await SemanticSnapshotService.buildSemanticSnapshot();
@@ -103,7 +99,7 @@ class WaitPredicateService {
       return _timeoutResponse(
         predicate,
         stopwatch.elapsedMilliseconds,
-        lastPeek,
+        await SemanticSnapshotService.peekSemanticSnapshot(),
         waitStartSnapshotId: waitStartSnapshotId,
         waitStartBaseline: waitStartBaseline,
       );
@@ -121,9 +117,7 @@ class WaitPredicateService {
     var changeCount = 0;
 
     while (stopwatch.elapsed < deadline) {
-      final snapshot = await SemanticSnapshotService.peekSemanticSnapshot(
-        filter: waitFilter?.isEmpty == false ? waitFilter : null,
-      );
+      final snapshot = await SemanticSnapshotService.peekSemanticSnapshot();
       lastSnapshot = snapshot;
 
       if (kind == 'stable') {
@@ -266,25 +260,53 @@ class WaitPredicateService {
       );
       final delta = current.diff(baseline);
       if (!delta.isEmpty) {
+        var settled = true;
         if (settleMs != null && settleMs > 0) {
-          final settled = await _settleForMs(
+          final remainingMs =
+              deadline.inMilliseconds - stopwatch.elapsedMilliseconds;
+          if (remainingMs < settleMs) {
+            final late = SemanticSnapshotService.observationFromSnapshot(
+              lastPeek!,
+              filter: filter.isEmpty ? null : filter,
+            );
+            return <String, Object?>{
+              'matched': true,
+              'settled': false,
+              'predicate': predicate,
+              'elapsedMs': stopwatch.elapsedMilliseconds,
+              'since': since,
+              ...cappedDeltaRender(late.diff(baseline)),
+            };
+          }
+          final settle = await _settleForMs(
             binding: binding,
             settleMs: settleMs,
             stopwatch: stopwatch,
             deadline: deadline,
             filter: filter.isEmpty ? null : filter,
           );
+          settled = settle.settled;
+          lastPeek = settle.lastPeek ?? lastPeek;
           if (!settled) {
-            return _timeoutResponse(
-              predicate,
-              stopwatch.elapsedMilliseconds,
-              lastPeek,
-              waitStartSnapshotId: since,
-              waitStartBaseline: baseline,
+            final late = SemanticSnapshotService.observationFromSnapshot(
+              lastPeek!,
+              filter: filter.isEmpty ? null : filter,
             );
+            return <String, Object?>{
+              'matched': true,
+              'settled': false,
+              'predicate': predicate,
+              'elapsedMs': stopwatch.elapsedMilliseconds,
+              'since': since,
+              ...cappedDeltaRender(late.diff(baseline)),
+            };
           }
         }
         final finalSnapshot = await SemanticSnapshotService.buildSemanticSnapshot(
+          filter: filter.isEmpty ? null : filter,
+        );
+        final finalObs = SemanticSnapshotService.observationFromSnapshot(
+          finalSnapshot,
           filter: filter.isEmpty ? null : filter,
         );
         return _successWithSnapshot(
@@ -292,8 +314,9 @@ class WaitPredicateService {
           stopwatch.elapsedMilliseconds,
           finalSnapshot,
           measured: <String, Object?>{
-            ...cappedDeltaRender(delta),
+            ...cappedDeltaRender(finalObs.diff(baseline)),
             'since': since,
+            if (settleMs != null && settleMs > 0) 'settled': settled,
           },
         );
       }
@@ -309,7 +332,8 @@ class WaitPredicateService {
     );
   }
 
-  static Future<bool> _settleForMs({
+  static Future<({bool settled, Map<String, Object?>? lastPeek})>
+      _settleForMs({
     required WidgetsBinding binding,
     required int settleMs,
     required Stopwatch stopwatch,
@@ -319,10 +343,16 @@ class WaitPredicateService {
     var stableSamples = 0;
     String? lastSerialised;
     var unchangedSinceMs = 0;
+    Map<String, Object?>? lastPeek;
     while (stopwatch.elapsed < deadline) {
+      await _awaitNextFrame(binding);
+      if (stopwatch.elapsed >= deadline) break;
+      // Yield so widget tests can interleave pumps between settle samples.
+      await Future<void>.delayed(Duration.zero);
       final snapshot = await SemanticSnapshotService.peekSemanticSnapshot(
         filter: filter?.isEmpty == false ? filter : null,
       );
+      lastPeek = snapshot;
       final serialised = _serialiseNodes(snapshot);
       final sampledAtMs = stopwatch.elapsedMilliseconds;
       if (lastSerialised == null || serialised != lastSerialised) {
@@ -332,12 +362,11 @@ class WaitPredicateService {
       } else {
         stableSamples++;
         if (sampledAtMs - unchangedSinceMs >= settleMs) {
-          return true;
+          return (settled: true, lastPeek: lastPeek);
         }
       }
-      await _awaitNextFrame(binding);
     }
-    return false;
+    return (settled: false, lastPeek: lastPeek);
   }
 
   static Future<void> _awaitNextFrame(WidgetsBinding binding) async {
@@ -399,6 +428,8 @@ class WaitPredicateService {
     return predicate['absent'] == true ? !found : found;
   }
 
+  /// A flag the snapshot omits reads as `false` — it only emits the ones that
+  /// are set.
   static bool _flagsHold(
     Map<String, Object?> predicate,
     Map<Object?, Object?> node,
@@ -420,6 +451,9 @@ class WaitPredicateService {
     return _anyStringContains(nodes, needle);
   }
 
+  /// Recursively walks any nested Map/List structure looking for a string
+  /// value containing [needle]. Field-name agnostic so the predicate is
+  /// robust to snapshot-shape changes (label/value/hint/name/whatever).
   static bool _anyStringContains(Object? value, String needle) {
     if (value is String) return value.contains(needle);
     if (value is List) {

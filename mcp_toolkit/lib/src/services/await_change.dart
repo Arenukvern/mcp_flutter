@@ -13,11 +13,16 @@ Future<Map<String, Object?>> runWithAwaitChange(
     return const <String, Object?>{};
   }
 
-  if (SemanticSnapshotService.currentSnapshotId == 0 ||
+  // `changed` needs a ring observation for `since`. When none exists we must
+  // take a public snapshot — that bumps `snapshot_id` and rebinds refs before
+  // [act] (only when the caller never built, or the prior id was evicted).
+  final ringBaseline =
+      SemanticSnapshotService.currentSnapshotId != 0 &&
       SemanticObservationHistory.instance.lookupSince(
             SemanticSnapshotService.currentSnapshotId,
-          ) ==
-          null) {
+          ) !=
+          null;
+  if (!ringBaseline) {
     await SemanticSnapshotService.buildSemanticSnapshot();
   }
   final since = SemanticSnapshotService.currentSnapshotId;

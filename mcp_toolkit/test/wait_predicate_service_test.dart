@@ -131,6 +131,103 @@ void main() {
   );
 
   testWidgets(
+    'wait_for text after filtered snapshot searches the full tree',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Column(
+              children: [
+                Semantics(
+                  identifier: 'alpha',
+                  button: true,
+                  label: 'Alpha only',
+                  child: const SizedBox(width: 40, height: 40),
+                ),
+                Semantics(
+                  identifier: 'beta',
+                  button: true,
+                  label: 'Beta needle',
+                  child: const SizedBox(width: 40, height: 40),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final filterFuture = SemanticSnapshotService.buildSemanticSnapshot(
+        filter: SemanticSnapshotFilter(labelPrefix: 'Alpha'),
+      );
+      await tester.pump();
+      await tester.pump();
+      final filtered = await filterFuture;
+      expect(
+        ((filtered['nodes']! as List).cast<Map<String, Object?>>()).length,
+        1,
+      );
+
+      final waitFuture = WaitPredicateService.waitFor(
+        predicate: const {'kind': 'text', 'text': 'Beta needle'},
+        timeoutMs: 2000,
+      );
+      for (var i = 0; i < 15; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      final result = await waitFuture;
+      expect(result['matched'], isTrue);
+    },
+  );
+
+  testWidgets(
+    'wait_for stable succeeds after a filtered public snapshot',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Semantics(
+              identifier: 'alpha',
+              button: true,
+              label: 'Alpha hold',
+              child: const SizedBox(width: 40, height: 40),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final filterFuture = SemanticSnapshotService.buildSemanticSnapshot(
+        filter: SemanticSnapshotFilter(labelPrefix: 'Alpha'),
+      );
+      await tester.pump();
+      await tester.pump();
+      final filtered = await filterFuture;
+      expect(filtered['snapshot_id'], isA<int>());
+
+      var stableDone = false;
+      final waitFuture = WaitPredicateService.waitFor(
+        predicate: const {'kind': 'stable', 'stableWindowMs': 100},
+        timeoutMs: 2000,
+      ).whenComplete(() => stableDone = true);
+      for (var i = 0; i < 10; i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 25)),
+        );
+        await tester.pump();
+      }
+      if (!stableDone) {
+        for (var i = 0; i < 20 && !stableDone; i++) {
+          await tester.pump(const Duration(milliseconds: 50));
+        }
+      }
+      final result = await waitFuture;
+      expect(result['matched'], isTrue);
+      expect(result['stableFor'], isA<Map<String, Object?>>());
+    },
+  );
+
+  testWidgets(
     'wait_for text predicate does not bump public snapshot_id more than once',
     (tester) async {
       await tester.pumpWidget(

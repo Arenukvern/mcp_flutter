@@ -69,6 +69,34 @@ void main() {
     expect(joined, contains('ready when you are'));
   });
 
+  testWidgets('changed with unsettled UI returns matched and settled false', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: _ChatReplyFixture())),
+    );
+    await tester.pump();
+    final baseline = await _buildAfterPumps(tester);
+    final since = baseline['snapshot_id']! as int;
+
+    final waitFuture = WaitPredicateService.waitFor(
+      predicate: <String, Object?>{
+        'kind': 'changed',
+        'since': since,
+        'settleMs': 2000,
+      },
+      timeoutMs: 800,
+    );
+    for (var i = 0; i < 40; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    final result = await waitFuture;
+    expect(result['matched'], isTrue);
+    expect(result['settled'], isFalse);
+    expect(result['delta'], isA<String>());
+    expect(result['delta'], isNot('# no change'));
+  });
+
   test('timeout carries observedRevision and capped delta', () {
     final baselineNodes = <Map<String, Object?>>[
       <String, Object?>{'ref': 's_0', 'label': 'Orders', 'type': 'text'},
