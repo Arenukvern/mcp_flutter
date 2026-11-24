@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
+import 'package:mcp_toolkit/examples/fibonacci.dart';
 
 Future<void> main() async {
   await MCPToolkitBinding.instance.addEntries(entries: _starterEntries);
@@ -10,50 +11,7 @@ Future<void> main() async {
 }
 
 Set<AgentCallEntry> get _starterEntries => {
-  mcpToolkitTool(
-    namespace: 'app',
-    definition: MCPToolDefinition(
-      name: 'calculate_fibonacci',
-      description: 'Calculate the nth Fibonacci number and return the sequence',
-      inputSchema: ObjectSchema(
-        properties: {
-          'n': IntegerSchema(
-            description: 'The position in the Fibonacci sequence (0-100)',
-            minimum: 0,
-            maximum: 100,
-          ),
-        },
-        required: ['n'],
-      ),
-    ),
-    handler: (request) {
-      final n = int.tryParse(request['n'] ?? '0') ?? 0;
-
-      if (n < 0) {
-        return MCPCallResult(
-          message: 'Error: Fibonacci position must be non-negative',
-          parameters: {'error': 'Invalid input: $n'},
-        );
-      }
-
-      if (n > 100) {
-        return MCPCallResult(
-          message: 'Error: Fibonacci position too large (max 100)',
-          parameters: {'error': 'Input too large: $n'},
-        );
-      }
-
-      final result = _calculateFibonacci(n);
-      return MCPCallResult(
-        message: 'Calculated Fibonacci number for position $n',
-        parameters: {
-          'result': result,
-          'position': n,
-          'sequence': _getFibonacciSequence(n),
-        },
-      );
-    },
-  ),
+  buildCalculateFibonacciTool(),
   mcpToolkitResource(
     namespace: 'app',
     definition: MCPResourceDefinition(
@@ -72,36 +30,6 @@ Set<AgentCallEntry> get _starterEntries => {
     ),
   ),
 };
-
-/// Calculate the nth Fibonacci number
-int _calculateFibonacci(int n) {
-  if (n <= 1) return n;
-
-  var a = 0;
-  var b = 1;
-
-  for (var i = 2; i <= n; i++) {
-    final temp = a + b;
-    a = b;
-    b = temp;
-  }
-
-  return b;
-}
-
-/// Get the Fibonacci sequence up to position n
-List<int> _getFibonacciSequence(int n) {
-  if (n < 0) return [];
-  if (n == 0) return [0];
-
-  final sequence = <int>[0, 1];
-
-  for (var i = 2; i <= n; i++) {
-    sequence.add(sequence[i - 1] + sequence[i - 2]);
-  }
-
-  return sequence;
-}
 
 class FibonacciApp extends StatelessWidget {
   const FibonacciApp({super.key});

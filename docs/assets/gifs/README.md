@@ -4,18 +4,20 @@ Terminal recordings for docs quickstart / CI / harness pages. Sources are [Charm
 
 ## Regenerate
 
-Prereqs: `vhs`, `ttyd`, `flutter` (3.50.0+), release `flutter-mcp-toolkit` on `PATH`, Chrome (headless drives), X11 (`DISPLAY`).
+Prereqs: `vhs`, `ttyd`, `flutter` (3.50.0+), workspace `flutter-mcp-toolkit` on `PATH`, Chrome (headless drives), X11 (`DISPLAY`).
 
 ```bash
 export PATH="$HOME/.local/bin:$HOME/flutter/bin:$PATH"
 export DISPLAY=:99   # Xvfb works headless
 
-bash docs/assets/gifs/regenerate_cli_gifs.sh
+dart run docs/assets/gifs/regenerate.dart
 ```
 
-The script compiles the workspace **`flutter-mcp-toolkit`** (`mcp_server_dart/make compile`), provisions **intentcall** for `showcase/flutter_demo`, prebuilds web assets, and runs vhs. **No URI grep/sed** — `cli-exec` warm uses `showcase.dart --web --detach` writing `runner-session.json`; `flutter-mcp-toolkit exec` in the app directory uses runner discovery.
+`regenerate.dart` compiles the workspace CLI (`mcp_server_dart/make compile`), provisions intentcall when available, prebuilds web assets, runs vhs, and enforces the **GIF size budget on every committed GIF** under `docs/` (including `docs/view_screenshots.gif`).
 
-`SHOWCASE_APP_DIR` (repo-relative) selects which showcase app `showcase.dart` launches and where `runner-session.json` is written; default is `showcase/flutter_test_app` (unset env).
+Pull requests that touch `docs/assets/gifs/**` or this workflow run **GIF regenerate preflight** only (`dart run docs/assets/gifs/regenerate.dart --preflight` — compile, PATH, tape checks; no vhs). Full vhs regeneration is **workflow_dispatch** only (artifact upload; `contents: read`, no repo writes).
+
+Default showcase app: `showcase/flutter_test_app` (`SHOWCASE_APP_DIR` overrides).
 
 ## Size budget
 
@@ -23,31 +25,35 @@ The script compiles the workspace **`flutter-mcp-toolkit`** (`mcp_server_dart/ma
 | --- | --- | --- |
 | Duration | 8–15s playback | — |
 | Width | 800–1000px (tapes use **1008px**) | — |
-| File size | ≤2MB | **5MB** (`stat` check in `regenerate_cli_gifs.sh`) |
+| File size | ≤2MB | **5MB** (`regenerate.dart`) |
 | Theme | GitHub Dark, font **14px** | — |
 
-## Tapes
+## Tapes (first-class commands only — no `make`)
 
 | Tape | GIF | Content |
 | --- | --- | --- |
-| `harness-flutter.tape` | `harness-flutter.gif` | `make drive-flutter-chrome` — full showcase drive ending in **OK** |
-| `harness-web.tape` | `harness-web.gif` | `make drive-web` — CDP tier **OK** |
-| `cli-exec.tape` | `cli-exec.gif` | Hide: `SHOWCASE_APP_DIR=showcase/flutter_demo WEB_HEADLESS=1 dart run packages/harness/tool/showcase.dart --web --detach`. Show: `flutter-mcp-toolkit exec --name semantic_snapshot --pretty` from `showcase/flutter_demo` (compact tree + `render` line) |
+| `harness-flutter.tape` | `harness-flutter.gif` | `dart run showcase/drivers/bin/drive_flutter.dart --device chrome` |
+| `harness-web.tape` | `harness-web.gif` | `dart run showcase/drivers/bin/drive_web.dart` |
+| `cli-exec.tape` | `cli-exec.gif` | Hide: `dart run packages/harness/tool/showcase.dart --web --detach`. Show: `flutter-mcp-toolkit exec --name fmt_semantic_snapshot` from `showcase/flutter_test_app` |
 
-Harness flows mirror [`showcase/README.md`](../../../showcase/README.md) (`make drive-flutter-chrome`, `make drive-web`).
+Phase 2: `view-screenshots.tape` → replace `docs/view_screenshots.gif`.
 
-### Exec warm path / oka
+## G1 — Agent in Cursor (manual shot list)
 
-- **Launcher today:** `packages/harness/tool/showcase.dart --web --detach` (pinned `--host-vmservice-port`, default **8181**).
-- **`oka_harness` (pub.dev 0.10.3+):** **Android-only** `AppTarget` — mobile launcher via `oka dev`, not used for these Linux Chrome recordings. No new oka wiring in this docs PR.
-- **Tokenless `ws://127.0.0.1:8181/ws`:** works on **macOS/desktop** with `--disable-service-auth-codes`. **Chrome (DWDS) still uses per-session tokens**, so the exec tape uses cwd-scoped fmtk discovery after the showcase detach, not a static `/ws` path in the tape.
+Record on macOS; export GIF or MP4 under budget; **not** automated in Linux CI.
 
-**`cli-doctor.gif`** remains deferred until doctor output is human-readable in a terminal recording.
+1. **Setup (off-camera):** `dart run packages/harness/tool/showcase.dart` (macOS) or `--web` (Chrome); confirm MCP server in Cursor; open `showcase/flutter_test_app` if not already running.
+2. **Split frame:** Cursor chat (left) + running app (right).
+3. **Prompt:** “Discover my debug Flutter app, take a semantic snapshot, describe the shipments home screen.”
+4. **Show tool calls:** `fmt_discover_debug_apps` → `fmt_semantic_snapshot` (refs: `shipment_create_button`, `shipment_empty_state` or list items).
+5. **Act:** “Tap Create shipment, fill recipient name and email, submit, confirm the new row appears in the list.” Show `fmt_click` / `fmt_enter_text` (or `fmt_fill_form`) and app reaction.
+6. **Proof:** Optional `fmt_get_screenshots` image block in chat.
+7. **Duration:** 12–20s trimmed; width 1008px or 1280px; file ≤2MB preferred.
 
-## Shot-list only (macOS manual)
+## Shot-list (macOS manual, optional)
 
 | Flow | What to capture |
 | --- | --- |
-| Instrumented harness + window | `make drive-flutter` beside the `flutter_demo` window |
+| Harness + app window | `dart run showcase/drivers/bin/drive_flutter.dart` beside `flutter_demo` or canonical app |
 | Two-instance desktop | `dart run example/desktop_pair.dart --skip-build` from `packages/harness` |
-| Tokenless exec (desktop) | `flutter run --disable-service-auth-codes --host-vmservice-port=8181` + `flutter-mcp-toolkit --vm-service-uri ws://127.0.0.1:8181/ws exec …` beside the app |
+| Tokenless exec (desktop) | `flutter run --disable-service-auth-codes --host-vmservice-port=8181` + `flutter-mcp-toolkit exec …` beside the app |

@@ -95,16 +95,25 @@ dart test pkgs/universal_capture_macos   # screenshots + ScreenCaptureKit stream
 
 ```
 showcase/
-├── README.md              ← you are here
-├── flutter_test_app/      ← the full dogfood showcase app (dynamic tools,
-│                            WebMCP, IntentCall bootstrap, platform views)
-│                            behind `make showcase` / `make web-showcase`
-├── drivers/               ← composition package: drive programs + the
-│                            FlutterAppFrames adapter (owns the pipeline
-│                            policy, so the harness stays pipeline-free)
-├── flutter_demo/          ← minimal instrumented target (mcp_toolkit bound)
-└── web_demo/              ← minimal static page + serve.dart (CDP target)
+├── README.md                    ← you are here (+ examples index below)
+├── flutter_test_app/            ← **canonical product showcase** (ADR-0025)
+│                                  `/` polished journey, `/qa` maintainer lab
+├── drivers/                     ← composition: drive programs + FlutterAppFrames
+├── flutter_demo/                ← minimal instrumented harness target
+├── web_demo/                    ← static HTML + serve.dart (CDP tier)
+└── native_layer_capture_fixture/  ← **CI fixture only** (Android capture tests)
 ```
+
+### Examples index
+
+| Goal | Path |
+| --- | --- |
+| Run the canonical app | `dart run packages/harness/tool/showcase.dart` |
+| Custom tool sample | [`mcp_toolkit/example/fibonacci_tool_example.dart`](../mcp_toolkit/example/fibonacci_tool_example.dart) |
+| Code-first drive | [`drivers/bin/drive_flutter.dart`](drivers/bin/drive_flutter.dart) |
+| Full map | [`docs/contributing/examples_map.md`](../docs/contributing/examples_map.md) |
+
+Session discovery: `showcase/flutter_test_app/.flutter_mcp/runner-session.json` (not log grep).
 
 The big app and the minimal demos are complementary: `flutter_test_app`
 exercises every product hook and is the consumer proof target

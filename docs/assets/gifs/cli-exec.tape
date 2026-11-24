@@ -16,16 +16,16 @@ Set PlaybackSpeed 1.1
 Set MarginFill "#0d1117"
 
 Hide
-Type "make showcase-stop"
+Type "dart run packages/harness/tool/showcase.dart --stop"
 Enter
 Sleep 2s
-Type "SHOWCASE_APP_DIR=showcase/flutter_demo WEB_HEADLESS=1 dart run packages/harness/tool/showcase.dart --web --detach"
+Type "WEB_HEADLESS=1 dart run packages/harness/tool/showcase.dart --web --detach"
 Enter
 Sleep 90s
 
 Show
-Type "cd showcase/flutter_demo"
+Type "cd showcase/flutter_test_app"
 Enter
-Type "flutter-mcp-toolkit exec --name semantic_snapshot --pretty"
+Type "flutter-mcp-toolkit exec --name fmt_semantic_snapshot --pretty"
 Enter
 Sleep 14s
