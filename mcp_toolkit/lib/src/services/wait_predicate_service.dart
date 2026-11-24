@@ -1,15 +1,18 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
+import 'package:universal_automation_semantics/universal_automation_semantics.dart';
 
 import '../mcp_toolkit_binding.dart';
 import 'background_frame_pump.dart';
+import 'semantic_delta_wire.dart';
 import 'semantic_snapshot_service.dart';
 
 /// Service that blocks until a UI predicate holds or a timeout elapses.
 ///
 /// Predicate kinds:
-///   - `time`:    {kind: 'time', ms: int} — pure delay, no UI inspection.
+///   - `time`:    {kind: 'time', ms: int, observe: bool?} — delay; observes
+///                by default (`observe: true`).
 ///   - `text`:    {kind: 'text', text: String} — substring appears in snapshot.
 ///   - `noText`:  {kind: 'noText', text: String} — substring absent.
 ///   - `node`:    {kind: 'node', identifier: String, selected/enabled/focused/
@@ -18,8 +21,8 @@ import 'semantic_snapshot_service.dart';
 ///   - `stable`:  {kind: 'stable', stableWindowMs: int} — no semantic change
 ///                for the requested wall time, sampled once per frame.
 ///   - `noError`: {kind: 'noError'} — Flutter error monitor has no entries.
-///
-/// Implemented incrementally — see plan tasks 2–5.
+///   - `changed`: {kind: 'changed', since: int, settleMs?: int} — tree differs
+///                from public snapshot [since] (ring buffer).
 class WaitPredicateService {
   const WaitPredicateService._();
 
@@ -42,14 +45,45 @@ class WaitPredicateService {
 
     if (kind == 'time') {
       final ms = (predicate['ms'] as num?)?.toInt() ?? 0;
+      final observe = predicate['observe'] as bool? ?? true;
       await Future<void>.delayed(Duration(milliseconds: ms));
-      return _successNoSnapshot(predicate, stopwatch.elapsedMilliseconds);
+      if (!observe) {
+        return <String, Object?>{
+          'matched': true,
+          'observed': false,
+          'predicate': predicate,
+          'elapsedMs': stopwatch.elapsedMilliseconds,
+        };
+      }
+      final finalSnapshot =
+          await SemanticSnapshotService.buildSemanticSnapshot();
+      return _successWithSnapshot(
+        predicate,
+        stopwatch.elapsedMilliseconds,
+        finalSnapshot,
+      );
     }
+
+    if (kind == 'changed') {
+      return _waitForChanged(
+        predicate: predicate,
+        timeoutMs: timeoutMs,
+        stopwatch: stopwatch,
+      );
+    }
+
+    final waitStartSnapshotId = SemanticSnapshotService.currentSnapshotId;
+    final waitStartBaseline =
+        SemanticSnapshotService.observationForPublicSnapshot(
+          waitStartSnapshotId,
+        );
 
     if (kind == 'noError') {
       final binding = WidgetsBinding.instance;
       final deadline = Duration(milliseconds: timeoutMs);
+      Map<String, Object?>? lastPeek;
       while (stopwatch.elapsed < deadline) {
+        lastPeek = await SemanticSnapshotService.peekSemanticSnapshot();
         if (_errorMonitorIsEmpty()) {
           final finalSnapshot =
               await SemanticSnapshotService.buildSemanticSnapshot();
@@ -64,7 +98,9 @@ class WaitPredicateService {
       return _timeoutResponse(
         predicate,
         stopwatch.elapsedMilliseconds,
-        await SemanticSnapshotService.peekSemanticSnapshot(),
+        lastPeek,
+        waitStartSnapshotId: waitStartSnapshotId,
+        waitStartBaseline: waitStartBaseline,
       );
     }
 
@@ -75,8 +111,6 @@ class WaitPredicateService {
     String? lastSerialised;
     var stableSamples = 0;
     var unchangedSinceMs = 0;
-    // How often the tree changed under the wait. Only `stable` acts on it, but
-    // it is the one number that explains why that predicate never settled.
     var changeCount = 0;
 
     while (stopwatch.elapsed < deadline) {
@@ -137,7 +171,120 @@ class WaitPredicateService {
       stopwatch.elapsedMilliseconds,
       lastSnapshot,
       changeCount: changeCount,
+      waitStartSnapshotId: waitStartSnapshotId,
+      waitStartBaseline: waitStartBaseline,
     );
+  }
+
+  static Future<Map<String, Object?>> _waitForChanged({
+    required Map<String, Object?> predicate,
+    required int timeoutMs,
+    required Stopwatch stopwatch,
+  }) async {
+    final since = (predicate['since'] as num?)?.toInt();
+    if (since == null) {
+      return <String, Object?>{
+        'matched': false,
+        'error': 'invalid_predicate',
+        'reason': 'changed_since_required',
+        'predicate': predicate,
+        'elapsedMs': stopwatch.elapsedMilliseconds,
+        'hint': 'Pass {"kind":"changed","since":<snapshotId from a public '
+            'semantic_snapshot>}',
+      };
+    }
+
+    final baseline = SemanticSnapshotService.observationForPublicSnapshot(since);
+    if (baseline == null) {
+      return <String, Object?>{
+        'matched': false,
+        'error': 'baseline_evicted',
+        'predicate': predicate,
+        'elapsedMs': stopwatch.elapsedMilliseconds,
+        'since': since,
+        'hint':
+            'Snapshot $since is no longer in the observation ring (~8 public '
+            'snapshots). Take a fresh semantic_snapshot and wait again.',
+      };
+    }
+
+    final settleMs = (predicate['settleMs'] as num?)?.toInt();
+    final binding = WidgetsBinding.instance;
+    final deadline = Duration(milliseconds: timeoutMs);
+    Map<String, Object?>? lastPeek;
+
+    while (stopwatch.elapsed < deadline) {
+      lastPeek = await SemanticSnapshotService.peekSemanticSnapshot();
+      final current = SemanticSnapshotService.observationFromSnapshot(lastPeek);
+      final delta = current.diff(baseline);
+      if (!delta.isEmpty) {
+        if (settleMs != null && settleMs > 0) {
+          final settled = await _settleForMs(
+            binding: binding,
+            settleMs: settleMs,
+            stopwatch: stopwatch,
+            deadline: deadline,
+          );
+          if (!settled) {
+            return _timeoutResponse(
+              predicate,
+              stopwatch.elapsedMilliseconds,
+              lastPeek,
+              waitStartSnapshotId: since,
+              waitStartBaseline: baseline,
+            );
+          }
+        }
+        final finalSnapshot =
+            await SemanticSnapshotService.buildSemanticSnapshot();
+        return _successWithSnapshot(
+          predicate,
+          stopwatch.elapsedMilliseconds,
+          finalSnapshot,
+          measured: <String, Object?>{
+            ...cappedDeltaRender(delta),
+            'since': since,
+          },
+        );
+      }
+      await _awaitNextFrame(binding);
+    }
+
+    return _timeoutResponse(
+      predicate,
+      stopwatch.elapsedMilliseconds,
+      lastPeek,
+      waitStartSnapshotId: since,
+      waitStartBaseline: baseline,
+    );
+  }
+
+  static Future<bool> _settleForMs({
+    required WidgetsBinding binding,
+    required int settleMs,
+    required Stopwatch stopwatch,
+    required Duration deadline,
+  }) async {
+    var stableSamples = 0;
+    String? lastSerialised;
+    var unchangedSinceMs = 0;
+    while (stopwatch.elapsed < deadline) {
+      final snapshot = await SemanticSnapshotService.peekSemanticSnapshot();
+      final serialised = _serialiseNodes(snapshot);
+      final sampledAtMs = stopwatch.elapsedMilliseconds;
+      if (lastSerialised == null || serialised != lastSerialised) {
+        stableSamples = 1;
+        lastSerialised = serialised;
+        unchangedSinceMs = sampledAtMs;
+      } else {
+        stableSamples++;
+        if (sampledAtMs - unchangedSinceMs >= settleMs) {
+          return true;
+        }
+      }
+      await _awaitNextFrame(binding);
+    }
+    return false;
   }
 
   static Future<void> _awaitNextFrame(WidgetsBinding binding) async {
@@ -166,8 +313,6 @@ class WaitPredicateService {
     }
   }
 
-  /// Semantic flags a `node` predicate can require, spelled as the snapshot
-  /// spells them.
   static const _nodeFlags = <String>[
     'selected',
     'enabled',
@@ -176,13 +321,6 @@ class WaitPredicateService {
     'toggled',
   ];
 
-  /// Whether a node carrying `identifier` holds every flag the predicate
-  /// names. `absent: true` inverts the result, so one shape covers "appeared",
-  /// "became selected" and "went away".
-  ///
-  /// Unlike `text`, this reads the node's own state rather than any string in
-  /// the tree: the label of an unselected tab is present the whole time, so it
-  /// cannot say whether that tab is open.
   static bool _nodeMatches(
     Map<String, Object?> predicate,
     Map<String, Object?> snapshot,
@@ -199,8 +337,6 @@ class WaitPredicateService {
     return predicate['absent'] == true ? !found : found;
   }
 
-  /// A flag the snapshot omits reads as `false` — it only emits the ones that
-  /// are set.
   static bool _flagsHold(
     Map<String, Object?> predicate,
     Map<Object?, Object?> node,
@@ -222,9 +358,6 @@ class WaitPredicateService {
     return _anyStringContains(nodes, needle);
   }
 
-  /// Recursively walks any nested Map/List structure looking for a string
-  /// value containing [needle]. Field-name agnostic so the predicate is
-  /// robust to snapshot-shape changes (label/value/hint/name/whatever).
   static bool _anyStringContains(Object? value, String needle) {
     if (value is String) return value.contains(needle);
     if (value is List) {
@@ -242,27 +375,35 @@ class WaitPredicateService {
     return false;
   }
 
-  static Map<String, Object?> _successNoSnapshot(
-    Map<String, Object?> predicate,
-    int elapsedMs,
-  ) => <String, Object?>{
-    'matched': true,
-    'predicate': predicate,
-    'elapsedMs': elapsedMs,
-  };
-
   static Map<String, Object?> _successWithSnapshot(
     Map<String, Object?> predicate,
     int elapsedMs,
     Map<String, Object?> snapshot, {
     Map<String, Object?> measured = const <String, Object?>{},
-  }) => <String, Object?>{
-    'matched': true,
-    'predicate': predicate,
-    'elapsedMs': elapsedMs,
-    ...measured,
-    ...snapshot,
-  };
+  }) {
+    final observed = predicate['observe'] as bool?;
+    final nodes = snapshot['nodes'];
+    final nodesAbsent = nodes is! List;
+    if (nodesAbsent && observed != false) {
+      return <String, Object?>{
+        'matched': true,
+        'error': 'invalid_observation',
+        'predicate': predicate,
+        'elapsedMs': elapsedMs,
+        ...measured,
+        'hint':
+            'Success promised an observed tree but the snapshot carried no '
+            'nodes. Use buildSemanticSnapshot or set observe:false on time.',
+      };
+    }
+    return <String, Object?>{
+      'matched': true,
+      'predicate': predicate,
+      'elapsedMs': elapsedMs,
+      ...measured,
+      ...snapshot,
+    };
+  }
 
   static Map<String, Object?> _invalidStableBudget({
     required Map<String, Object?> predicate,
@@ -286,27 +427,31 @@ class WaitPredicateService {
     int elapsedMs,
     Map<String, Object?>? lastSnapshot, {
     int changeCount = 0,
-  }) => <String, Object?>{
-    'matched': false,
-    'predicate': predicate,
-    'elapsedMs': elapsedMs,
-    if (lastSnapshot != null && lastSnapshot['snapshot_id'] is int)
-      'lastSnapshotId': lastSnapshot['snapshot_id'],
-    ..._timeoutDiagnosis(
-      predicate: predicate,
-      lastSnapshot: lastSnapshot,
-      changeCount: changeCount,
-    ),
-  };
+    int? waitStartSnapshotId,
+    Observation? waitStartBaseline,
+  }) {
+    final observedRevision = (lastSnapshot?['observedRevision'] as num?)?.toInt();
+    Map<String, Object?>? deltaWire;
+    if (waitStartBaseline != null && lastSnapshot != null) {
+      final current =
+          SemanticSnapshotService.observationFromSnapshot(lastSnapshot);
+      deltaWire = cappedDeltaRender(current.diff(waitStartBaseline));
+    }
+    return <String, Object?>{
+      'matched': false,
+      'predicate': predicate,
+      'elapsedMs': elapsedMs,
+      if (waitStartSnapshotId != null) 'lastSnapshotId': waitStartSnapshotId,
+      if (observedRevision != null) 'observedRevision': observedRevision,
+      if (deltaWire != null) ...deltaWire,
+      ..._timeoutDiagnosis(
+        predicate: predicate,
+        lastSnapshot: lastSnapshot,
+        changeCount: changeCount,
+      ),
+    };
+  }
 
-  /// Why the predicate never held, in a sentence the caller can act on.
-  ///
-  /// A timeout used to report only how long it waited, which is the one thing
-  /// the caller already knew. The tree it waited on is too big to inline — a
-  /// real screen runs to thousands of tokens — but the reason is small: the
-  /// identifier is absent, one flag disagrees, or the text differs only by
-  /// case. Named `hint` so it reaches the caller as the failure's recovery
-  /// summary, like every other refusal.
   static Map<String, Object?> _timeoutDiagnosis({
     required Map<String, Object?> predicate,
     required Map<String, Object?>? lastSnapshot,
@@ -319,7 +464,33 @@ class WaitPredicateService {
       'node' => _nodeTimeout(predicate, lastSnapshot),
       'stable' => _stableTimeout(predicate, changeCount),
       'noError' => _noErrorTimeout(),
+      'changed' => _changedTimeout(predicate, lastSnapshot),
       _ => const <String, Object?>{},
+    };
+  }
+
+  static Map<String, Object?> _changedTimeout(
+    Map<String, Object?> predicate,
+    Map<String, Object?>? lastSnapshot,
+  ) {
+    final since = (predicate['since'] as num?)?.toInt();
+    if (since == null) {
+      return const <String, Object?>{
+        'hint': 'changed requires since:<snapshotId>.',
+      };
+    }
+    if (SemanticSnapshotService.observationForPublicSnapshot(since) == null) {
+      return <String, Object?>{
+        'hint': 'Baseline snapshot $since was evicted from the ring.',
+      };
+    }
+    return <String, Object?>{
+      'hint':
+          'Nothing changed versus snapshot $since before the timeout ended. '
+          'The tree may already match the baseline, or the change is slower '
+          'than timeoutMs.',
+      if (lastSnapshot != null)
+        'observedRevision': lastSnapshot['observedRevision'],
     };
   }
 
@@ -470,8 +641,6 @@ class WaitPredicateService {
     };
   }
 
-  /// Number of strings under [value], and the first one containing
-  /// [lowerNeedle] once case is set aside.
   static (int, String?) _scanStrings(
     Object? value,
     String lowerNeedle,
@@ -523,13 +692,6 @@ class WaitPredicateService {
     return null;
   }
 
-  /// The flags the snapshot actually published for [node].
-  ///
-  /// Only those: a snapshot emits a flag when the widget declares that state
-  /// at all, so filling the rest in as `false` would report a plain label as
-  /// a disabled, unchecked control. Matching still reads an absent flag as
-  /// `false` — see [_flagsHold] — but that is a rule about the predicate, not
-  /// a description of the widget.
   static Map<String, Object?> _stateOf(Map<Object?, Object?> node) =>
       <String, Object?>{
         for (final flag in _nodeFlags)
@@ -552,26 +714,22 @@ class WaitPredicateService {
     }
   }
 
-  /// Test-only surface for the timeout response shape.
-  ///
-  /// The integration path through [waitFor] is hard to drive deterministically
-  /// in `testWidgets` (the deadline check uses a real-time [Stopwatch] which
-  /// does not advance under fake-async pumps). Exposing the pure builder lets
-  /// tests lock the wire field name (`lastSnapshotId`, not `lastSnapshot`)
-  /// without flaky timing.
   static Map<String, Object?> buildTimeoutResponseForTesting({
     required Map<String, Object?> predicate,
     required int elapsedMs,
     Map<String, Object?>? lastSnapshot,
     int changeCount = 0,
+    int? waitStartSnapshotId,
+    Observation? waitStartBaseline,
   }) => _timeoutResponse(
     predicate,
     elapsedMs,
     lastSnapshot,
     changeCount: changeCount,
+    waitStartSnapshotId: waitStartSnapshotId,
+    waitStartBaseline: waitStartBaseline,
   );
 
-  /// Mutable per-call scratch space for predicates that need history.
   static bool _errorMonitorIsEmpty() {
     try {
       return MCPToolkitBinding.instance.errors.isEmpty;
