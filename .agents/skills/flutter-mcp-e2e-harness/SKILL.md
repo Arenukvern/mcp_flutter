@@ -3,7 +3,7 @@ name: flutter-mcp-e2e-harness
 description: Use this skill when writing or running repeatable E2E scenarios for Flutter apps as checked-in Dart with the `flutter_mcp_harness` package (`packages/harness`) — build/launch the app, attach to its VM service, drive widgets (snapshot/tap/enter text) and assert without MCP; also covers the repo showcase launcher (`make showcase`, `--web`, `--stop`) and multi-instance desktop compositions. For interactive assistant-driven debugging through MCP `fmt_*` tools, use `flutter-mcp` instead.
 ---
 
-<!-- Vendored copy of plugin/skills/flutter-mcp-e2e-harness/SKILL.md (source of truth). Regenerate via `flutter-mcp-toolkit init zcode`. -->
+<!-- Vendored copy of plugin/skills/flutter-mcp-e2e-harness/SKILL.md (source of truth). Regenerate via flutter-mcp-toolkit init zcode. -->
 
 <!-- @FMT_MODE_PRELUDE -->
 
@@ -175,7 +175,7 @@ exit(passed ? 0 : 1);
 Console output stays the default (`printSummary`). Agents and CI opt in:
 
 ```dart
-final reportArgs = HarnessReportArgs.parse(platformArgs);
+final reportArgs = requireHarnessReportArgs(platformArgs);
 passed = await scenario.run(runOptions: reportArgs.toRunOptions());
 scenario.report.printSummary();
 ```
@@ -201,12 +201,17 @@ CLI flags (composition roots): `--report=agent|json|junit`,
 Schema: `packages/harness/schema/harness_scenario_report_v1.schema.json`
 (locked by `packages/harness/test/scenario_report_test.dart`).
 
-**First-class smoke entry** (no app required):
+**Report smoke check** (synthetic scenario — validates report shape only, not a
+real app run):
 
 ```bash
 dart run packages/harness/tool/scenario_report.dart --smoke \
   --report=agent --report-out=/tmp/harness-smoke.jsonl
 ```
+
+For real E2E, run a checked-in composition root with the same flags;
+`requireHarnessReportArgs(args)` in `main` for validation (library uses
+`HarnessReportParseResult.parse` without calling `exit`).
 
 ## Driving widgets (`ToolkitDriver`)
 

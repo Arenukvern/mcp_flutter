@@ -72,7 +72,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "baseline": {"const": "missing"},
+        "baseline": {"type": "string", "enum": ["missing", "unreadable"]},
         "newFailures": {"type": "array", "items": {"type": "string"}},
         "resolved": {"type": "array", "items": {"type": "string"}},
         "unchangedFailures": {"type": "array", "items": {"type": "string"}}

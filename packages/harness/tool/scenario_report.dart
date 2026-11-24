@@ -1,4 +1,4 @@
-// First-class harness report entry (ADR-0023): smoke scenario + report flags.
+// Report smoke check (ADR-0023): synthetic scenario + report flags.
 //
 //   dart run packages/harness/tool/scenario_report.dart --smoke
 //   dart run packages/harness/tool/scenario_report.dart --smoke \
@@ -27,7 +27,7 @@ $HarnessReportArgs.usage''');
     exit(2);
   }
 
-  final reportArgs = HarnessReportArgs.parseValidated(args);
+  final reportArgs = requireHarnessReportArgs(args);
 
   final scenario = Scenario(
     'harness report smoke',

@@ -83,13 +83,6 @@ Harness report flags (composition roots & dart run packages/harness/tool/scenari
     return null;
   }
 
-  /// Validates report-related argv; prints [usage] and exits 2 on violation.
-  static HarnessReportArgs parseValidated(List<String> args) {
-    final err = validationError(args);
-    if (err != null) _reportUsageAndExit(err);
-    return parse(args);
-  }
-
   static HarnessReportFormat? tryParseFormat(String raw) => switch (raw) {
         'agent' => HarnessReportFormat.agent,
         'json' => HarnessReportFormat.json,
@@ -105,10 +98,31 @@ Harness report flags (composition roots & dart run packages/harness/tool/scenari
       );
 }
 
-void _reportUsageAndExit(String message) {
-  // ignore: avoid_print
-  print('error: $message\n$HarnessReportArgs.usage');
-  exit(2);
+/// Result of parsing report argv without terminating the isolate.
+final class HarnessReportParseResult {
+  const HarnessReportParseResult._(this.args, this.error);
+
+  final HarnessReportArgs? args;
+  final String? error;
+
+  bool get isOk => error == null;
+
+  static HarnessReportParseResult parse(List<String> args) {
+    final err = HarnessReportArgs.validationError(args);
+    if (err != null) return HarnessReportParseResult._(null, err);
+    return HarnessReportParseResult._(HarnessReportArgs.parse(args), null);
+  }
+}
+
+/// For composition-root `main` only — exits 2 with usage when invalid.
+HarnessReportArgs requireHarnessReportArgs(List<String> args) {
+  final result = HarnessReportParseResult.parse(args);
+  if (!result.isOk) {
+    // ignore: avoid_print
+    print('error: ${result.error}\n$HarnessReportArgs.usage');
+    exit(2);
+  }
+  return result.args!;
 }
 
 /// Options passed to [Scenario.run] for optional report emission.
@@ -380,39 +394,76 @@ final class ScenarioReportWriter {
 }
 
 /// Diff of failure ids vs a previous report (full JSON or agent JSONL).
+enum BaselineStatus { ok, missing, unreadable }
+
+/// Outcome of reading a prior report from disk for `--report-diff`.
+final class PreviousBaseline {
+  const PreviousBaseline._(this.status, this.document);
+
+  final BaselineStatus status;
+  final Map<String, Object?>? document;
+
+  factory PreviousBaseline.missing() =>
+      const PreviousBaseline._(BaselineStatus.missing, null);
+
+  factory PreviousBaseline.unreadable() =>
+      const PreviousBaseline._(BaselineStatus.unreadable, null);
+
+  factory PreviousBaseline.ok(Map<String, Object?> document) =>
+      PreviousBaseline._(BaselineStatus.ok, document);
+}
+
 final class ReportDiff {
   ReportDiff({
     required this.newFailures,
     required this.resolved,
     required this.unchanged,
-    this.baselineMissing = false,
+    this.baselineStatus = BaselineStatus.ok,
   });
 
   final List<String> newFailures;
   final List<String> resolved;
   final List<String> unchanged;
-  final bool baselineMissing;
+  final BaselineStatus baselineStatus;
 
   factory ReportDiff.baselineMissing() => ReportDiff(
         newFailures: const [],
         resolved: const [],
         unchanged: const [],
-        baselineMissing: true,
+        baselineStatus: BaselineStatus.missing,
       );
 
-  Map<String, Object?> toJson() => baselineMissing
-      ? <String, Object?>{'baseline': 'missing'}
-      : <String, Object?>{
-          'newFailures': newFailures,
-          'resolved': resolved,
-          'unchangedFailures': unchanged,
-        };
+  factory ReportDiff.baselineUnreadable() => ReportDiff(
+        newFailures: const [],
+        resolved: const [],
+        unchanged: const [],
+        baselineStatus: BaselineStatus.unreadable,
+      );
 
-  static ReportDiff? compute(
+  Map<String, Object?> toJson() => switch (baselineStatus) {
+        BaselineStatus.missing => <String, Object?>{'baseline': 'missing'},
+        BaselineStatus.unreadable => <String, Object?>{'baseline': 'unreadable'},
+        BaselineStatus.ok => <String, Object?>{
+            'newFailures': newFailures,
+            'resolved': resolved,
+            'unchangedFailures': unchanged,
+          },
+      };
+
+  static ReportDiff fromBaseline(
     Map<String, Object?> current,
-    Map<String, Object?>? previous,
+    PreviousBaseline baseline,
+  ) =>
+      switch (baseline.status) {
+        BaselineStatus.missing => ReportDiff.baselineMissing(),
+        BaselineStatus.unreadable => ReportDiff.baselineUnreadable(),
+        BaselineStatus.ok => compute(current, baseline.document!),
+      };
+
+  static ReportDiff compute(
+    Map<String, Object?> current,
+    Map<String, Object?> previous,
   ) {
-    if (previous == null) return ReportDiff.baselineMissing();
     final cur = _failureIds(current);
     final prev = _failureIds(previous);
     return ReportDiff(
@@ -431,32 +482,44 @@ final class ReportDiff {
     };
   }
 
-  /// Loads a prior report from JSON (single object) or agent JSONL.
-  static Future<Map<String, Object?>?> loadPrevious(String path) async {
+  /// Loads a prior report from full JSON (including indented) or agent JSONL.
+  static Future<PreviousBaseline> loadPrevious(String path) async {
     final file = File(path);
-    if (!file.existsSync()) return null;
+    if (!file.existsSync()) return PreviousBaseline.missing();
     final content = await file.readAsString();
     final trimmed = content.trim();
-    if (trimmed.isEmpty) return null;
+    if (trimmed.isEmpty) return PreviousBaseline.unreadable();
 
-    if (!trimmed.contains('\n')) {
+    try {
       final decoded = jsonDecode(trimmed);
-      if (decoded is Map<String, Object?>) return decoded;
-      if (decoded is Map) return decoded.cast<String, Object?>();
-      return null;
+      if (decoded is Map<String, Object?>) {
+        return PreviousBaseline.ok(decoded);
+      }
+      if (decoded is Map) {
+        return PreviousBaseline.ok(decoded.cast<String, Object?>());
+      }
+      return PreviousBaseline.unreadable();
+    } on FormatException {
+      return _parseAgentJsonlBaseline(content);
     }
+  }
 
-    final failures = <Map<String, Object?>>[];
-    for (final line in content.split('\n')) {
-      if (line.trim().isEmpty) continue;
-      final decoded = jsonDecode(line);
-      if (decoded is! Map) continue;
-      final map = decoded.cast<String, Object?>();
-      if (map['kind'] == 'diff') continue;
-      final id = map['id'];
-      if (id is String) failures.add(<String, Object?>{'id': id});
+  static PreviousBaseline _parseAgentJsonlBaseline(String content) {
+    try {
+      final failures = <Map<String, Object?>>[];
+      for (final line in content.split('\n')) {
+        if (line.trim().isEmpty) continue;
+        final decoded = jsonDecode(line);
+        if (decoded is! Map) continue;
+        final map = decoded.cast<String, Object?>();
+        if (map['kind'] == 'diff') continue;
+        final id = map['id'];
+        if (id is String) failures.add(<String, Object?>{'id': id});
+      }
+      return PreviousBaseline.ok(<String, Object?>{'failures': failures});
+    } on FormatException {
+      return PreviousBaseline.unreadable();
     }
-    return <String, Object?>{'failures': failures};
   }
 }
 
@@ -482,7 +545,7 @@ Future<void> writeScenarioReportIfRequested({
   final diffPath = opts.diffAgainst;
   if (diffPath != null && diffPath.isNotEmpty) {
     final previous = await ReportDiff.loadPrevious(diffPath);
-    diff = ReportDiff.compute(writer.buildFullJson(), previous);
+    diff = ReportDiff.fromBaseline(writer.buildFullJson(), previous);
   }
   await writer.write(format: opts.format!, path: opts.reportOut!, diff: diff);
 }

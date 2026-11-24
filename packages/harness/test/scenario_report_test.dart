@@ -65,15 +65,16 @@ void main() {
       );
     });
 
-    test('parses valid report flags', () {
-      final parsed = HarnessReportArgs.parseValidated([
+    test('HarnessReportParseResult accepts valid report flags', () {
+      final parsed = HarnessReportParseResult.parse([
         '--report=agent',
         '--report-out=/tmp/out.jsonl',
         '--report-diff=/tmp/prev.json',
         '--scenario-id=checkout-e2e',
       ]);
-      expect(parsed.format, HarnessReportFormat.agent);
-      expect(parsed.reportOut, '/tmp/out.jsonl');
+      expect(parsed.isOk, isTrue);
+      expect(parsed.args!.format, HarnessReportFormat.agent);
+      expect(parsed.args!.reportOut, '/tmp/out.jsonl');
     });
   });
 
@@ -235,7 +236,10 @@ void main() {
           {'id': 'checkout-e2e:old-fail'},
         ],
       };
-      final diff = ReportDiff.compute(writer.buildFullJson(), prev)!;
+      final diff = ReportDiff.fromBaseline(
+        writer.buildFullJson(),
+        PreviousBaseline.ok(prev),
+      );
       expect(diff.newFailures, contains('checkout-e2e:total-rendered'));
       expect(diff.resolved, contains('checkout-e2e:old-fail'));
     });
@@ -284,12 +288,56 @@ void main() {
       );
 
       final loaded = await ReportDiff.loadPrevious(baseline);
-      expect(loaded, isNotNull);
-      final diff = ReportDiff.compute(
-        writer.buildFullJson(),
-        loaded,
-      )!;
+      expect(loaded.status, BaselineStatus.ok);
+      final diff = ReportDiff.fromBaseline(writer.buildFullJson(), loaded);
       expect(diff.newFailures, contains('checkout-e2e:pay-button'));
+    });
+
+    test('indented full JSON baseline loads for diff', () async {
+      final dir = await Directory.systemTemp.createTemp('harness-json-diff-');
+      addTearDown(() => dir.delete(recursive: true));
+      final baseline = p.join(dir.path, 'prev.json');
+      await writer.write(
+        format: HarnessReportFormat.json,
+        path: baseline,
+      );
+      final loaded = await ReportDiff.loadPrevious(baseline);
+      expect(loaded.status, BaselineStatus.ok);
+      final diff = ReportDiff.fromBaseline(writer.buildFullJson(), loaded);
+      expect(diff.unchanged, contains('checkout-e2e:total-rendered'));
+    });
+
+    test('malformed diff baseline is unreadable', () async {
+      final dir = await Directory.systemTemp.createTemp('harness-bad-diff-');
+      addTearDown(() => dir.delete(recursive: true));
+      final bad = p.join(dir.path, 'prev.json');
+      File(bad).writeAsStringSync('{\nnot json\n{{{');
+      final loaded = await ReportDiff.loadPrevious(bad);
+      expect(loaded.status, BaselineStatus.unreadable);
+      final diff = ReportDiff.fromBaseline(writer.buildFullJson(), loaded);
+      expect(diff.toJson(), {'baseline': 'unreadable'});
+
+      final out = p.join(dir.path, 'out.jsonl');
+      final scenario = Scenario('unreadable baseline', steps: [
+        (
+          'one',
+          (c) async {
+            c.report.fail('x');
+          },
+        ),
+      ]);
+      await scenario.run(
+        runOptions: ScenarioRunOptions(
+          format: HarnessReportFormat.agent,
+          reportOut: out,
+          diffAgainst: bad,
+        ),
+      );
+      final last = File(out)
+          .readAsLinesSync()
+          .where((l) => l.trim().isNotEmpty)
+          .last;
+      expect(jsonDecode(last), {'kind': 'diff', 'baseline': 'unreadable'});
     });
   });
 

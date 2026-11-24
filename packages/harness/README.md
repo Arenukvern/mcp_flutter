@@ -105,7 +105,7 @@ failure aborts, cleanup still runs, exit code reflects the result.
   calls (source of truth: `mcp_toolkit`'s interaction toolkit).
 - `lib/src/scenario.dart`, `lib/src/check.dart`, `lib/src/scenario_report.dart` — steps, checks, report writers.
 - `schema/harness_scenario_report_v1.schema.json` — full JSON contract (ADR-0023).
-- `tool/scenario_report.dart` — smoke scenario + report flags (`--smoke --report=…`).
+- `tool/scenario_report.dart` — report **smoke check** (synthetic; `--smoke --report=…`).
 - `example/desktop_pair.dart` — a full two-instance composition root.
 - `tool/showcase.dart` — this repo's showcase launcher (macOS / `--web` /
   `--stop`), the Dart rewrite of the former `scripts/*.sh` showcase.
