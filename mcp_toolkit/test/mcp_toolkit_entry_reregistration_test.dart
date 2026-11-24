@@ -174,6 +174,44 @@ void main() {
       );
     });
 
+    test(
+      'collision throw leaves prior registry and VM table intact',
+      () async {
+        final binding = _CapturingToolkitBinding();
+        binding.initializeServiceExtensions(
+          errorMonitor: _TestErrorMonitor(),
+          entries: {
+            _pingTool(
+              revision: 1,
+              handler: (_) async => MCPCallResult(
+                message: 'pong',
+                parameters: {'rev': 1},
+              ),
+            ),
+          },
+        );
+
+        expect(
+          () => binding.initializeServiceExtensions(
+            errorMonitor: _TestErrorMonitor(),
+            entries: {
+              _pingTool(revision: 2, namespace: 'team_b'),
+            },
+          ),
+          throwsA(isA<StateError>()),
+        );
+
+        final vm = await binding.callbacks['ping']!({});
+        expect(vm['rev'], 1);
+
+        final invoke = await binding.callbacks['agent_invoke']!({
+          'name': 'ping',
+          'json': '{}',
+        });
+        expect(invoke['rev'], 1);
+      },
+    );
+
     test('VM and agent_invoke agree on handler for custom methodName', () async {
       final binding = _CapturingToolkitBinding();
       binding.initializeServiceExtensions(

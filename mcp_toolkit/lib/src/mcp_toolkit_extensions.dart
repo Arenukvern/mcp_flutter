@@ -136,24 +136,28 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
     // Dynamic registration is a debug-only VM-service surface; release apps
     // should not depend on these service extensions being present.
     assert(() {
-      final byKey = <Object, AgentCallEntry>{
+      final mergedByKey = <Object, AgentCallEntry>{
         for (final entry in _allEntries) entry.key: entry,
       };
       for (final entry in entries) {
-        final prior = byKey[entry.key];
+        final prior = mergedByKey[entry.key];
         if (prior != null && prior.value.namespace != entry.value.namespace) {
           throw StateError(
             'Duplicate tool name "${entry.key}" in namespaces '
             '"${prior.value.namespace}" and "${entry.value.namespace}".',
           );
         }
-        byKey[entry.key] = entry;
+        mergedByKey[entry.key] = entry;
       }
+      final mergedEntries = Set<AgentCallEntry>.from(mergedByKey.values);
+      final mergedByExtension = _entriesByExtensionNameFrom(mergedEntries);
+
       _allEntries
         ..clear()
-        ..addAll(byKey.values);
-
-      _rebuildEntriesByExtensionName();
+        ..addAll(mergedEntries);
+      _entriesByExtensionName
+        ..clear()
+        ..addAll(mergedByExtension);
 
       for (final projection in projections) {
         projection.entriesChanged(_allEntries);
@@ -210,11 +214,13 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
     _postToolRegistrationEvent(entries);
   }
 
-  void _rebuildEntriesByExtensionName() {
-    _entriesByExtensionName.clear();
-    for (final entry in _allEntries) {
+  Map<String, AgentCallEntry> _entriesByExtensionNameFrom(
+    Iterable<AgentCallEntry> entries,
+  ) {
+    final byExtension = <String, AgentCallEntry>{};
+    for (final entry in entries) {
       final extensionName = entry.serviceExtensionName;
-      final incumbent = _entriesByExtensionName[extensionName];
+      final incumbent = byExtension[extensionName];
       if (incumbent != null && incumbent.key != entry.key) {
         throw StateError(
           'Duplicate VM service extension "$extensionName" for registry keys '
@@ -222,8 +228,9 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
           'methodName or rename the tool.',
         );
       }
-      _entriesByExtensionName[extensionName] = entry;
+      byExtension[extensionName] = entry;
     }
+    return byExtension;
   }
 
   /// Resolves a tool for [agent_invoke] using the same live table as VM
