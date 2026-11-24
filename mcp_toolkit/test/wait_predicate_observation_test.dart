@@ -4,6 +4,7 @@ import 'package:mcp_toolkit/mcp_toolkit.dart';
 import 'package:universal_automation_semantics/universal_automation_semantics.dart';
 
 import 'package:mcp_toolkit/src/services/semantic_delta_wire.dart';
+import 'package:mcp_toolkit/src/services/semantic_observation_history.dart';
 
 void main() {
   test('changed delta wire includes rendered text and structured counts', () {
@@ -40,6 +41,8 @@ void main() {
     );
     expect(result['matched'], isFalse);
     expect(result['error'], 'baseline_evicted');
+    expect(result['ringCapacity'],
+        SemanticObservationHistory.publicObservationRingCapacity);
   });
 
   testWidgets('changed reports unknown reply text after chat line appears', (
@@ -85,7 +88,7 @@ void main() {
       waitStartBaseline: baselineObs,
       lastSnapshot: <String, Object?>{
         'snapshot_id': 2,
-        'observed_revision': 11,
+        'observedRevision': 11,
         'nodes': <Object?>[
           <String, Object?>{
             'ref': 's_0',

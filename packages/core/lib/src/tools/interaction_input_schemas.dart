@@ -141,8 +141,9 @@ Map<String, Object?> semanticSnapshotInputSchema() => <String, Object?>{
     'diff': <String, Object?>{
       'type': 'boolean',
       'description':
-          'When true, include baseline (prior snapshot id or "none") and delta '
-          '(null when no baseline exists).',
+          'When true, include baseline (prior public snapshot id as int, or '
+          'null with baselineReason when no prior same-filter snapshot) and '
+          'delta (null when no baseline exists).',
     },
     'lens': <String, Object?>{
       'type': 'string',

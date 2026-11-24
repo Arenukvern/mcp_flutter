@@ -1,4 +1,4 @@
-# ADR 0023 — Observation vs empty, and waiting for unknown UI change
+# ADR 0024 — Observation vs empty, and waiting for unknown UI change
 
 - **Status:** Accepted
 - **Date:** 2026-11-24
@@ -32,7 +32,7 @@ Toolkit gaps:
 | Key | Absent | Present empty | Present null |
 | --- | --- | --- | --- |
 | `nodes` | Tree not observed (e.g. `time` with `observe:false`) | N/A | N/A |
-| `delta` | Diff not requested or not computed | N/A | `delta: null` + `baseline: "none"` when diff asked but no baseline |
+| `delta` | Diff not requested or not computed | N/A | `delta: null` + `baseline: null` + `baselineReason` when diff asked but no baseline |
 | `observed` | Success path assumed observed tree | N/A | `observed: false` explicit opt-out |
 
 Agents must use `changed`, timeout `delta`, or `semantic_snapshot` with
@@ -52,16 +52,19 @@ Contract names belong in `Semantics(identifier:)`, not `label`.
    `observedRevision` is the latest peek revision. Capped timeout `delta` (~20
    rows) vs baseline observation at wait start.
 
-3. **`time` + `observe`:** Default `observe: true` — same snapshot envelope as
-   `text` success; `observe: false` returns `observed: false` and omits `nodes`.
-   **Semver:** minor; default increases snapshot tokens on `time` waits.
+3. **`time` + `observe`:** Default `observe: true` — peek snapshot envelope (no
+   `snapshot_id` bump, no ref rebind, no ring slot); `observe: false` returns
+   `observed: false` and omits `nodes`. **Semver:** minor; default still returns
+   full node payloads after the delay (token cost).
 
-4. **`semantic_snapshot` `diff` / `render`:** Schema + handler; `baseline:
-   "none"` when no prior observation for filter key.
+4. **`semantic_snapshot` `diff` / `render`:** Schema + handler; `baseline: null`
+   plus `baselineReason` when no prior observation for the filter key; otherwise
+   `baseline` is the prior public snapshot id (`int`).
 
 5. **`changed` predicate:** `{kind:"changed", since:<snapshotId>, settleMs?}`;
-   ring buffer of ~8 public observations; evicted `since` →
-   `baseline_evicted`; uses `Observation.diff` only.
+   ring buffer of 32 public observations (filtered baselines re-peeked with the
+   recorded filter); evicted `since` → `baseline_evicted` with
+   `publicSnapshotsSince`; uses `Observation.diff` only.
 
 6. **`labelPrefix`:** Filter + `nearLabels` hint when `identifierPrefix` would
    match nothing but labels share the prefix.
@@ -76,9 +79,9 @@ Contract names belong in `Semantics(identifier:)`, not `label`.
    `tap_widget`, `enter_text`, `press_key`, `fill_form` — baseline before act,
    delta in response.
 
-10. **Revision listener spike (PR B):** Prefer semantics-owner notifications to
-    bump `observedRevision` without full walks; ship only if reliable — else
-    document negative result here (see Implementation notes).
+10. **Revision listener spike (not shipped):** Frame-boundary sampling did not
+    justify a persistent semantics callback hook; findings stay in Implementation
+    notes below — no `SemanticRevisionProbe` in production code.
 
 11. **`maxNodes`:** Added to JSON Schema (already supported in filter).
 
@@ -106,11 +109,9 @@ Contract names belong in `Semantics(identifier:)`, not `label`.
 - Android emulator proof for `changed` / timeout delta (Linux desktop covered in
   harness tests).
 
-## Implementation notes (revision listener)
+## Implementation notes (revision listener spike)
 
-Spike uses `SemanticsBinding.instance.ensureSemantics()` handle and samples
-`owner.sendSemanticsUpdate` scheduling via frame-boundary counter compare (see
-`semantic_revision.dart`). If frame-only revision cannot distinguish intra-frame
-mutations, full walk remains on `stable`/`changed` until owner exposes a public
-revision — **not shipped as optimization** when spike tests show no gain on
-`stable` in CI (recorded in test skip reason).
+Prototype code compared frame-boundary semantics scheduling to full walks. It
+could not reliably distinguish intra-frame mutations, so `stable`/`changed` keep
+walking the tree. The spike was removed from the toolkit; rely on peek/build
+snapshots and the public observation ring instead.

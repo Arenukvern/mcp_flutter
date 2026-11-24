@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
+import 'package:mcp_toolkit/src/services/semantic_observation_history.dart';
 import 'package:universal_automation_semantics/universal_automation_semantics.dart';
 
 void main() {
@@ -33,13 +34,30 @@ void main() {
     expect((result['predicate']! as Map)['ms'], 50);
   });
 
-  testWidgets('wait_for time observe defaults to a fresh snapshot', (
+  testWidgets('wait_for time observe peeks without bumping snapshot_id', (
     tester,
   ) async {
     await tester.pumpWidget(
-      const MaterialApp(home: Scaffold(body: Text('tick'))),
+      MaterialApp(
+        home: Scaffold(
+          body: Semantics(
+            identifier: 'tick',
+            button: true,
+            label: 'tick',
+            child: const SizedBox(width: 40, height: 40),
+          ),
+        ),
+      ),
     );
-    await tester.pump();
+    await tester.pumpAndSettle();
+
+    final baseline = await _snapshotAfterPump(tester);
+    final publicId = baseline['snapshot_id']! as int;
+    final ref = (baseline['nodes']! as List<Object?>)
+        .cast<Map<String, Object?>>()
+        .single['ref']! as String;
+    final bound = SemanticSnapshotService.resolveRef(ref);
+
     final resultFuture = WaitPredicateService.waitFor(
       predicate: const {'kind': 'time', 'ms': 1},
       timeoutMs: 500,
@@ -48,10 +66,15 @@ void main() {
     await tester.pump();
     await tester.pump();
     final result = await resultFuture;
+
     expect(result['matched'], isTrue);
-    expect(result['snapshot_id'], isA<int>());
     expect(result['nodes'], isA<List<Object?>>());
-    expect(result.containsKey('observed'), isFalse);
+    expect(SemanticSnapshotService.currentSnapshotId, publicId);
+    expect(SemanticSnapshotService.resolveRef(ref), same(bound));
+    expect(
+      SemanticObservationHistory.instance.lookupSince(publicId),
+      isNotNull,
+    );
   });
 
   test('wait_for time observe false skips nodes', () async {
@@ -181,8 +204,10 @@ void main() {
       waitStartBaseline: baselineObs,
       lastSnapshot: const <String, Object?>{
         'snapshot_id': 7,
-        'observed_revision': 19,
-        'nodes': <Object?>[],
+        'observedRevision': 19,
+        'nodes': <Object?>[
+          <String, Object?>{'ref': 's_0', 'label': 'x', 'type': 'text'},
+        ],
       },
     );
     expect(result['matched'], isFalse);
@@ -630,6 +655,13 @@ class _DelayedClear extends StatefulWidget {
   const _DelayedClear();
   @override
   State<_DelayedClear> createState() => _DelayedClearState();
+}
+
+Future<Map<String, Object?>> _snapshotAfterPump(WidgetTester tester) async {
+  final future = SemanticSnapshotService.buildSemanticSnapshot();
+  await tester.pump();
+  await tester.pump();
+  return future;
 }
 
 class _DelayedClearState extends State<_DelayedClear> {

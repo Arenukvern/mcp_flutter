@@ -1,7 +1,9 @@
+import 'semantic_observation_history.dart';
 import 'semantic_snapshot_service.dart';
+import 'wait_predicate_service.dart';
 
-/// Runs [act] after capturing a baseline observation; optional [awaitChange]
-/// `settleMs` waits before the closing diff.
+/// Runs [act] after pinning a public baseline, then blocks on `changed` until
+/// the tree moves or [awaitChange] times out.
 Future<Map<String, Object?>> runWithAwaitChange(
   Map<String, Object?>? awaitChange,
   Future<void> Function() act,
@@ -11,13 +13,43 @@ Future<Map<String, Object?>> runWithAwaitChange(
     return const <String, Object?>{};
   }
 
-  final baseline = await SemanticSnapshotService.captureBaselineObservation();
+  if (SemanticSnapshotService.currentSnapshotId == 0 ||
+      SemanticObservationHistory.instance.lookupSince(
+            SemanticSnapshotService.currentSnapshotId,
+          ) ==
+          null) {
+    await SemanticSnapshotService.buildSemanticSnapshot();
+  }
+  final since = SemanticSnapshotService.currentSnapshotId;
+  final timeoutMs = (awaitChange['timeoutMs'] as num?)?.toInt() ?? 5000;
+  final settleMs = (awaitChange['settleMs'] as num?)?.toInt() ?? 250;
+
   await act();
 
-  final settleMs = (awaitChange['settleMs'] as num?)?.toInt() ?? 0;
-  if (settleMs > 0) {
-    await Future<void>.delayed(Duration(milliseconds: settleMs));
-  }
+  final waitResult = await WaitPredicateService.waitFor(
+    predicate: <String, Object?>{
+      'kind': 'changed',
+      'since': since,
+      if (settleMs > 0) 'settleMs': settleMs,
+    },
+    timeoutMs: timeoutMs,
+  );
 
-  return SemanticSnapshotService.deltaAgainstBaseline(baseline);
+  final settled = waitResult['matched'] == true;
+  final elapsed = (waitResult['elapsedMs'] as num?)?.toInt() ?? 0;
+
+  return <String, Object?>{
+    'settled': settled,
+    'observedAfterMs': elapsed,
+    'changeBaselineId': since,
+    if (settled) ...<String, Object?>{
+      if (waitResult['delta'] != null) 'delta': waitResult['delta'],
+      if (waitResult['added'] != null) 'added': waitResult['added'],
+      if (waitResult['removed'] != null) 'removed': waitResult['removed'],
+      if (waitResult['changed'] != null) 'changed': waitResult['changed'],
+      if (waitResult['deltaTruncated'] == true) 'deltaTruncated': true,
+      if (waitResult['partial'] == true) 'partial': true,
+    },
+    if (!settled) 'changeWait': waitResult,
+  };
 }

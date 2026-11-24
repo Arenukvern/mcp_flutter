@@ -51,10 +51,11 @@ void main() {
 
       expect(SemanticSnapshotService.currentSnapshotId, publicId);
       expect(SemanticSnapshotService.resolveRef(targetRef), same(boundBefore));
+      expect(peek['refBound'], isFalse);
       final peekB = (peek['nodes']! as List<Object?>)
           .cast<Map<String, Object?>>()
           .singleWhere((n) => n['identifier'] == 'target_b');
-      expect(peekB['ref'], targetRef);
+      expect(peekB.containsKey('ref'), isFalse);
     } finally {
       semantics.dispose();
     }

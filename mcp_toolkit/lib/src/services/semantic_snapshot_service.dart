@@ -74,6 +74,23 @@ extension type const SemanticSnapshotFilter._(Map<String, dynamic> value) {
     );
   }
 
+  /// Rehydrates a filter from a history-record [filterKey] (`jsonEncode` of
+  /// [toJson]).
+  factory SemanticSnapshotFilter.fromFilterKey(String filterKey) {
+    if (filterKey.isEmpty) return SemanticSnapshotFilter.empty;
+    try {
+      final decoded = jsonDecode(filterKey);
+      if (decoded is Map) {
+        return SemanticSnapshotFilter.fromJson(
+          decoded.map((k, v) => MapEntry('$k', v as Object?)),
+        );
+      }
+    } on Object {
+      return SemanticSnapshotFilter.empty;
+    }
+    return SemanticSnapshotFilter.empty;
+  }
+
   /// Keep nodes whose identifier starts with this prefix.
   String? get identifierPrefix => _selector(value['identifierPrefix']);
 
@@ -145,6 +162,9 @@ mixin SemanticSnapshotService {
   static final Map<String, Observation> _lastFamilyObservations =
       <String, Observation>{};
 
+  /// Filter-signature → last public [snapshot_id] used for diff baselines.
+  static final Map<String, int> _lastFamilySnapshotIds = <String, int>{};
+
   /// Handle that keeps the semantics tree built for the lifetime of the app.
   /// Created lazily on first snapshot / semantic action call.
   static SemanticsHandle? _semanticsHandle;
@@ -156,8 +176,9 @@ mixin SemanticSnapshotService {
   /// Tree walks for predicate peeks and public builds — bumps every walk.
   static int _observedRevision = 0;
 
-  /// Latest await-change baseline from [captureBaselineObservation].
-  static BaselineCapture? _capturedBaseline;
+  /// Node maps (with refs) from the latest walk — used when peeks strip refs
+  /// from wire payloads but family projection still needs them.
+  static List<Map<String, Object?>>? _lastWalkNodesForFamily;
 
   /// The snapshot id of the most recently produced snapshot.
   static int get currentSnapshotId => _snapshotCounter;
@@ -165,25 +186,26 @@ mixin SemanticSnapshotService {
   /// Latest semantic walk revision (peeks and public builds).
   static int get observedRevision => _observedRevision;
 
+  /// Public observation ring entry for [snapshotId], if not evicted.
+  static ObservationHistoryRecord? lookupPublicObservation(int snapshotId) =>
+      SemanticObservationHistory.instance.lookupSince(snapshotId);
+
   /// Observation captured for a public [snapshotId], if still in the ring.
   static Observation? observationForPublicSnapshot(int snapshotId) =>
-      SemanticObservationHistory.instance
-          .lookupSince(snapshotId)
-          ?.observation;
+      lookupPublicObservation(snapshotId)?.observation;
+
+  /// Filter recorded with the public snapshot [snapshotId].
+  static SemanticSnapshotFilter? filterForPublicSnapshot(int snapshotId) {
+    final key = lookupPublicObservation(snapshotId)?.filterKey;
+    if (key == null) return null;
+    return SemanticSnapshotFilter.fromFilterKey(key);
+  }
 
   /// Family observation for a snapshot wire payload (peek or public).
-  static Observation observationFromSnapshot(Map<String, Object?> snapshot) {
-    final nodes = _nodeMaps(snapshot['nodes']);
-    final snapshotId = (snapshot['snapshot_id'] as num?)?.toInt() ?? 0;
-    return Observation.of(
-      familySnapshotFromNodes(
-        nodes,
-        snapshotId: snapshotId,
-        capturedAt: DateTime.now().toUtc(),
-      ),
-      const SemanticView(),
-    );
-  }
+  static Observation observationFromSnapshot(
+    Map<String, Object?> snapshot, {
+    SemanticSnapshotFilter? filter,
+  }) => _observationFromPayload(snapshot, filter);
 
   /// Look up a [SemanticsNode] captured during the last snapshot.
   static SemanticsNode? resolveRef(String ref) => _lastRefMap[ref];
@@ -369,30 +391,20 @@ mixin SemanticSnapshotService {
     SemanticSnapshotFilter? filter,
   }) async {
     final payload = await peekSemanticSnapshot(filter: filter);
-    final capture = _baselineFromPayload(payload, filter);
-    _capturedBaseline = capture;
-    return capture;
+    return _baselineFromPayload(payload, filter);
   }
 
-  /// Diffs the latest peek against [_capturedBaseline] or an explicit
-  /// [baseline].
-  static Future<Map<String, Object?>> deltaAgainstBaseline([
-    BaselineCapture? baseline,
-  ]) async {
-    final base = baseline ?? _capturedBaseline;
-    if (base == null) {
-      return <String, Object?>{
-        'baseline': 'none',
-        'delta': null,
-        'error': 'no_baseline',
-      };
-    }
-    final payload = await peekSemanticSnapshot(filter: base.filter);
-    final current = _observationFromPayload(payload, base.filter);
-    final delta = current.diff(base.observation);
+  /// Diffs the latest peek against [baseline].
+  static Future<Map<String, Object?>> deltaAgainstBaseline(
+    BaselineCapture baseline,
+  ) async {
+    final payload = await peekSemanticSnapshot(filter: baseline.filter);
+    final current = _observationFromPayload(payload, baseline.filter);
+    final delta = current.diff(baseline.observation);
     return <String, Object?>{
-      'baseline': base.snapshotId,
+      'baseline': baseline.snapshotId,
       'observedRevision': _observedRevision,
+      'refBound': false,
       ...delta_wire.cappedDeltaRender(delta),
     };
   }
@@ -595,6 +607,7 @@ mixin SemanticSnapshotService {
         _observedRevision++;
         return _snapshotEnvelope(
           snapshotId: snapshotId,
+          refBound: incrementId,
           nodes: const <Object?>[],
           nodeCount: 0,
           truncated: false,
@@ -613,6 +626,7 @@ mixin SemanticSnapshotService {
         _observedRevision++;
         return _snapshotEnvelope(
           snapshotId: snapshotId,
+          refBound: incrementId,
           nodes: const <Object?>[],
           nodeCount: 0,
           truncated: false,
@@ -635,6 +649,7 @@ mixin SemanticSnapshotService {
       _observedRevision++;
       return _snapshotEnvelope(
         snapshotId: snapshotId,
+        refBound: incrementId,
         nodes: const <Object?>[],
         nodeCount: 0,
         truncated: false,
@@ -810,19 +825,22 @@ mixin SemanticSnapshotService {
     // family Snapshot + Observation — the render/diff grammar is shared
     // with the automation family, while `nodes` stays this tool's wire.
     Map<String, Object?>? familyKeys;
+    final previousSnapshotId = diff ? _lastFamilySnapshotIds[cacheKey] : null;
     if (render || diff) {
       familyKeys = <String, Object?>{
         if (render) 'render': observation.render(lens: lensEnum),
-        if (diff)
-          'baseline': previous != null
-              ? '${previous.snapshot.revision}'
-              : 'none',
+        if (diff && previousSnapshotId != null) 'baseline': previousSnapshotId,
+        if (diff && previousSnapshotId == null) ...<String, Object?>{
+          'baseline': null,
+          'baselineReason': 'no_prior_same_filter',
+        },
         if (diff)
           'delta': previous != null ? observation.diff(previous).render() : null,
       };
     }
 
     if (incrementId) {
+      _lastFamilySnapshotIds[cacheKey] = snapshotId;
       SemanticObservationHistory.instance.record(
         observation,
         snapshotId,
@@ -832,9 +850,14 @@ mixin SemanticSnapshotService {
 
     _observedRevision++;
 
+    _lastWalkNodesForFamily = returned;
+
+    final wireNodes = _nodesForWire(returned, refBound: incrementId);
+
     return _snapshotEnvelope(
       snapshotId: snapshotId,
-      nodes: returned,
+      refBound: incrementId,
+      nodes: wireNodes,
       nodeCount: returned.length,
       truncated: truncated || capped,
       interactionSurface: _classifyInteractionSurface(totalNodeCount),
@@ -871,8 +894,25 @@ mixin SemanticSnapshotService {
     _lastCenterMap = centerMap;
   }
 
+  static List<Object?> _nodesForWire(
+    List<Map<String, Object?>> nodes, {
+    required bool refBound,
+  }) {
+    if (refBound) return nodes.cast<Object?>();
+    return nodes
+        .map((node) {
+          final copy = Map<String, Object?>.from(node);
+          copy.remove('ref');
+          copy.remove('children');
+          return copy;
+        })
+        .cast<Object?>()
+        .toList(growable: false);
+  }
+
   static Map<String, Object?> _snapshotEnvelope({
     required int snapshotId,
+    required bool refBound,
     required List<Object?> nodes,
     required int nodeCount,
     required bool truncated,
@@ -881,6 +921,7 @@ mixin SemanticSnapshotService {
   }) => <String, Object?>{
     'snapshot_id': snapshotId,
     'observedRevision': _observedRevision,
+    if (!refBound) 'refBound': false,
     'nodes': nodes,
     'nodeCount': nodeCount,
     'truncated': truncated,
@@ -952,7 +993,11 @@ mixin SemanticSnapshotService {
     Map<String, Object?> payload,
     SemanticSnapshotFilter? filter,
   ) {
-    final nodes = _nodeMaps(payload['nodes']);
+    final refBound = payload['refBound'] as bool? ?? true;
+    final nodes = refBound
+        ? _nodeMaps(payload['nodes'])
+        : (_lastWalkNodesForFamily ??
+            _rehydrateRefsForFamily(_nodeMaps(payload['nodes'])));
     final snapshotId = (payload['snapshot_id'] as num?)?.toInt() ?? 0;
     return Observation.of(
       familySnapshotFromNodes(
@@ -962,6 +1007,30 @@ mixin SemanticSnapshotService {
       ),
       filter?.toView() ?? const SemanticView(),
     );
+  }
+
+  /// Peeks strip `ref` from wire nodes; family projection still needs refs.
+  static List<Map<String, Object?>> _rehydrateRefsForFamily(
+    List<Map<String, Object?>> nodes,
+  ) {
+    final idToRef = <int, String>{};
+    for (final entry in _lastRefMap.entries) {
+      idToRef[entry.value.id] = entry.key;
+    }
+    return nodes
+        .map((node) {
+          final ref = node['ref'];
+          if (ref is String && ref.isNotEmpty) return node;
+          final id = node['id'];
+          if (id is int) {
+            final resolved = idToRef[id];
+            if (resolved != null) {
+              return <String, Object?>{...node, 'ref': resolved};
+            }
+          }
+          return node;
+        })
+        .toList(growable: false);
   }
 
   /// Whether [node] is [root] or sits below it.

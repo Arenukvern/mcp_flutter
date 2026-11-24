@@ -9,7 +9,8 @@ const String semanticSnapshotToolDescription =
     'identifierPrefix (Semantics identifier), labelPrefix (visible label), '
     'subtreeOf, fields, and maxNodes. Set render:true for numbered family '
     'text; diff:true for +/-/~ rows against the prior same-filter snapshot '
-    '(baseline "none" on the first call). lens selects render density '
+    '(baseline:null with baselineReason on the first call). lens selects '
+    'render density '
     '(standard, compact, design). Desktop/web hover controls may be absent '
     'until you hover and snapshot again.';
 
@@ -24,11 +25,12 @@ const String waitForToolDescription =
 const String waitForPredicateKindsDescription =
     'Predicate map shapes: '
     '{kind:"time", ms:int, observe?:bool} — observe defaults true and returns '
-    'the snapshot envelope; false sets observed:false and omits nodes | '
+    'a peek snapshot envelope (no snapshot_id bump); false sets observed:false '
+    'and omits nodes | '
     '{kind:"text", text:String} | {kind:"noText", text:String} | '
     '{kind:"node", identifier:String, selected/enabled/focused/checked/'
     'toggled:bool, absent:bool} | '
     '{kind:"stable", stableWindowMs:int} | {kind:"noError"} | '
     '{kind:"changed", since:<snapshotId>, settleMs?:int} — diffs against a '
-    'prior public snapshot in the observation ring (baseline_evicted when since '
-    'was evicted).';
+    'prior public snapshot in the observation ring (capacity 32; '
+    'baseline_evicted when since was evicted).';

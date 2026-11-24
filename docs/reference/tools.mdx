@@ -1833,7 +1833,7 @@ Scroll to reveal content in a direction. "down" reveals content below (finger sw
 
 ### `fmt_semantic_snapshot`
 
-Get a compact semantic tree of interactive widgets with refs for interaction tools (tap_widget, enter_text, etc.). Refs number the full walk — a filtered snapshot still resolves everywhere. Narrow with identifierPrefix (Semantics identifier), labelPrefix (visible label), subtreeOf, fields, and maxNodes. Set render:true for numbered family text; diff:true for +/-/~ rows against the prior same-filter snapshot (baseline "none" on the first call). lens selects render density (standard, compact, design). Desktop/web hover controls may be absent until you hover and snapshot again.
+Get a compact semantic tree of interactive widgets with refs for interaction tools (tap_widget, enter_text, etc.). Refs number the full walk — a filtered snapshot still resolves everywhere. Narrow with identifierPrefix (Semantics identifier), labelPrefix (visible label), subtreeOf, fields, and maxNodes. Set render:true for numbered family text; diff:true for +/-/~ rows against the prior same-filter snapshot (baseline:null with baselineReason on the first call). lens selects render density (standard, compact, design). Desktop/web hover controls may be absent until you hover and snapshot again.
 
 ```json
 {
@@ -1892,7 +1892,7 @@ Get a compact semantic tree of interactive widgets with refs for interaction too
     },
     "diff": {
       "type": "boolean",
-      "description": "When true, include baseline (prior snapshot id or \"none\") and delta (null when no baseline exists)."
+      "description": "When true, include baseline (prior public snapshot id as int, or null with baselineReason when no prior same-filter snapshot) and delta (null when no baseline exists)."
     },
     "lens": {
       "type": "string",
@@ -2105,7 +2105,7 @@ Wait until a UI predicate holds (or timeout) and return a fresh semantic snapsho
     "predicate": {
       "type": "object",
       "additionalProperties": true,
-      "description": "Predicate map shapes: {kind:\"time\", ms:int, observe?:bool} — observe defaults true and returns the snapshot envelope; false sets observed:false and omits nodes | {kind:\"text\", text:String} | {kind:\"noText\", text:String} | {kind:\"node\", identifier:String, selected/enabled/focused/checked/toggled:bool, absent:bool} | {kind:\"stable\", stableWindowMs:int} | {kind:\"noError\"} | {kind:\"changed\", since:<snapshotId>, settleMs?:int} — diffs against a prior public snapshot in the observation ring (baseline_evicted when since was evicted)."
+      "description": "Predicate map shapes: {kind:\"time\", ms:int, observe?:bool} — observe defaults true and returns a peek snapshot envelope (no snapshot_id bump); false sets observed:false and omits nodes | {kind:\"text\", text:String} | {kind:\"noText\", text:String} | {kind:\"node\", identifier:String, selected/enabled/focused/checked/toggled:bool, absent:bool} | {kind:\"stable\", stableWindowMs:int} | {kind:\"noError\"} | {kind:\"changed\", since:<snapshotId>, settleMs?:int} — diffs against a prior public snapshot in the observation ring (capacity 32; baseline_evicted when since was evicted)."
     },
     "timeoutMs": {
       "type": "integer",

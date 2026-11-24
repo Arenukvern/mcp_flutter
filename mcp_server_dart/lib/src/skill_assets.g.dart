@@ -764,7 +764,7 @@ Returns: `{"key": "Enter", "handled": bool}` — `handled` says whether either d
 
 Wait for a UI predicate; returns a **fresh semantic snapshot envelope** on success (missing `nodes` means not observed — never treat as empty). **Do not keyword-filter snapshots** to discover new content; use `changed` or `semantic_snapshot` with `diff:true` when you do not know the text in advance. Put contract handles in `Semantics(identifier:)`, not `label`.
 
-Predicates: `{kind:"text",text}` | `{kind:"noText",text}` | `{kind:"node",identifier,…}` | `{kind:"stable",stableWindowMs}` | `{kind:"time",ms,observe?:bool}` (observe defaults **true** — returns snapshot; `observe:false` sets `observed:false`) | `{kind:"noError"}` | `{kind:"changed",since:<snapshotId>,settleMs?}` (diff vs a prior **public** snapshot; `baseline_evicted` when `since` left the ring).
+Predicates: `{kind:"text",text}` | `{kind:"noText",text}` | `{kind:"node",identifier,…}` | `{kind:"stable",stableWindowMs}` | `{kind:"time",ms,observe?:bool}` (observe defaults **true** — peek snapshot, no `snapshot_id` bump; `observe:false` sets `observed:false`) | `{kind:"noError"}` | `{kind:"changed",since:<snapshotId>,settleMs?}` (diff vs a prior **public** snapshot; ring capacity 32; `baseline_evicted` when `since` left the ring).
 
 Timeout carries `observedRevision`, `lastSnapshotId` (public id at wait start), and a capped `delta` vs the tree at wait start. `predicate` • object • required. `timeoutMs` • integer • optional • default 5000 • max 30000.
 ```json
@@ -774,7 +774,7 @@ Failures: `timeout`, `invalid_predicate`, `baseline_evicted`
 
 ### semantic_snapshot (diff / filters)
 
-`identifierPrefix` matches **Semantics identifier** only. Use `labelPrefix` for visible label text. `diff:true` returns `baseline` + `delta` (`baseline:"none"` on first call). `render:true` adds compact numbered text.
+`identifierPrefix` matches **Semantics identifier** only. Use `labelPrefix` for visible label text. `diff:true` returns `baseline` + `delta` (`baseline:null` + `baselineReason` on first call). `render:true` adds compact numbered text.
 
 ### navigate
 Drive the registered Navigator. Requires `MCPToolkitBinding.instance.navigatorKey = key` in the app. `action` • string • required (`push|pop|popUntil`). `route` • string • required for push/popUntil. `arguments` • object • optional (for push). `connection` • object • optional.

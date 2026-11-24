@@ -5,8 +5,17 @@
 'flutter_mcp_toolkit_capability_core': minor
 ---
 
-Observation vs empty semantics (ADR 0023): `semantic_snapshot` exposes `diff`,
+Observation vs empty semantics (ADR 0024): `semantic_snapshot` exposes `diff`,
 `render`, `labelPrefix`, and `maxNodes`; `wait_for` adds `changed`, timeout
-delta, and `time.observe` (defaults **true** — returns a full snapshot envelope
-after the delay, increasing default token use for `time` waits). Action tools
-support optional `awaitChange`. Doctor warns on unnamed tappable controls.
+delta, and optional `awaitChange` on actions. Doctor warns on unnamed tappable
+controls.
+
+**Behavior change:** `wait_for` `{kind:"time"}` defaults `observe` to **true**,
+returning a peek snapshot envelope after the delay (higher default token use than
+`observe:false`). After this release, `time` with default observe uses a peek
+that does **not** bump `snapshot_id`, rebind public refs, or consume a ring
+slot — refs and `changed` baselines stay stable.
+
+**Included patch scope:** peek snapshots no longer rebind public `s_N` refs
+while `snapshot_id` is frozen; timeouts report `lastSnapshotId` at wait start
+and `observedRevision` from the latest peek.
