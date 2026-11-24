@@ -18,6 +18,12 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
   var _debugServiceExtensionsRegistered = false;
   final _registeredEntryKeys = <String>{};
 
+  /// Live entry per VM extension name. Handlers are resolved here because the
+  /// Dart VM cannot unregister or replace a registered service extension; a
+  /// later `addEntries` with the same name must update behavior without calling
+  /// [registerServiceExtension] again.
+  final _entriesByExtensionName = <String, AgentCallEntry>{};
+
   /// Accumulated entries from all addEntries calls
   final _allEntries = <AgentCallEntry>{};
 
@@ -133,16 +139,19 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
     // Dynamic registration is a debug-only VM-service surface; release apps
     // should not depend on these service extensions being present.
     assert(() {
-      final allEntries = {..._allEntries, ...entries};
-      final uniqueEntries = <AgentCallEntry>{};
-      for (final entry in allEntries) {
-        if (!uniqueEntries.any((e) => e.key == entry.key)) {
-          uniqueEntries.add(entry);
-        }
+      final byKey = <Object, AgentCallEntry>{
+        for (final entry in _allEntries) entry.key: entry,
+      };
+      for (final entry in entries) {
+        byKey[entry.key] = entry;
       }
       _allEntries
         ..clear()
-        ..addAll(uniqueEntries);
+        ..addAll(byKey.values);
+
+      for (final entry in _allEntries) {
+        _entriesByExtensionName[entry.serviceExtensionName] = entry;
+      }
 
       for (final projection in projections) {
         projection.entriesChanged(_allEntries);
@@ -156,16 +165,23 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
         registerServiceExtension(
           name: extensionName,
           callback: (parameters) async {
+            final current = _entriesByExtensionName[extensionName];
+            if (current == null) {
+              return <String, Object?>{
+                'success': false,
+                'error': 'unregistered extension: $extensionName',
+              };
+            }
             final wireArgs = mcpToolkitArgumentsFromServiceExtensionParameters(
               parameters,
             );
-            final registration = entry.toRegistration();
+            final registration = current.toRegistration();
             final args = coerceArgumentsForSchema(
               registration.descriptor.inputSchema,
               wireArgs,
             );
             registration.validate(args);
-            final result = await entry.value.handler(args);
+            final result = await current.value.handler(args);
             return agentResultToServiceExtensionMap(result);
           },
         );
