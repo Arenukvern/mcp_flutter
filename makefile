@@ -28,7 +28,6 @@ check-contracts:
 	bash tool/contracts/test_release_recovery_flow.sh && \
 	bash tool/contracts/test_oka_consumer_overrides_guard.sh && \
 	bash tool/contracts/check_version_sync.sh && \
-	bash tool/contracts/test_harness_scenario_report_schema.sh && \
 	bash tool/contracts/check_skill_assets_drift.sh && \
 	bash tool/contracts/check_docs_reference_drift.sh && \
 	bash tool/contracts/test_hardcoded_tool_counts_fixtures.sh && \

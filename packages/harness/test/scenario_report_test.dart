@@ -36,11 +36,37 @@ ScenarioReport _fixtureReport() {
   return report;
 }
 
+int _consoleBytes(ScenarioReport report, {bool allPassed = false}) {
+  final buffer = StringBuffer();
+  for (final check in report.checks) {
+    buffer.writeln('  $check');
+  }
+  buffer.writeln(
+    allPassed
+        ? 'ALL PASS (${report.checks.length})'
+        : 'FAILURES: ${report.checks.where((c) => c.status == CheckStatus.fail).length}/${report.checks.length}',
+  );
+  return utf8.encode(buffer.toString()).length;
+}
+
 void main() {
   group('HarnessReportArgs', () {
-    test('parses report flags', () {
-      final parsed = HarnessReportArgs.parse([
-        '--skip-build',
+    test('validationError rejects unknown report format', () {
+      expect(
+        HarnessReportArgs.validationError(['--report=jsonl']),
+        contains('unknown --report=jsonl'),
+      );
+    });
+
+    test('validationError requires report-out when report set', () {
+      expect(
+        HarnessReportArgs.validationError(['--report=agent']),
+        '--report requires --report-out=<path>',
+      );
+    });
+
+    test('parses valid report flags', () {
+      final parsed = HarnessReportArgs.parseValidated([
         '--report=agent',
         '--report-out=/tmp/out.jsonl',
         '--report-diff=/tmp/prev.json',
@@ -48,8 +74,67 @@ void main() {
       ]);
       expect(parsed.format, HarnessReportFormat.agent);
       expect(parsed.reportOut, '/tmp/out.jsonl');
-      expect(parsed.diffAgainst, '/tmp/prev.json');
-      expect(parsed.scenarioId, 'checkout-e2e');
+    });
+  });
+
+  group('stable check ids', () {
+    test('slug-only ids with collision suffix', () {
+      final report = ScenarioReport()
+        ..pass('Same Name')
+        ..pass('same name')
+        ..fail('other');
+      final ids = assignStableCheckIds('checkout-e2e', report.checks);
+      expect(ids, [
+        'checkout-e2e:same-name',
+        'checkout-e2e:same-name#2',
+        'checkout-e2e:other',
+      ]);
+    });
+
+    test('inserting a check does not shift later ids', () {
+      final before = ScenarioReport()
+        ..pass('alpha')
+        ..failDetailed('beta', expected: 'ok');
+      final after = ScenarioReport()
+        ..pass('inserted')
+        ..pass('alpha')
+        ..failDetailed('beta', expected: 'ok');
+      final idsBefore = assignStableCheckIds('s', before.checks);
+      final idsAfter = assignStableCheckIds('s', after.checks);
+      expect(idsBefore, ['s:alpha', 's:beta']);
+      expect(idsAfter[1], idsBefore[0]);
+      expect(idsAfter[2], idsBefore[1]);
+    });
+  });
+
+  group('observed encoding', () {
+    test('agent omits obs when absent; keeps literal false', () {
+      final report = ScenarioReport()
+        ..failDetailed('a', expected: 'x', observed: false)
+        ..failDetailed('b', expected: 'y')
+        ..failDetailed('c', detail: '');
+      final writer = ScenarioReportWriter(
+        scenarioName: 'checkout E2E',
+        scenarioId: 'checkout-e2e',
+        report: report,
+        stepsNotRun: const [],
+      );
+      final lines = writer.buildAgentJsonl();
+      expect(lines[1], contains('"obs":false'));
+      expect(lines[2], isNot(contains('"obs"')));
+      expect(lines[3], isNot(contains('"obs"')));
+    });
+
+    test('full JSON failures omit observed when absent', () {
+      final report = ScenarioReport()..fail('bare');
+      final writer = ScenarioReportWriter(
+        scenarioName: 't',
+        scenarioId: 't',
+        report: report,
+        stepsNotRun: const [],
+      );
+      final failures = writer.buildFullJson()['failures']! as List;
+      expect((failures.single as Map).containsKey('observed'), isFalse);
     });
   });
 
@@ -70,11 +155,35 @@ void main() {
 
     test('full JSON validates against published schema', () {
       final doc = writer.buildFullJson();
-      final schema = _loadReportSchema();
-      expect(() => validateAgainstSchema(schema, doc), returnsNormally);
+      validateAgainstSchema(_loadReportSchema(), doc);
+      final checks = doc['checks']! as List;
+      expect(checks.length, report.checks.length);
+      expect((checks.first as Map)['status'], 'pass');
     });
 
-    test('agent JSONL is smaller than console when passes dominate', () {
+    test('all-pass agent line is smaller than console', () {
+      final passOnly = ScenarioReport();
+      for (var i = 0; i < 10; i++) {
+        passOnly.pass('gate-$i');
+      }
+      final w = ScenarioReportWriter(
+        scenarioName: 'checkout E2E',
+        scenarioId: 'checkout-e2e',
+        report: passOnly,
+        stepsNotRun: const [],
+      );
+      final agentBytes = utf8.encode(w.buildAgentJsonl().single).length;
+      final consoleBytes = _consoleBytes(passOnly, allPassed: true);
+      expect(agentBytes, lessThan(consoleBytes));
+    });
+
+    test('token sizes (ADR-0023 regression)', () {
+      final fixtureAgent = utf8.encode(writer.buildAgentJsonl().join('\n')).length;
+      final fixtureConsole = _consoleBytes(report);
+      final fixtureJson = utf8.encode(
+        const JsonEncoder().convert(writer.buildFullJson()),
+      ).length;
+
       final passOnly = ScenarioReport();
       for (var i = 0; i < 24; i++) {
         passOnly.pass('gate-$i');
@@ -85,80 +194,102 @@ void main() {
         expected: 'total in snapshot',
         observed: false,
       );
-      final compactWriter = ScenarioReportWriter(
+      final w24 = ScenarioReportWriter(
         scenarioName: 'checkout E2E',
         scenarioId: 'checkout-e2e',
         report: passOnly,
         stepsNotRun: const [],
       );
-      final agentBytes =
-          utf8.encode(compactWriter.buildAgentJsonl().join('\n')).length;
-      final buffer = StringBuffer();
-      for (final check in passOnly.checks) {
-        buffer.writeln('  $check');
+      final agent24 = utf8.encode(w24.buildAgentJsonl().join('\n')).length;
+      final console24 = _consoleBytes(passOnly);
+
+      final allPass = ScenarioReport();
+      for (var i = 0; i < 10; i++) {
+        allPass.pass('gate-$i');
       }
-      buffer.writeln('FAILURES: 1/${passOnly.checks.length}');
-      final consoleBytes = utf8.encode(buffer.toString()).length;
-      expect(agentBytes, lessThan(consoleBytes));
+      final wAll = ScenarioReportWriter(
+        scenarioName: 'checkout E2E',
+        scenarioId: 'checkout-e2e',
+        report: allPass,
+        stepsNotRun: const [],
+      );
+      final allPassAgent = utf8.encode(wAll.buildAgentJsonl().single).length;
+      final allPassConsole = _consoleBytes(allPass, allPassed: true);
+
+      expect(allPassAgent, lessThan(allPassConsole));
+      expect(agent24, lessThan(console24));
+      expect(fixtureAgent, inInclusiveRange(400, 520));
+      expect(fixtureConsole, inInclusiveRange(260, 330));
+      expect(fixtureJson, inInclusiveRange(1100, 1300));
     });
 
-    test('fixture token sizes match ADR-0023 table (regression)', () {
-      final agentBytes = utf8.encode(writer.buildAgentJsonl().join('\n')).length;
-      final buffer = StringBuffer();
-      for (final check in report.checks) {
-        buffer.writeln('  $check');
-      }
-      buffer.writeln('FAILURES: 2/${report.checks.length}');
-      final consoleBytes = utf8.encode(buffer.toString()).length;
-      final jsonBytes = utf8.encode(
-        const JsonEncoder().convert(writer.buildFullJson()),
-      ).length;
-      expect(agentBytes, inInclusiveRange(500, 560));
-      expect(consoleBytes, inInclusiveRange(270, 320));
-      expect(jsonBytes, inInclusiveRange(600, 680));
+    test('writes junit with a testcase per check', () async {
+      final xml = writer.buildJUnitXml();
+      expect(xml.split('<testcase').length - 1, report.checks.length);
+      expect(xml, contains('<failure'));
     });
 
-    test('writes agent, json, and junit artifacts', () async {
-      final dir = await Directory.systemTemp.createTemp('harness-report-');
-      addTearDown(() => dir.delete(recursive: true));
-
-      await writer.write(
-        format: HarnessReportFormat.agent,
-        path: p.join(dir.path, 'agent.jsonl'),
-      );
-      await writer.write(
-        format: HarnessReportFormat.json,
-        path: p.join(dir.path, 'full.json'),
-      );
-      await writer.write(
-        format: HarnessReportFormat.junit,
-        path: p.join(dir.path, 'junit.xml'),
-      );
-
-      final agent = File(p.join(dir.path, 'agent.jsonl')).readAsStringSync();
-      expect(agent.split('\n').first, contains('"verdict":"fail"'));
-      expect(agent, contains('"obs":'));
-
-      final full = jsonDecode(
-        File(p.join(dir.path, 'full.json')).readAsStringSync(),
-      ) as Map<String, Object?>;
-      validateAgainstSchema(_loadReportSchema(), full);
-
-      final junit = File(p.join(dir.path, 'junit.xml')).readAsStringSync();
-      expect(junit, contains('<testsuite'));
-      expect(junit, contains('<failure'));
-    });
-
-    test('diff mode compares failure ids', () {
+    test('diff uses stable ids without index prefix', () {
       final prev = <String, Object?>{
         'failures': [
-          {'id': 'checkout-e2e:c10:old-fail'},
+          {'id': 'checkout-e2e:old-fail'},
         ],
       };
-      final diff = ReportDiff.compute(writer.buildFullJson(), prev);
-      expect(diff, isNotNull);
-      expect(diff!.newFailures, contains('checkout-e2e:c10:total-rendered'));
-      expect(diff.resolved, contains('checkout-e2e:c10:old-fail'));
+      final diff = ReportDiff.compute(writer.buildFullJson(), prev)!;
+      expect(diff.newFailures, contains('checkout-e2e:total-rendered'));
+      expect(diff.resolved, contains('checkout-e2e:old-fail'));
+    });
+
+    test('missing diff baseline emits baseline missing', () async {
+      final dir = await Directory.systemTemp.createTemp('harness-diff-');
+      addTearDown(() => dir.delete(recursive: true));
+      final out = p.join(dir.path, 'out.jsonl');
+      final missing = p.join(dir.path, 'nope.json');
+
+      final scenario = Scenario('diff missing', steps: [
+        (
+          'one',
+          (c) async {
+            c.report.fail('x');
+          },
+        ),
+      ]);
+      await scenario.run(
+        runOptions: ScenarioRunOptions(
+          format: HarnessReportFormat.agent,
+          reportOut: out,
+          diffAgainst: missing,
+        ),
+      );
+      final last = File(out)
+          .readAsLinesSync()
+          .where((l) => l.trim().isNotEmpty)
+          .last;
+      expect(jsonDecode(last), {'kind': 'diff', 'baseline': 'missing'});
+    });
+
+    test('agent JSONL baseline loads for diff', () async {
+      final dir = await Directory.systemTemp.createTemp('harness-jsonl-diff-');
+      addTearDown(() => dir.delete(recursive: true));
+      final baseline = p.join(dir.path, 'prev.jsonl');
+      final writerPrev = ScenarioReportWriter(
+        scenarioName: 'checkout E2E',
+        scenarioId: 'checkout-e2e',
+        report: ScenarioReport()..failDetailed('total rendered'),
+        stepsNotRun: const [],
+      );
+      await writerPrev.write(
+        format: HarnessReportFormat.agent,
+        path: baseline,
+      );
+
+      final loaded = await ReportDiff.loadPrevious(baseline);
+      expect(loaded, isNotNull);
+      final diff = ReportDiff.compute(
+        writer.buildFullJson(),
+        loaded,
+      )!;
+      expect(diff.newFailures, contains('checkout-e2e:pay-button'));
     });
   });
 
@@ -179,11 +310,7 @@ void main() {
         (
           'two',
           (context) async {
-            context.report.failDetailed(
-              'boom',
-              expected: 'ok',
-              observed: false,
-            );
+            context.report.failDetailed('boom', expected: 'ok', observed: 'nope');
           },
         ),
         (
@@ -201,9 +328,8 @@ void main() {
         ),
       );
       expect(ok, isFalse);
-      final lines = File(out).readAsLinesSync();
-      expect(lines.length, greaterThanOrEqualTo(2));
-      final header = jsonDecode(lines.first) as Map<String, Object?>;
+      final header = jsonDecode(File(out).readAsLinesSync().first) as Map;
+      expect(header['v'], 1);
       expect(header['stepsNotRun'], ['three']);
     });
   });

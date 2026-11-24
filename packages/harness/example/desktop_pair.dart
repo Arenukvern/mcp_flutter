@@ -17,7 +17,7 @@ import 'package:path/path.dart' as p;
 ///   dart run example/desktop_pair.dart [--skip-build]
 ///   dart run example/desktop_pair.dart --report=agent --report-out=/tmp/pair.jsonl
 Future<void> main(List<String> args) async {
-  final reportArgs = HarnessReportArgs.parse(args);
+  final reportArgs = HarnessReportArgs.parseValidated(args);
   final build = !args.contains('--skip-build');
   final appDir = 'flutter_test_app'; // adapt: your Flutter desktop project
   final binary = p.join(

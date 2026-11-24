@@ -190,13 +190,21 @@ CLI flags (composition roots): `--report=agent|json|junit`,
    counts (`n: [pass, fail, skip, not_run, steps_not_run]`).
 3. Expand only failure lines (`exp`, `obs`, `det`, `delta`, `ev` paths —
    never inlined blobs). Use `evidenceDir` + `ev` for on-disk artifacts.
-4. `obs: false` means observation absent/false; missing keys are not used to
-   imply emptiness — full JSON uses explicit `status` on each check.
+4. Agent failure lines omit `obs` when nothing was observed; `obs: false` is
+   only a real boolean false. Full JSON lists every check in `checks[]` with
+   `status`, and failures spell out `observed` only when set.
 5. Re-runs: pass `--report-diff` pointing at the previous full JSON export to
    get a trailing `kind: diff` line with new/resolved failure ids.
 
 Schema: `packages/harness/schema/harness_scenario_report_v1.schema.json`
-(contract: `tool/contracts/test_harness_scenario_report_schema.sh`).
+(locked by `packages/harness/test/scenario_report_test.dart`).
+
+**First-class smoke entry** (no app required):
+
+```bash
+dart run packages/harness/tool/scenario_report.dart --smoke \
+  --report=agent --report-out=/tmp/harness-smoke.jsonl
+```
 
 ## Driving widgets (`ToolkitDriver`)
 

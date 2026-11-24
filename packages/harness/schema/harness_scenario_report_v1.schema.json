@@ -4,7 +4,16 @@
   "title": "Harness scenario report v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "scenarioId", "scenario", "verdict", "summary", "stepsNotRun", "failures"],
+  "required": [
+    "schema",
+    "scenarioId",
+    "scenario",
+    "verdict",
+    "summary",
+    "stepsNotRun",
+    "checks",
+    "failures"
+  ],
   "properties": {
     "schema": {"const": "harness.scenario_report.v1"},
     "scenarioId": {"type": "string", "minLength": 1},
@@ -24,12 +33,27 @@
     },
     "stepsNotRun": {"type": "array", "items": {"type": "string"}},
     "evidenceDir": {"type": "string"},
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "status"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "status": {
+            "type": "string",
+            "enum": ["pass", "fail", "skip", "not_run"]
+          }
+        }
+      }
+    },
     "failures": {
       "type": "array",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "expected", "observed"],
+        "required": ["id"],
         "properties": {
           "id": {"type": "string", "minLength": 1},
           "step": {"type": "string"},
@@ -47,8 +71,8 @@
     "diff": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["newFailures", "resolved", "unchangedFailures"],
       "properties": {
+        "baseline": {"const": "missing"},
         "newFailures": {"type": "array", "items": {"type": "string"}},
         "resolved": {"type": "array", "items": {"type": "string"}},
         "unchangedFailures": {"type": "array", "items": {"type": "string"}}
