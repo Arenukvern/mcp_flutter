@@ -1,6 +1,6 @@
 # Examples map (fmtk monorepo)
 
-Canonical index of runnable samples. ADR: [0024](../decisions/0024_canonical_showcase_and_demo_pipeline.mdx).
+Canonical index of runnable samples. ADR: [0025](../decisions/0025_canonical_showcase_and_demo_pipeline.mdx).
 
 ## Top-level map
 

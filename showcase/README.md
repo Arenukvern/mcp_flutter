@@ -96,7 +96,7 @@ dart test pkgs/universal_capture_macos   # screenshots + ScreenCaptureKit stream
 ```
 showcase/
 ├── README.md                    ← you are here (+ examples index below)
-├── flutter_test_app/            ← **canonical product showcase** (ADR-0024)
+├── flutter_test_app/            ← **canonical product showcase** (ADR-0025)
 │                                  `/` polished journey, `/qa` maintainer lab
 ├── drivers/                     ← composition: drive programs + FlutterAppFrames
 ├── flutter_demo/                ← minimal instrumented harness target

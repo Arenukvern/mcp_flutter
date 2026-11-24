@@ -1,4 +1,4 @@
-# flutter_test_app — canonical fmtk showcase (ADR-0024)
+# flutter_test_app — canonical fmtk showcase (ADR-0025)
 
 Product-facing demo for **flutter-mcp-toolkit**: default route is a
 **shipments** flow (form validation, async create, list updates). Maintainer

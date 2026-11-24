@@ -8,7 +8,7 @@ import 'package:test_app/agent_state.dart';
 import 'package:test_app/platform_view_showcase.dart';
 
 /// Maintainer QA lab — every built-in interaction tool in one scroll surface.
-/// Reach via route `/qa` (ADR-0024); not the default product home.
+/// Reach via route `/qa` (ADR-0025); not the default product home.
 ///
 /// The design is deliberately restrained: type and whitespace do the work,
 /// sections are flat, and every interactive widget has a Semantics

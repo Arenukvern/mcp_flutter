@@ -8,7 +8,7 @@ semantics identifier so harness and MCP tools can resolve widgets from a
 semantic snapshot.
 
 **Not** the public product showcase — that is
-[`flutter_test_app`](../flutter_test_app/README.md) (ADR-0024).
+[`flutter_test_app`](../flutter_test_app/README.md) (ADR-0025).
 
 ```bash
 dart run showcase/drivers/bin/drive_flutter.dart
