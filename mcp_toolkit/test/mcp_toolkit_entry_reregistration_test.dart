@@ -175,7 +175,7 @@ void main() {
     });
 
     test(
-      'collision throw leaves prior registry and VM table intact',
+      'VM extension collision throw leaves prior registry and VM table intact',
       () async {
         final binding = _CapturingToolkitBinding();
         binding.initializeServiceExtensions(
@@ -195,20 +195,42 @@ void main() {
           () => binding.initializeServiceExtensions(
             errorMonitor: _TestErrorMonitor(),
             entries: {
-              _pingTool(revision: 2, namespace: 'team_b'),
+              AgentCallEntry.tool(
+                namespace: 'demo',
+                name: 'pong',
+                description: 'collides on VM extension ping',
+                inputSchema: _emptyObjectSchema,
+                methodName: 'ping',
+                handler: (_) async => AgentResult.success(
+                  data: {'rev': 2},
+                ),
+              ),
             },
           ),
-          throwsA(isA<StateError>()),
+          throwsA(
+            isA<StateError>().having(
+              (e) => e.toString(),
+              'message',
+              contains('Duplicate VM service extension'),
+            ),
+          ),
         );
 
         final vm = await binding.callbacks['ping']!({});
         expect(vm['rev'], 1);
 
-        final invoke = await binding.callbacks['agent_invoke']!({
+        final invokePing = await binding.callbacks['agent_invoke']!({
           'name': 'ping',
           'json': '{}',
         });
-        expect(invoke['rev'], 1);
+        expect(invokePing['rev'], 1);
+
+        final invokePong = await binding.callbacks['agent_invoke']!({
+          'name': 'pong',
+          'json': '{}',
+        });
+        expect(invokePong['success'], isFalse);
+        expect(invokePong['error'], contains('unknown registry action'));
       },
     );
 
