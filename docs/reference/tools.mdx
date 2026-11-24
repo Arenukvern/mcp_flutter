@@ -2092,7 +2092,7 @@ Tap a widget identified by ref from semantic_snapshot. Refs are session-scoped t
 
 ### `fmt_wait_for`
 
-Wait until a UI predicate holds (or timeout) and return a fresh semantic snapshot envelope. Prefer changed or diff over keyword filters on a static snapshot when you do not know the text in advance. Default timeout 5000ms, max 30000ms.
+Wait until a UI predicate holds (or timeout) and return a semantic snapshot envelope. Matched successes include nodes; `changed` with `settled:false` attaches the last peek (refBound:false, refs stripped) plus delta. Prefer changed or diff over keyword filters on a static snapshot when you do not know the text in advance. Default timeout 5000ms, max 30000ms.
 
 ```json
 {
@@ -2105,7 +2105,7 @@ Wait until a UI predicate holds (or timeout) and return a fresh semantic snapsho
     "predicate": {
       "type": "object",
       "additionalProperties": true,
-      "description": "Predicate map shapes: {kind:\"time\", ms:int, observe?:bool} — observe defaults true and returns a peek snapshot envelope (no snapshot_id bump); false sets observed:false and omits nodes | {kind:\"text\", text:String} | {kind:\"noText\", text:String} | {kind:\"node\", identifier:String, selected/enabled/focused/checked/toggled:bool, absent:bool} | {kind:\"stable\", stableWindowMs:int} | {kind:\"noError\"} | {kind:\"changed\", since:<snapshotId>, settleMs?:int} — diffs against a prior public snapshot in the observation ring (capacity 32; baseline_evicted when since was evicted)."
+      "description": "Predicate map shapes: {kind:\"time\", ms:int, observe?:bool} — observe defaults true and returns a peek snapshot envelope (no snapshot_id bump); false sets observed:false and omits nodes | {kind:\"text\", text:String} | {kind:\"noText\", text:String} | {kind:\"node\", identifier:String, selected/enabled/focused/checked/toggled:bool, absent:bool} | {kind:\"stable\", stableWindowMs:int} | {kind:\"noError\"} | {kind:\"changed\", since:<snapshotId>, settleMs?:int} — diffs against a prior public snapshot in the observation ring (capacity 32; baseline_evicted when since was evicted). When the tree moved but settleMs could not complete before timeout, matched:true, settled:false returns delta plus a peek snapshot envelope (refBound:false)."
     },
     "timeoutMs": {
       "type": "integer",
