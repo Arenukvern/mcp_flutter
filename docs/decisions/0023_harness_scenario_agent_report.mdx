@@ -1,0 +1,109 @@
+# ADR 0023: Harness scenario report — agent-first, CI-second
+
+## Status
+
+Accepted (2026-11-24)
+
+## Context
+
+`flutter_mcp_harness` ends a [Scenario] with console `PASS`/`FAIL` lines
+(`ScenarioReport.printSummary`) and, on failure, a best-effort evidence
+directory (`EvidenceCollector` + `scenario.dart`). CI and AI agents must
+parse that console text to learn which checks passed, what was expected vs
+observed, and where artifacts live. That is noisy for humans, expensive in
+tokens for agents, and brittle for junit-compatible CI reporters.
+
+Issue [#180](https://github.com/Arenukvern/mcp_flutter/issues/180) asks for
+machine-readable output. The primary consumer is an **autonomous agent**
+triaging a failed gate: it needs a one-line verdict, expanded failures only,
+stable ids for re-run comparison, and **paths** to evidence — never inlined
+blobs. JSON and JUnit are secondary surfaces for dashboards and CI uploaders.
+
+## Decision
+
+Add an optional report artifact selected by format and path. Console output
+stays the default (unchanged).
+
+### Key design decisions
+
+1. **Agent format first** — `HarnessReportFormat.agent` emits compact
+   JSONL: line 1 is the verdict + collapsed pass/skip/not_run counts; only
+   failure records follow; optional final `diff` line when
+   `--report-diff=<prev>` is set. No timestamps on the hot path.
+2. **Full JSON + JUnit for CI** — `json` is the schema-complete document;
+   `junit` maps failed checks to `<testcase>` elements (passed checks
+   collapse to counts in suite metadata, not one XML node per pass).
+3. **Explicit absence** — every check carries `status`:
+   `pass` | `fail` | `skip` | `not_run`. Optional fields use JSON `null` in
+   full JSON; agent lines omit null keys. An absent field never means empty.
+4. **Stable ids** — `scenarioId` (slug of scenario name unless overridden)
+   and per-check ids `scenarioId:c<index>:<check-slug>` so consecutive runs
+   diff by id, not display text.
+5. **Evidence by reference** — `evidenceDir` and per-failure `evidence`
+   path lists only; semantic hints live in `semanticDelta` (short string),
+   not embedded AX or PNG data.
+6. **First-class CLI flags** — composition roots parse
+   `--report=agent|json|junit`, `--report-out=<path>`,
+   `--report-diff=<prev.json>`, `--scenario-id=<slug>` via
+   [HarnessReportArgs]; [Scenario.run] accepts the same via
+   [ScenarioRunOptions].
+7. **Schema contract** — `packages/harness/schema/harness_scenario_report_v1.schema.json`
+   plus dart tests that validate golden fixtures with `intentcall_schema`
+   (same JSON-Schema subset as intentcall).
+
+### Report shapes (sketch)
+
+**Agent JSONL (example, 2 failures among 12 checks, 1 step not run):**
+
+```jsonl
+{"schema":"harness.agent.v1","scenarioId":"checkout-e2e","scenario":"checkout E2E","verdict":"fail","counts":{"pass":10,"fail":2,"skip":0,"not_run":0},"stepsNotRun":["teardown metrics"],"evidenceDir":"/tmp/checkout-e2e"}
+{"kind":"failure","id":"checkout-e2e:c11:total-rendered","step":"assert cart","expected":"total in snapshot","observed":false,"detail":"no total in snapshot","semanticDelta":"snapshot nodes=41, none with role=total"}
+{"kind":"failure","id":"checkout-e2e:c12:pay-button","step":"assert cart","expected":"Pay enabled","observed":"Pay disabled","evidence":["/tmp/checkout-e2e/host.log"]}
+```
+
+**Full JSON** — single object matching `harness_scenario_report_v1.schema.json`
+(`verdict`, `summary`, `stepsNotRun`, `failures[]` with expected/observed,
+`evidenceDir`, optional `diff`).
+
+### Token budget (measured fixture)
+
+Representative gate: 10 passing checks, 2 failing checks (with expected,
+observed, delta, evidence paths), 1 step not run, evidence dir set.
+
+| Surface | UTF-8 bytes | ~tokens (÷4) |
+| ------- | -----------: | ------------: |
+| Console `printSummary` (all 12 lines + footer) | 285 | ~71 |
+| Agent JSONL (`agent` format) | 530 | ~133 |
+| Full JSON (`json` format) | 637 | ~159 |
+
+On failure-heavy fixtures console can be *smaller* than agent (failures still
+print one short line each). Agent wins when passes dominate: 24 passes + 1
+failure → agent **207 B** vs console **413 B** (~50% smaller) because passes
+collapse to a count vector. Full JSON is largest (CI completeness); agents
+should prefer `agent` when writing scenarios with many checks.
+
+Console remains default; agents opt in with `--report=agent`.
+
+### Entry points
+
+| Surface | How to get the report |
+| ------- | --------------------- |
+| Dart scenario | `await scenario.run(options: ScenarioRunOptions(...))` then artifact at `reportOut` |
+| Composition-root CLI | `HarnessReportArgs.parse(args)` → pass to `ScenarioRunOptions` |
+| MCP / interactive | No new MCP tool — harness is programmatic; agents run the checked-in `dart run …` entrypoint and read `reportOut` (same as exit code + evidence dir today) |
+
+## Consequences
+
+- **Minor** semver bump on `flutter_mcp_harness` (new API surfaces, no
+  breaking changes to existing `pass`/`fail` calls).
+- Composition roots gain optional flags; showcase drivers may adopt them
+  incrementally.
+- CI can upload `--report=junit` without parsing stdout.
+- Agents stop scraping `PASS:` lines when `--report=agent` is set.
+
+## Notes
+
+- Diff mode compares failure **ids** between the current full JSON shape and
+  `--report-diff`; it does not diff pass lists.
+- JUnit output uses the scenario name as the suite; each **failed** check is
+  a testcase; skipped/not_run are properties on the suite, not silent absence.

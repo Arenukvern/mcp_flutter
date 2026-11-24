@@ -2611,6 +2611,36 @@ exit(passed ? 0 : 1);
 - `retry(action)` polls until non-null (for app-side readiness races).
 - Full two-instance composition root: `packages/harness/example/desktop_pair.dart`.
 
+## Machine-readable report (ADR-0023)
+
+Console output stays the default (`printSummary`). Agents and CI opt in:
+
+```dart
+final reportArgs = HarnessReportArgs.parse(platformArgs);
+passed = await scenario.run(runOptions: reportArgs.toRunOptions());
+scenario.report.printSummary();
+```
+
+CLI flags (composition roots): `--report=agent|json|junit`,
+`--report-out=<path>`, optional `--report-diff=<prev.json>`,
+`--scenario-id=<slug>`.
+
+**How agents should read results**
+
+1. Run the checked-in `dart run …` entrypoint with `--report=agent` and
+   `--report-out=<path>` (or `json` / `junit` for CI uploaders).
+2. Read line 1 of the agent JSONL for the one-line verdict and collapsed
+   counts (`n: [pass, fail, skip, not_run, steps_not_run]`).
+3. Expand only failure lines (`exp`, `obs`, `det`, `delta`, `ev` paths —
+   never inlined blobs). Use `evidenceDir` + `ev` for on-disk artifacts.
+4. `obs: false` means observation absent/false; missing keys are not used to
+   imply emptiness — full JSON uses explicit `status` on each check.
+5. Re-runs: pass `--report-diff` pointing at the previous full JSON export to
+   get a trailing `kind: diff` line with new/resolved failure ids.
+
+Schema: `packages/harness/schema/harness_scenario_report_v1.schema.json`
+(contract: `tool/contracts/test_harness_scenario_report_schema.sh`).
+
 ## Driving widgets (`ToolkitDriver`)
 
 - `attachDriver(app)` → a `ToolkitDriver` over the app's VM service.

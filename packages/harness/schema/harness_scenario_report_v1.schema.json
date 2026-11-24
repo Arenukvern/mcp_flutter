@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Arenukvern/mcp_flutter/packages/harness/schema/harness_scenario_report_v1.schema.json",
+  "title": "Harness scenario report v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "scenarioId", "scenario", "verdict", "summary", "stepsNotRun", "failures"],
+  "properties": {
+    "schema": {"const": "harness.scenario_report.v1"},
+    "scenarioId": {"type": "string", "minLength": 1},
+    "scenario": {"type": "string", "minLength": 1},
+    "verdict": {"type": "string", "enum": ["pass", "fail"]},
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pass", "fail", "skip", "not_run", "steps_not_run"],
+      "properties": {
+        "pass": {"type": "integer", "minimum": 0},
+        "fail": {"type": "integer", "minimum": 0},
+        "skip": {"type": "integer", "minimum": 0},
+        "not_run": {"type": "integer", "minimum": 0},
+        "steps_not_run": {"type": "integer", "minimum": 0}
+      }
+    },
+    "stepsNotRun": {"type": "array", "items": {"type": "string"}},
+    "evidenceDir": {"type": "string"},
+    "failures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "expected", "observed"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "step": {"type": "string"},
+          "expected": {},
+          "observed": {},
+          "detail": {"type": "string"},
+          "semanticDelta": {"type": "string"},
+          "evidence": {
+            "type": "array",
+            "items": {"type": "string"}
+          }
+        }
+      }
+    },
+    "diff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["newFailures", "resolved", "unchangedFailures"],
+      "properties": {
+        "newFailures": {"type": "array", "items": {"type": "string"}},
+        "resolved": {"type": "array", "items": {"type": "string"}},
+        "unchangedFailures": {"type": "array", "items": {"type": "string"}}
+      }
+    }
+  }
+}
