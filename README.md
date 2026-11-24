@@ -37,7 +37,11 @@ The picture's story: the toolkit gives an AI assistant a shared window and contr
 
 ![Screen recording of the flutter-mcp-toolkit harness driving a debug Flutter app and returning UI frames to an AI assistant.](docs/assets/gifs/harness-flutter.gif)
 
-Full-length capture demo (~6 MB): [docs/view_screenshots.gif](docs/view_screenshots.gif)
+## See it in Cursor (~6 MB)
+
+An early capture of the toolkit in Cursor: the agent grabs a screenshot of a running debug app and reads the UI back. Today's tool is `fmt_get_screenshots`; a fresh recording is coming with the demo rethink.
+
+![Early screen recording of Cursor's agent calling the toolkit's screenshot tool (then named view_screenshots) on a running Flutter debug app and describing the captured UI.](docs/view_screenshots.gif)
 
 ## See it in action
 
