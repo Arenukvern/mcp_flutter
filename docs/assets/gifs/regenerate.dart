@@ -39,8 +39,10 @@ Future<void> main(List<String> args) async {
   }
 
   await _checkoutIntentcall(root);
-  await _prebuildWeb('$root/showcase/flutter_demo');
-  await _prebuildWeb('$root/showcase/flutter_test_app');
+  // flutter_demo is not required for the committed tapes (harness drives build on
+  // demand). Prebuild flutter_test_app when solvable to warm cli-exec; skip on
+  // transient intentcall/workspace skew — showcase.dart / vhs still compile at runtime.
+  await _prebuildWebBestEffort('$root/showcase/flutter_test_app');
   await _stopShowcaseProcesses(root);
   await _checkDisplayBeforeVhs();
 
@@ -161,9 +163,23 @@ Future<void> _checkDisplayBeforeVhs() async {
   await _checkDisplayReady();
 }
 
-Future<void> _prebuildWeb(String appDir) async {
+Future<void> _prebuildWebBestEffort(String appDir) async {
   stdout.writeln('regenerate_cli_gifs: prebuilding $appDir (web)…');
-  await _run('flutter', ['build', 'web'], workingDirectory: appDir);
+  final result = await _runProcess(
+    'flutter',
+    ['build', 'web'],
+    workingDirectory: appDir,
+    allowFailure: true,
+  );
+  if (result.exitCode == 0) {
+    stdout.writeln('regenerate_cli_gifs: web prebuild OK ($appDir)');
+    return;
+  }
+  stderr.writeln(
+    'regenerate_cli_gifs: warning — web prebuild skipped for $appDir '
+    '(exit ${result.exitCode}); tapes will compile at runtime',
+  );
+  stderr.write(result.stderr);
 }
 
 Future<void> _stopShowcaseProcesses(String root) async {
