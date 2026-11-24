@@ -32,7 +32,7 @@ dependencies:
   flutter:
     sdk: flutter
   mcp_toolkit:
-    path: ../../mcp_toolkit
+    path: ../../../mcp_toolkit
   cupertino_icons: ^1.0.8
 
 dev_dependencies:
