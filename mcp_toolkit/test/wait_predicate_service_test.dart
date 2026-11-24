@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
+import 'package:universal_automation_semantics/universal_automation_semantics.dart';
 
 void main() {
   // The `time` predicate is a pure delay with no widget interaction. Use
@@ -30,6 +31,37 @@ void main() {
       timeoutMs: 500,
     );
     expect((result['predicate']! as Map)['ms'], 50);
+  });
+
+  testWidgets('wait_for time observe defaults to a fresh snapshot', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: Text('tick'))),
+    );
+    await tester.pump();
+    final resultFuture = WaitPredicateService.waitFor(
+      predicate: const {'kind': 'time', 'ms': 1},
+      timeoutMs: 500,
+    );
+    await tester.pump(const Duration(milliseconds: 20));
+    await tester.pump();
+    await tester.pump();
+    final result = await resultFuture;
+    expect(result['matched'], isTrue);
+    expect(result['snapshot_id'], isA<int>());
+    expect(result['nodes'], isA<List<Object?>>());
+    expect(result.containsKey('observed'), isFalse);
+  });
+
+  test('wait_for time observe false skips nodes', () async {
+    final result = await WaitPredicateService.waitFor(
+      predicate: const {'kind': 'time', 'ms': 1, 'observe': false},
+      timeoutMs: 500,
+    );
+    expect(result['matched'], isTrue);
+    expect(result['observed'], isFalse);
+    expect(result.containsKey('nodes'), isFalse);
   });
 
   test('wait_for rejects an impossible stable timeout budget', () async {
@@ -131,17 +163,33 @@ void main() {
     // builder — driving the full waitFor loop deterministically under
     // testWidgets is impractical because the deadline check uses a
     // real-time Stopwatch that does not advance under fake-async pumps.
+    final baselineNodes = <Map<String, Object?>>[
+      <String, Object?>{'ref': 's_0', 'label': 'x', 'type': 'text'},
+    ];
+    final baselineObs = Observation.of(
+      familySnapshotFromNodes(
+        baselineNodes,
+        snapshotId: 4,
+        capturedAt: DateTime.utc(2026),
+      ),
+      const SemanticView(),
+    );
     final result = WaitPredicateService.buildTimeoutResponseForTesting(
       predicate: const {'kind': 'text', 'text': 'never_appears'},
       elapsedMs: 50,
+      waitStartSnapshotId: 4,
+      waitStartBaseline: baselineObs,
       lastSnapshot: const <String, Object?>{
         'snapshot_id': 7,
+        'observed_revision': 19,
         'nodes': <Object?>[],
       },
     );
     expect(result['matched'], isFalse);
     expect(result['elapsedMs'], 50);
-    expect(result['lastSnapshotId'], 7);
+    expect(result['lastSnapshotId'], 4);
+    expect(result['observedRevision'], 19);
+    expect(result['delta'], isA<String>());
     expect(
       result.containsKey('lastSnapshot'),
       isFalse,

@@ -989,9 +989,17 @@ final class CommandCatalog {
                     .toList(growable: false)
               : const <Map<String, Object?>>[];
           final snapshotIdRaw = _intArg(args, 'snapshotId', fallback: 0);
+          final awaitChangeRaw = args['awaitChange'];
+          Map<String, Object?>? awaitChange;
+          if (awaitChangeRaw is Map<String, Object?>) {
+            awaitChange = awaitChangeRaw;
+          } else if (awaitChangeRaw is Map) {
+            awaitChange = awaitChangeRaw.cast<String, Object?>();
+          }
           return FillFormCommand(
             fields: list,
             snapshotId: snapshotIdRaw == 0 ? null : snapshotIdRaw,
+            awaitChange: awaitChange,
           );
         },
       ),

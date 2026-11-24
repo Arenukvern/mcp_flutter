@@ -550,10 +550,18 @@ final class NavigateCommand extends CoreCommand {
 }
 
 final class FillFormCommand extends CoreCommand {
-  const FillFormCommand({required this.fields, this.snapshotId});
+  const FillFormCommand({
+    required this.fields,
+    this.snapshotId,
+    this.awaitChange,
+  });
 
   final List<Map<String, Object?>> fields;
   final int? snapshotId;
+
+  /// Optional `{settleMs, timeoutMs}` — baseline snapshot before fields,
+  /// then `changed` wait and delta after success.
+  final Map<String, Object?>? awaitChange;
 
   @override
   String get name => 'fill_form';

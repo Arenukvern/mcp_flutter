@@ -430,7 +430,8 @@ class WaitPredicateService {
     int? waitStartSnapshotId,
     Observation? waitStartBaseline,
   }) {
-    final observedRevision = (lastSnapshot?['observedRevision'] as num?)?.toInt();
+    final observedRevision =
+        (lastSnapshot?['observed_revision'] as num?)?.toInt();
     Map<String, Object?>? deltaWire;
     if (waitStartBaseline != null && lastSnapshot != null) {
       final current =
