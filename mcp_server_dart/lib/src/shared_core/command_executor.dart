@@ -965,7 +965,12 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
         args: {
           if (command.identifierPrefix != null)
             'identifierPrefix': command.identifierPrefix,
+          if (command.labelPrefix != null) 'labelPrefix': command.labelPrefix,
           if (command.subtreeOf != null) 'subtreeOf': command.subtreeOf,
+          if (command.maxNodes != null) 'maxNodes': command.maxNodes,
+          if (command.render) 'render': true,
+          if (command.diff) 'diff': true,
+          if (command.lens != null) 'lens': command.lens,
           // Extension parameters travel as strings; the app decodes a
           // list from JSON, not from List.toString().
           if (command.fields != null) 'fields': jsonEncode(command.fields),
@@ -993,6 +998,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
         args: {
           'ref': command.ref,
           if (command.snapshotId != null) 'snapshotId': command.snapshotId,
+          if (command.awaitChange != null)
+            'awaitChange': jsonEncode(command.awaitChange),
         },
       );
       return routeInteractionResponse('tap_widget', _map(result.json));
@@ -1015,6 +1022,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           'ref': command.ref,
           'text': command.text,
           if (command.snapshotId != null) 'snapshotId': command.snapshotId,
+          if (command.awaitChange != null)
+            'awaitChange': jsonEncode(command.awaitChange),
         },
       );
       return routeInteractionResponse('enter_text', _map(result.json));
@@ -1414,6 +1423,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           'shift': command.shift,
           'alt': command.alt,
           'meta': command.meta,
+          if (command.awaitChange != null)
+            'awaitChange': jsonEncode(command.awaitChange),
         },
       );
       final data = _map(result.json);
@@ -1513,7 +1524,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       final baseline = await _semanticSnapshot(const SemanticSnapshotCommand());
       if (!baseline.ok) return baseline;
       changeBaselineId =
-          (baseline.data?['snapshot_id'] as num?)?.toInt();
+          (_map(baseline.data)['snapshot_id'] as num?)?.toInt();
     }
 
     final results = <Map<String, Object?>>[];

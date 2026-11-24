@@ -297,12 +297,17 @@ final class CaptureUiSnapshotCommand extends CoreCommand {
 final class SemanticSnapshotCommand extends CoreCommand {
   const SemanticSnapshotCommand({
     this.identifierPrefix,
+    this.labelPrefix,
     this.subtreeOf,
     this.fields,
     this.lens,
+    this.maxNodes,
+    this.render = false,
+    this.diff = false,
   });
 
   final String? identifierPrefix;
+  final String? labelPrefix;
   final String? subtreeOf;
   final List<String>? fields;
 
@@ -310,16 +315,24 @@ final class SemanticSnapshotCommand extends CoreCommand {
   /// `standard` (default), `compact`, or `design`. The node payload is
   /// identical under every lens.
   final String? lens;
+  final int? maxNodes;
+  final bool render;
+  final bool diff;
 
   @override
   String get name => 'semantic_snapshot';
 }
 
 final class TapWidgetCommand extends CoreCommand {
-  const TapWidgetCommand({required this.ref, this.snapshotId});
+  const TapWidgetCommand({
+    required this.ref,
+    this.snapshotId,
+    this.awaitChange,
+  });
 
   final String ref;
   final int? snapshotId;
+  final Map<String, Object?>? awaitChange;
 
   @override
   String get name => 'tap_widget';
@@ -330,11 +343,13 @@ final class EnterTextCommand extends CoreCommand {
     required this.ref,
     required this.text,
     this.snapshotId,
+    this.awaitChange,
   });
 
   final String ref;
   final String text;
   final int? snapshotId;
+  final Map<String, Object?>? awaitChange;
 
   @override
   String get name => 'enter_text';
@@ -517,6 +532,7 @@ final class PressKeyCommand extends CoreCommand {
     this.shift = false,
     this.alt = false,
     this.meta = false,
+    this.awaitChange,
   });
 
   final String key;
@@ -524,6 +540,7 @@ final class PressKeyCommand extends CoreCommand {
   final bool shift;
   final bool alt;
   final bool meta;
+  final Map<String, Object?>? awaitChange;
 
   @override
   String get name => 'press_key';

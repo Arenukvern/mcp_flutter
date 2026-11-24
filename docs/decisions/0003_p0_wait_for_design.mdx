@@ -1,5 +1,9 @@
 # ADR 0003 — P0: `wait_for` design
 
+> **Superseded in part by [ADR 0023](/decisions/0023_observation_vs_empty_and_change_waits)**:
+> `time` observe default, timeout `observedRevision` / capped delta, `changed`
+> predicate, and the rule that absent `nodes` means not observed.
+
 - **Status:** Accepted
 - **Shipped:** v3.0.0 (commit `0df147e`, 2026-04-27)
 - **Sources:** `docs/superpowers/plans/2026-04-27-wait-for.md` (deleted in commit `20c2e14`; recoverable from git history)
