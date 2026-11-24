@@ -58,7 +58,7 @@ export WS_URI="$(jq -r .vm_service_uri showcase/flutter_test_app/.flutter_mcp/ru
 # Some batteries still expect WS_URI in the environment.
 ```
 
-> The enter-text adoption proof is `dart run tool/evals/run_runtime_enter_text_greeting.dart` (Dart port of the former bash script; same steps and acceptance check).
+> The enter-text adoption proof is `dart run tool/evals/run_runtime_enter_text_greeting.dart --platform web` (Dart port of the former bash script; same steps and acceptance check). Use `--platform macos` when the showcase is a macOS/desktop run.
 
 **Web (plain Chrome — WebMCP API usually inactive):**
 

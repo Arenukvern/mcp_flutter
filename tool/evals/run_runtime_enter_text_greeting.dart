@@ -46,9 +46,24 @@ late final String _wsUri;
 late final String _platform;
 late final Directory _workDir;
 
+String _firstNonemptyEnv(Map<String, String> env, List<String> keys) {
+  for (final key in keys) {
+    final value = env[key];
+    if (value != null && value.isNotEmpty) {
+      return value;
+    }
+  }
+  return '';
+}
+
+class _ToolFailure implements Exception {
+  _ToolFailure(this.exitCode);
+  final int exitCode;
+}
+
 Future<void> main(List<String> args) async {
   final env = Platform.environment;
-  var wsUri = env['WS_URI'] ?? env['MACOS_WS_URI'] ?? '';
+  var wsUri = _firstNonemptyEnv(env, ['WS_URI', 'MACOS_WS_URI']);
   var output =
       '$_repoRoot/maintainers/evidence/generated/mcp_flutter.runtime-enter-text-greeting.redacted.json';
   var text = 'steward runtime proof';
@@ -107,6 +122,8 @@ Future<void> main(List<String> args) async {
       text: text,
       launchCommand: launchCommand,
     );
+  } on _ToolFailure catch (e) {
+    exitCode = e.exitCode;
   } finally {
     _workDir.deleteSync(recursive: true);
   }
@@ -315,7 +332,7 @@ Future<Map<String, Object?>> _requireTool(
     stderr
       ..writeln('$label failed (exit ${r.exitCode})')
       ..write(r.stderr);
-    exit(r.exitCode);
+    throw _ToolFailure(r.exitCode);
   }
   return r.json;
 }

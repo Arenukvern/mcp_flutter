@@ -45,8 +45,10 @@ each kind of example lives without weakening integration or exec-sweep gates.
   `flutter-mcp-toolkit …`) — never `make`.
 - **`dart run docs/assets/gifs/regenerate.dart`** replaces
   `regenerate_cli_gifs.sh`; compiles workspace CLI (no release-binary drift).
-- **GIF size gate** applies to every committed GIF under `docs/`, including
-  `docs/view_screenshots.gif` (2 MiB warn / 5 MiB hard cap).
+- **GIF size gate** applies to the three vhs outputs under
+  `docs/assets/gifs/` (2 MiB warn / 5 MiB hard cap; missing output fails the
+  run). Legacy manual `docs/view_screenshots.gif` is reported but not capped
+  (vhs cannot regenerate it; Phase 2 `view-screenshots.tape` replaces it).
 - **G1** is maintainer-recorded; not automated in Linux CI.
 
 ### Session discovery
