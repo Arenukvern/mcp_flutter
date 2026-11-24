@@ -307,6 +307,67 @@ void main() {
       expect(diff.unchanged, contains('checkout-e2e:total-rendered'));
     });
 
+    test('HarnessReportParseResult never calls exit', () {
+      final bad = HarnessReportParseResult.parse(['--report=jsonl']);
+      expect(bad.isOk, isFalse);
+      expect(bad.error, isNotNull);
+    });
+
+    test('JSON array baseline file is unreadable', () async {
+      final dir = await Directory.systemTemp.createTemp('harness-array-diff-');
+      addTearDown(() => dir.delete(recursive: true));
+      final path = p.join(dir.path, 'prev.json');
+      File(path).writeAsStringSync('[1,2,3]');
+      expect(
+        (await ReportDiff.loadPrevious(path)).status,
+        BaselineStatus.unreadable,
+      );
+    });
+
+    test('JSONL with no harness lines is unreadable', () async {
+      final dir = await Directory.systemTemp.createTemp('harness-garbage-jsonl-');
+      addTearDown(() => dir.delete(recursive: true));
+      final path = p.join(dir.path, 'prev.jsonl');
+      File(path).writeAsStringSync('{"foo":"bar"}\n{"other":1}\n');
+      expect(
+        (await ReportDiff.loadPrevious(path)).status,
+        BaselineStatus.unreadable,
+      );
+    });
+
+    test('skip then pass: verdict pass and skip in n vector', () async {
+      final dir = await Directory.systemTemp.createTemp('harness-skip-report-');
+      addTearDown(() => dir.delete(recursive: true));
+      final out = p.join(dir.path, 'skip.jsonl');
+      final scenario = Scenario('skip flow', scenarioId: 'skip-flow', steps: [
+        (
+          'a',
+          (c) async {
+            c.report.skip('probe', 'n/a');
+          },
+        ),
+        (
+          'b',
+          (c) async {
+            c.report.pass('ok');
+          },
+        ),
+      ]);
+      expect(
+        await scenario.run(
+          runOptions: ScenarioRunOptions(
+            format: HarnessReportFormat.agent,
+            reportOut: out,
+          ),
+        ),
+        isTrue,
+      );
+      final header =
+          jsonDecode(File(out).readAsLinesSync().first) as Map<String, Object?>;
+      expect(header['verdict'], 'pass');
+      expect(header['n'], [1, 0, 1, 0, 0]);
+    });
+
     test('malformed diff baseline is unreadable', () async {
       final dir = await Directory.systemTemp.createTemp('harness-bad-diff-');
       addTearDown(() => dir.delete(recursive: true));

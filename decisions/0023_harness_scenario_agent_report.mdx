@@ -43,9 +43,10 @@ stays the default (unchanged).
    existing one renumbers the `#n` suffix on duplicates — ids before the
    insertion stay unchanged.
 5. **Evidence by reference** — `evidenceDir` only when failures exist.
-6. **Report flags** — `HarnessReportParseResult.parse` returns errors;
-   composition-root `main` calls `requireHarnessReportArgs` to exit 2 + usage
-   (library code does not call `exit`).
+6. **Report flags** — `HarnessReportParseResult.parse` returns errors (library,
+   no `exit`). Composition roots import
+   `packages/harness/tool/harness_report_argv.dart` for
+   `requireHarnessReportArgs` (exit 2 + usage in `main` only).
 7. **Schema contract** — `packages/harness/schema/harness_scenario_report_v1.schema.json`
    locked by `packages/harness/test/scenario_report_test.dart`.
 8. **Report smoke check** — `dart run packages/harness/tool/scenario_report.dart
@@ -85,8 +86,8 @@ All-pass agent is a single header line (~50–60 B); console prints every
 
 | Surface | How to get the report |
 | ------- | --------------------- |
-| Dart scenario | `Scenario.run(runOptions: …)` |
-| Composition root | `requireHarnessReportArgs(args)` then `Scenario.run` |
+| Dart scenario | `await scenario.run(runOptions: ScenarioRunOptions(…))` |
+| Composition root | `requireHarnessReportArgs(args)` from `tool/harness_report_argv.dart`, then `scenario.run(runOptions: …)` |
 | Report smoke check | `dart run packages/harness/tool/scenario_report.dart --smoke --report=…` (shape only) |
 | MCP / interactive | Unchanged — composition roots; no new `fmt_*` |
 
