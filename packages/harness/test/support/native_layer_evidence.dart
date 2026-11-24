@@ -642,4 +642,4 @@ Directory harnessRepoRoot() {
 }
 
 Directory nativeCaptureFixtureApp(Directory repoRoot) =>
-    Directory('${repoRoot.path}/showcase/native_layer_capture_fixture');
+    Directory('${repoRoot.path}/showcase/fixtures/native_layer_capture_fixture');

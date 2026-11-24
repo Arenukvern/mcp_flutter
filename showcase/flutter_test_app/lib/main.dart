@@ -13,6 +13,7 @@ import 'package:test_app/platform_view_showcase.dart';
 import 'package:test_app/canonical_showcase/new_shipment_screen.dart';
 import 'package:test_app/canonical_showcase/shipments_home_screen.dart';
 import 'package:test_app/showcase_screen.dart';
+import 'package:test_app/drive_profile_screen.dart';
 import 'package:test_app/visual_reconstruct_screen.dart';
 
 var _initialEntriesRegistered = false;
@@ -164,6 +165,7 @@ class MyApp extends StatelessWidget {
       '/': (_) => const ShipmentsHomeScreen(),
       NewShipmentScreen.routeName: (_) => const NewShipmentScreen(),
       '/qa': (_) => const ShowcaseScreen(),
+      '/profile': (_) => const DriveProfileScreen(),
       '/visual-reconstruct': (_) => const VisualReconstructScreen(),
     },
     initialRoute: _dogfoodVisual ? '/visual-reconstruct' : '/',

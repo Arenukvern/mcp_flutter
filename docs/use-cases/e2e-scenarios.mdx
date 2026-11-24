@@ -7,15 +7,16 @@ description: Repeatable Dart scenarios with flutter_mcp_harness.
 
 When a flow should run in **CI** or on a schedule, promote it from chat to **checked-in Dart** using **`flutter_mcp_harness`**. Showcase demos live under [`showcase/`](../../showcase/README.md).
 
-## Instrumented tier (canonical + minimal)
+## Instrumented tier (canonical showcase)
 
 ![Terminal recording: dart run showcase/drivers/bin/drive_flutter.dart --device chrome](../assets/gifs/harness-flutter.gif)
 
+<!-- example-snippet: e2e_drive_flutter_bash -->
 ```bash
 dart run showcase/drivers/bin/drive_flutter.dart --device chrome
 ```
 
-Case: `ToolkitDriver` over the VM service — semantic tree, taps, screenshots, named routes, ending **`OK`**. Default drive target: [`showcase/flutter_demo/`](../../showcase/flutter_demo/) (minimal). The **product** surface is [`showcase/flutter_test_app/`](../../showcase/flutter_test_app/).
+Case: `ToolkitDriver` over the VM service — semantic tree, taps, screenshots, named routes, ending **`OK`**. Drive target: [`showcase/flutter_test_app/`](../../showcase/flutter_test_app/) (navigates to `/qa` for the interaction lab, then `/profile`).
 
 Requires sibling **intentcall** checkout (`tool/ci/checkout_intentcall.sh`) when the drive uses IntentCall routing.
 
@@ -23,6 +24,7 @@ Requires sibling **intentcall** checkout (`tool/ci/checkout_intentcall.sh`) when
 
 ![Terminal recording: dart run showcase/drivers/bin/drive_web.dart](../assets/gifs/harness-web.gif)
 
+<!-- example-snippet: e2e_drive_web_bash -->
 ```bash
 dart run showcase/drivers/bin/drive_web.dart
 ```

@@ -54,6 +54,6 @@ Record on macOS; export GIF or MP4 under budget; **not** automated in Linux CI.
 
 | Flow | What to capture |
 | --- | --- |
-| Harness + app window | `dart run showcase/drivers/bin/drive_flutter.dart` beside `flutter_demo` or canonical app |
+| Harness + app window | `dart run showcase/drivers/bin/drive_flutter.dart` against `flutter_test_app` |
 | Two-instance desktop | `dart run example/desktop_pair.dart --skip-build` from `packages/harness` |
 | Tokenless exec (desktop) | `flutter run --disable-service-auth-codes --host-vmservice-port=8181` + `flutter-mcp-toolkit exec …` beside the app |

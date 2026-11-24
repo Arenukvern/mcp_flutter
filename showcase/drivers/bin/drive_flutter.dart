@@ -1,13 +1,13 @@
-/// Instrumented-tier showcase: drives `showcase/flutter_demo` end to end
+/// Instrumented-tier showcase: drives `showcase/flutter_test_app` end to end
 /// through the [ToolkitDriver] — the same observe/act/verify vocabulary
 /// the CDP and OS-native drivers speak (ADR 0038) — and proves the
 /// capture split by streaming PNG frames from the running app into a
 /// `universal_screencast` pipeline.
 ///
-///   dart run showcase/drivers/bin/drive_flutter.dart
-///   dart run showcase/drivers/bin/drive_flutter.dart --device chrome
+/// <!-- example-snippet: e2e_drive_flutter_bash -->
+/// dart run showcase/drivers/bin/drive_flutter.dart --device chrome
 ///
-/// Steps: observe (semantic tree) → act (tap Increment ×3, type a name,
+/// Steps: observe (semantic tree on `/qa`) → act (tap Increment ×3, type a name,
 /// push the `/profile` named route) → verify (rendered text) → capture
 /// (single-frame screenshots + a recorded frame stream under
 /// `.showcase/`). The app bring-up is a first-owner `flutter run`
@@ -44,10 +44,10 @@ Future<void> main(final List<String> arguments) async {
     logSink.writeln(message);
   }
 
-  log('flutter run -d $device (showcase/flutter_demo); first build may '
+  log('flutter run -d $device (showcase/flutter_test_app); first build may '
       'take minutes — full tool output: ${p.relative(logFile.path, from: repoRoot)}');
   final app = FlutterRunTarget(
-    projectDir: p.join(repoRoot, 'showcase', 'flutter_demo'),
+    projectDir: p.join(repoRoot, 'showcase', 'flutter_test_app'),
     device: device,
     extraArgs: device == 'chrome' ? const ['--web-port=8792'] : const [],
     onLine: logSink.writeln,
@@ -61,6 +61,9 @@ Future<void> main(final List<String> arguments) async {
   log('attached; toolkit isolate ${client.boundIsolateId}');
 
   try {
+    await driver.perform(NavigateAction(Uri.parse('/qa')));
+    log('navigated to /qa (maintainer interaction lab)');
+
     // -- observe ------------------------------------------------------------
     final snapshot = await driver.snapshot();
     log('observed ${snapshot.nodes.length} semantic nodes (revision '
@@ -79,15 +82,16 @@ Future<void> main(final List<String> arguments) async {
 
     final mainPng = await driver.screenshot();
     await File(
-      p.join(outDir, 'flutter_demo_main.png'),
+      p.join(outDir, 'flutter_test_app_main.png'),
     ).writeAsBytes(mainPng);
-    log('captured single frame: .showcase/flutter_demo_main.png '
+    log('captured single frame: .showcase/flutter_test_app_main.png '
         '(${mainPng.length} bytes)');
 
     // -- continuous frames (capture split, ADR 0038) ------------------------
     // The source is THIS package's adapter over the harness VmClient —
     // composition owns the glue; the harness stays pipeline-free.
-    final receipts = FileRecorderSink(directory: outDir, base: 'flutter_demo');
+    final receipts =
+        FileRecorderSink(directory: outDir, base: 'flutter_test_app');
     final pipeline = await ScreencastPipeline.start(
       ScreencastComposition(
         source: FlutterAppFrames(client: client),
@@ -102,7 +106,7 @@ Future<void> main(final List<String> arguments) async {
     final frames = await delivered.toList();
     await pipeline.stop();
     log('streamed ${frames.length} PNG frames through the screencast '
-        'pipeline → .showcase/flutter_demo.frames.mjpeg (+ .meta.jsonl)');
+        'pipeline → .showcase/flutter_test_app.frames.mjpeg (+ .meta.jsonl)');
 
     // -- driver-routed invocation (ADR 0038: hint → driver action) -----------
     // Intents declare what could be driven (transport + verb + locator);
@@ -136,11 +140,11 @@ Future<void> main(final List<String> arguments) async {
     );
     final greeting = await driver.expectLabel('Hello,');
     final profilePng = await driver.screenshot();
-    await File(p.join(outDir, 'flutter_demo_profile.png')).writeAsBytes(
+    await File(p.join(outDir, 'flutter_test_app_profile.png')).writeAsBytes(
       profilePng,
     );
     log('verified: "$greeting" (named route push) + '
-        '.showcase/flutter_demo_profile.png');
+        '.showcase/flutter_test_app_profile.png');
 
     log('OK — one driver contract, one instrumented Flutter app.');
   } finally {

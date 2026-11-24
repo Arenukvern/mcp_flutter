@@ -1,0 +1,81 @@
+name: Showcase drive scenarios (scheduled)
+
+# Read-only smoke for drive_* programs — does not gate pull requests.
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drive-flutter-chrome:
+    name: drive_flutter (chrome)
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Setup Chrome
+        id: setup-chrome
+        # browser-actions/setup-chrome@v1 (2025-01-25)
+        uses: browser-actions/setup-chrome@c785b87e244131f27c9f19c1a33e2ead956ab7ce
+        with:
+          chrome-version: stable
+
+      - name: Setup Flutter SDK
+        # subosito/flutter-action@v2 (2026-03-25)
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          channel: stable
+          flutter-version: '3.50.1'
+          cache: true
+
+      - name: Checkout intentcall (showcase path deps)
+        run: |
+          set -euo pipefail
+          bash tool/ci/checkout_intentcall.sh
+          ln -snf "$(pwd)/intentcall" "$(dirname "$(pwd)")/intentcall"
+          test -d ../intentcall/packages/intentcall_webmcp
+
+      - name: drive_flutter
+        env:
+          CHROME_EXECUTABLE: ${{ steps.setup-chrome.outputs.chrome-path }}
+          CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
+        run: dart run showcase/drivers/bin/drive_flutter.dart --device chrome
+
+  drive-web:
+    name: drive_web
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Setup Chrome
+        id: setup-chrome
+        uses: browser-actions/setup-chrome@c785b87e244131f27c9f19c1a33e2ead956ab7ce
+        with:
+          chrome-version: stable
+
+      - name: Setup Flutter SDK
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          channel: stable
+          flutter-version: '3.50.1'
+          cache: true
+
+      - name: drive_web
+        env:
+          CHROME_EXECUTABLE: ${{ steps.setup-chrome.outputs.chrome-path }}
+          CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
+        run: dart run showcase/drivers/bin/drive_web.dart
