@@ -185,6 +185,7 @@ final class ExecSweepRunner {
     }
 
     await runTool('semantic_snapshot', '{}');
+    await runTool('navigate', '{"action":"push","route":"/qa"}');
 
     await runTool(
       'reveal_search',
@@ -573,8 +574,8 @@ final class ExecSweepRunner {
       '--args',
       args,
     ]);
-    await outfile.writeAsString(result.stdout);
-    await stderrFile.writeAsString(result.stderr);
+    await outfile.writeAsString('${result.stdout}');
+    await stderrFile.writeAsString('${result.stderr}');
     if (result.exitCode == 0 && jsonOk(outfile)) {
       stdout.writeln('PASS: $name');
       pass++;
@@ -602,8 +603,8 @@ final class ExecSweepRunner {
       '--args',
       args,
     ]);
-    await outfile.writeAsString(result.stdout);
-    await stderrFile.writeAsString(result.stderr);
+    await outfile.writeAsString('${result.stdout}');
+    await stderrFile.writeAsString('${result.stderr}');
     if (result.exitCode == 0 && jsonOk(outfile)) {
       stdout.writeln('PASS: $name');
       pass++;
@@ -636,7 +637,7 @@ final class ExecSweepRunner {
       '--args',
       args,
     ]);
-    await outfile.writeAsString(result.stdout);
+    await outfile.writeAsString('${result.stdout}');
     await File(p.join(outdir, '$name.stderr')).writeAsString(result.stderr);
     if (result.exitCode == 0 && jsonOk(outfile)) {
       stdout.writeln('PASS: $name');
@@ -711,7 +712,7 @@ final class ExecSweepRunner {
       '--args',
       '{}',
     ]);
-    await outfile.writeAsString(result.stdout);
+    await outfile.writeAsString('${result.stdout}');
     await File(p.join(outdir, '$label.stderr')).writeAsString(result.stderr);
     if (result.exitCode == 0 && jsonOk(outfile)) {
       return outfile.path;
@@ -800,7 +801,7 @@ final class ExecSweepRunner {
         '{"query":"$identifier","matchBy":"identifier","direction":"$dir",'
         '"maxAttempts":$maxAttempts,"distance":$distance}',
       ]);
-      await revealFile.writeAsString(result.stdout);
+      await revealFile.writeAsString('${result.stdout}');
       await File(p.join(outdir, 'reveal_${identifier}_$dir.stderr'))
           .writeAsString(result.stderr);
       if (result.exitCode != 0) continue;

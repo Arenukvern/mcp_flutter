@@ -2113,8 +2113,8 @@ toolkit's tool catalog onto that registry is the tracked bridge.
 
 ```bash
 make web-showcase
-# WS_URI from .showcase/web_app.log (re-grep after hot reload)
-grep -Eo 'ws://127\.0\.0\.1:[0-9]+/[A-Za-z0-9_=-]+/ws' .showcase/web_app.log | tail -1
+# vm_service_uri from runner-session (re-read after hot reload if needed)
+jq -r .vm_service_uri showcase/flutter_test_app/.flutter_mcp/runner-session.json
 ```
 
 ```bash
@@ -2267,7 +2267,7 @@ make showcase-stop && make showcase
 - WS URI: grep `ws://127.0.0.1:…/ws` from log (default VM port **8181**)
 
 ```bash
-grep -Eo 'ws://127\.0\.0\.1:[0-9]+/[A-Za-z0-9_=-]+/ws' .showcase/flutter_app.log | tail -1
+jq -r .vm_service_uri showcase/flutter_test_app/.flutter_mcp/runner-session.json
 ```
 
 Stop: `make showcase-stop`.
@@ -2366,7 +2366,8 @@ Task Progress:
 
 ```bash
 make web-showcase
-export WS_URI="$(grep -Eo 'ws://127\.0\.0\.1:[0-9]+/[A-Za-z0-9_=-]+/ws' .showcase/web_app.log | tail -1)"
+# VM URI: showcase/flutter_test_app/.flutter_mcp/runner-session.json → vm_service_uri
+# Or: dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart --runner-session-file showcase/flutter_test_app/.flutter_mcp/runner-session.json …
 bash tool/evals/run_dogfood_eval.sh --ws-uri "$WS_URI" --merge --skip-visual   # yq or dart fallback
 # or without merge:
 bash tool/evals/run_dogfood_eval.sh --ws-uri "$WS_URI"
@@ -2699,7 +2700,7 @@ make showcase-stop   # kill stray sessions, free VM port 8181 (idempotent)
   `INTENTCALL_ROOT`, sibling checkouts, or `PATH`.
 - Interactive mode tees every line to the log (which `make exec-sweep` greps)
   and tears the session down on exit or Ctrl-C.
-- WS URI for follow-up calls: `grep -Eo 'ws://127\.0\.0\.1:[0-9]+/[A-Za-z0-9_=-]+/ws' .showcase/flutter_app.log | tail -1`.
+- VM URI for follow-up calls: read `showcase/flutter_test_app/.flutter_mcp/runner-session.json` field `vm_service_uri` (or `dart run packages/harness/tool/showcase.dart --web --detach`, then exec from the app directory with runner discovery).
 
 ## Hard boundaries
 

@@ -9,6 +9,8 @@ import 'package:test_app/agent_state.dart';
 import 'package:test_app/agent_web_mcp_dogfood.dart';
 import 'package:test_app/intentcall_showcase_bootstrap.dart';
 import 'package:test_app/platform_view_showcase.dart';
+import 'package:test_app/canonical_showcase/new_shipment_screen.dart';
+import 'package:test_app/canonical_showcase/shipments_home_screen.dart';
 import 'package:test_app/showcase_screen.dart';
 import 'package:test_app/visual_reconstruct_screen.dart';
 
@@ -40,18 +42,6 @@ Future<void> main({final bool enableDelayedMcpRegistration = true}) async {
 
 // ---- App-specific MCP registrations -----------------------------------------
 
-int _calculateFibonacci(final int n) {
-  if (n <= 1) return n;
-  var a = 0;
-  var b = 1;
-  for (var i = 2; i <= n; i++) {
-    final temp = a + b;
-    a = b;
-    b = temp;
-  }
-  return b;
-}
-
 Map<String, dynamic> _getUserPreferences(final String category) {
   final allPreferences = <String, Map<String, Object>>{
     'theme': <String, Object>{'mode': 'dark', 'primaryColor': 'deepPurple'},
@@ -69,31 +59,6 @@ Future<void> _registerInitialMCPTools() async {
   _initialEntriesRegistered = true;
   final binding = MCPToolkitBinding.instance;
   final proofEntries = buildIntentCallProofEntries();
-
-  final fibonacciEntry = mcpToolkitTool(
-    namespace: 'app',
-    handler: (final request) {
-      final n = int.tryParse(request['n'] ?? '0') ?? 0;
-      return MCPCallResult(
-        message: 'Calculated Fibonacci number for position $n',
-        parameters: {'result': _calculateFibonacci(n), 'position': n},
-      );
-    },
-    definition: MCPToolDefinition(
-      name: 'calculate_fibonacci',
-      description: 'Calculate the nth Fibonacci number',
-      inputSchema: ObjectSchema(
-        properties: {
-          'n': IntegerSchema(
-            description: 'The position in the Fibonacci sequence',
-            minimum: 0,
-            maximum: 100,
-          ),
-        },
-        required: ['n'],
-      ),
-    ),
-  );
 
   final appStateEntry = mcpToolkitResource(
     namespace: 'app',
@@ -126,7 +91,7 @@ Future<void> _registerInitialMCPTools() async {
   await configureIntentCallShowcase(proofEntries: proofEntries);
   await binding.addEntries(
     entries: {
-      fibonacciEntry,
+      buildCalculateFibonacciTool(),
       appStateEntry,
       agentStateEntry,
       ...proofEntries,
@@ -195,7 +160,9 @@ class MyApp extends StatelessWidget {
       scaffoldBackgroundColor: const Color(0xFFFAFAFA),
     ),
     routes: {
-      '/': (_) => const ShowcaseScreen(),
+      '/': (_) => const ShipmentsHomeScreen(),
+      NewShipmentScreen.routeName: (_) => const NewShipmentScreen(),
+      '/qa': (_) => const ShowcaseScreen(),
       '/visual-reconstruct': (_) => const VisualReconstructScreen(),
     },
     initialRoute: _dogfoodVisual ? '/visual-reconstruct' : '/',

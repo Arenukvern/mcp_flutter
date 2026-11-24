@@ -43,17 +43,6 @@ jobs:
           flutter-version: '3.50.1'
           cache: true
 
-      - name: Install flutter-mcp-toolkit CLI (release)
-        run: |
-          set -euo pipefail
-          ver="$(grep '^version:' mcp_server_dart/pubspec.yaml | awk '{print $2}')"
-          curl -fsSL -o /tmp/flutter_mcp.tgz \
-            "https://github.com/Arenukvern/mcp_flutter/releases/download/v${ver}/flutter_mcp_${ver}_linux-x64.tar.gz"
-          tar xzf /tmp/flutter_mcp.tgz -C /tmp
-          mkdir -p "$HOME/.local/bin"
-          cp "/tmp/flutter_mcp_${ver}_linux-x64/bin/"* "$HOME/.local/bin/"
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-
       - name: Regenerate GIFs
         env:
           DISPLAY: ':99'
@@ -61,7 +50,7 @@ jobs:
           set -euo pipefail
           Xvfb :99 -screen 0 1280x720x24 &
           sleep 2
-          bash docs/assets/gifs/regenerate_cli_gifs.sh
+          dart run docs/assets/gifs/regenerate.dart
 
       - name: Upload GIFs artifact
         uses: actions/upload-artifact@v4
