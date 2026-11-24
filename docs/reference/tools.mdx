@@ -404,6 +404,22 @@ Enter text into a text field identified by ref from semantic_snapshot. Taps the 
       "type": "integer",
       "description": "Optional: snapshotId input. Use the snapshot_id returned by most recent semantic_snapshot. If provided and stale, the call fails with stale_snapshot."
     },
+    "awaitChange": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "settleMs": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Milliseconds to wait after the action before diffing the tree."
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Reserved for future bounded await-change polling."
+        }
+      }
+    },
     "connection": {
       "type": "object",
       "properties": {
@@ -536,6 +552,22 @@ Batch text entry: enters text into multiple fields in one call. Stops on first f
     "snapshotId": {
       "type": "integer",
       "description": "Optional: snapshotId input. Use the snapshot_id returned by most recent semantic_snapshot. Checked on the first field only."
+    },
+    "awaitChange": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "settleMs": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Milliseconds to wait after the action before diffing the tree."
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Reserved for future bounded await-change polling."
+        }
+      }
     },
     "connection": {
       "type": "object",
@@ -1579,6 +1611,22 @@ Synthesize a keyboard key press (down + up). Accepted keys: Enter, Escape, Tab, 
     "meta": {
       "type": "boolean"
     },
+    "awaitChange": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "settleMs": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Milliseconds to wait after the action before diffing the tree."
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Reserved for future bounded await-change polling."
+        }
+      }
+    },
     "connection": {
       "type": "object",
       "properties": {
@@ -1785,7 +1833,7 @@ Scroll to reveal content in a direction. "down" reveals content below (finger sw
 
 ### `fmt_semantic_snapshot`
 
-Get compact semantic tree of interactive widgets with refs usable by interaction tools (tap_widget, enter_text, etc.). A control that appears only under the pointer is absent here: on desktop and web, hover the element that should own it and snapshot again.
+Get a compact semantic tree of interactive widgets with refs for interaction tools (tap_widget, enter_text, etc.). Refs number the full walk — a filtered snapshot still resolves everywhere. Narrow with identifierPrefix (Semantics identifier), labelPrefix (visible label), subtreeOf, fields, and maxNodes. Set render:true for numbered family text; diff:true for +/-/~ rows against the prior same-filter snapshot (baseline "none" on the first call). lens selects render density (standard, compact, design). Desktop/web hover controls may be absent until you hover and snapshot again.
 
 ```json
 {
@@ -1794,7 +1842,11 @@ Get compact semantic tree of interactive widgets with refs usable by interaction
   "properties": {
     "identifierPrefix": {
       "type": "string",
-      "description": "Return only nodes whose Semantics identifier starts with this prefix (\"nav.\" for one navigation rail). Refs are those of the full tree, so a ref from a filtered snapshot works everywhere."
+      "description": "Return only nodes whose Semantics identifier starts with this prefix (\"nav.\" for one navigation rail). Refs are those of the full tree, so a ref from a filtered snapshot works everywhere. Does not search labels — use labelPrefix for visible text."
+    },
+    "labelPrefix": {
+      "type": "string",
+      "description": "Return only nodes whose Semantics label starts with this prefix."
     },
     "subtreeOf": {
       "type": "string",
@@ -1828,6 +1880,19 @@ Get compact semantic tree of interactive widgets with refs usable by interaction
       "minItems": 1,
       "uniqueItems": true,
       "description": "Node fields to return; \"ref\" is always included. Omit for every field. A name outside the list is refused before the call reaches the app."
+    },
+    "maxNodes": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Cap returned nodes in walk order; truncated:true when the tail is hidden. Refs stay full-walk."
+    },
+    "render": {
+      "type": "boolean",
+      "description": "When true, include family numbered-text render under render."
+    },
+    "diff": {
+      "type": "boolean",
+      "description": "When true, include baseline (prior snapshot id or \"none\") and delta (null when no baseline exists)."
     },
     "lens": {
       "type": "string",
@@ -1970,6 +2035,22 @@ Tap a widget identified by ref from semantic_snapshot. Refs are session-scoped t
       "type": "integer",
       "description": "Optional: snapshotId input. Use the snapshot_id returned by most recent semantic_snapshot. If provided and stale, the call fails with stale_snapshot."
     },
+    "awaitChange": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "settleMs": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Milliseconds to wait after the action before diffing the tree."
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Reserved for future bounded await-change polling."
+        }
+      }
+    },
     "connection": {
       "type": "object",
       "properties": {
@@ -2011,7 +2092,7 @@ Tap a widget identified by ref from semantic_snapshot. Refs are session-scoped t
 
 ### `fmt_wait_for`
 
-Wait for a UI predicate (text/noText/node/time/stable/noError) and return a fresh semantic snapshot. Replaces sleep+snapshot polling. text matches any string in the tree, including the label of a tab that is not open — wait on state with node: {"kind":"node","identifier":"…","selected":true}, or add "absent":true to wait for it to go away. Default timeout 5000 ms, max 30000 ms.
+Wait until a UI predicate holds (or timeout) and return a fresh semantic snapshot envelope. Prefer changed or diff over keyword filters on a static snapshot when you do not know the text in advance. Default timeout 5000ms, max 30000ms.
 
 ```json
 {
@@ -2024,7 +2105,7 @@ Wait for a UI predicate (text/noText/node/time/stable/noError) and return a fres
     "predicate": {
       "type": "object",
       "additionalProperties": true,
-      "description": "Predicate map. Shapes: {kind:\"time\", ms:int} | {kind:\"text\", text:String} | {kind:\"noText\", text:String} | {kind:\"node\", identifier:String, selected/enabled/focused/checked/toggled:bool, absent:bool} | {kind:\"stable\", stableWindowMs:int} — sampled once per frame and matched after the tree remains unchanged for the requested wall time; stableWindowMs must be less than effective timeoutMs, or the call fails with invalid_predicate before sampling; a match reports stableFor.sampledFrames and stableFor.elapsedMs, {kind:\"noError\"}"
+      "description": "Predicate map shapes: {kind:\"time\", ms:int, observe?:bool} — observe defaults true and returns the snapshot envelope; false sets observed:false and omits nodes | {kind:\"text\", text:String} | {kind:\"noText\", text:String} | {kind:\"node\", identifier:String, selected/enabled/focused/checked/toggled:bool, absent:bool} | {kind:\"stable\", stableWindowMs:int} | {kind:\"noError\"} | {kind:\"changed\", since:<snapshotId>, settleMs?:int} — diffs against a prior public snapshot in the observation ring (baseline_evicted when since was evicted)."
     },
     "timeoutMs": {
       "type": "integer",
