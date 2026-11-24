@@ -66,6 +66,7 @@ jobs:
           DISPLAY: ':99'
           INTENTCALL_REF: main
           CHROME_EXECUTABLE: ${{ steps.setup-chrome.outputs.chrome-path }}
+          CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
         run: |
           set -euo pipefail
           Xvfb :99 -screen 0 1280x720x24 &
