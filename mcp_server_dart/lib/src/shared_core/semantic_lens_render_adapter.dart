@@ -1,10 +1,9 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 //
-// Compatibility adapter: pub.dev `universal_automation_semantics` 0.2.x does not
-// ship [SemanticLens] (requires unpublished interface 0.4). Preserves the
-// public semantic_snapshot lens contract (`standard` / `compact` / `design`) by
-// porting the observation render grammar from UA semantics @ 1c6f798 until
-// hosted interface 0.4 lands.
+// Compatibility adapter: pub.dev `universal_automation_semantics` 0.5.x ships
+// [SemanticLens] on hosted interface 0.4. This module preserves the server
+// semantic_snapshot lens contract (`standard` / `compact` / `design`) when the
+// app response omits an inline `render` and the host enriches from node JSON.
 
 import 'package:universal_automation_interface/universal_automation_interface.dart';
 import 'package:universal_automation_semantics/universal_automation_semantics.dart';
@@ -17,7 +16,7 @@ HostedSemanticLens hostedSemanticLens(String? lensName) => switch (lensName) {
   _ => HostedSemanticLens.standard,
 };
 
-/// Renders family observation text with lens fidelity on hosted semantics 0.2.x.
+/// Renders family observation text with lens fidelity on hosted semantics 0.5.x.
 String renderHostedSemanticLens({
   required Snapshot snapshot,
   required Observation observation,

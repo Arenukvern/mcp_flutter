@@ -95,6 +95,7 @@ final class DoctorRunner {
       );
       checks.add(await _checkAppPermissionBridge(broker: visualCaptureBroker));
       checks.add(await _checkToolkitExtensions(timeout: timeout));
+      checks.add(await _checkSemanticControlWarnings(timeout: timeout));
       checks.add(await _checkDynamicRegistryAvailable(timeout: timeout));
 
       final passCount = checks.where((c) => c['status'] == 'pass').length;
@@ -654,6 +655,71 @@ final class DoctorRunner {
         diagnostic: 'Dynamic registry check failed unexpectedly: $error',
         fixCommand:
             'Verify app-side dynamic registry initialization and retry doctor.',
+      );
+    }
+  }
+
+  Future<Map<String, Object?>> _checkSemanticControlWarnings({
+    required Duration timeout,
+  }) async {
+    try {
+      final result = await executor
+          .execute(const SemanticSnapshotCommand())
+          .timeout(timeout);
+      if (!result.ok) {
+        return _check(
+          id: 'semantic_snapshot_naming',
+          status: DoctorCheckStatus.warn,
+          critical: false,
+          diagnostic:
+              'Could not read semantic snapshot for control naming: '
+              '${result.error?.message ?? 'unknown'}',
+          fixCommand:
+              'Connect to a running debug app with mcp_toolkit initialized, '
+              'then re-run doctor.',
+        );
+      }
+      final data = result.data is Map
+          ? (result.data as Map).cast<String, Object?>()
+          : const <String, Object?>{};
+      final warnings = data['warnings'];
+      if (warnings is! List || warnings.isEmpty) {
+        return _check(
+          id: 'semantic_snapshot_naming',
+          status: DoctorCheckStatus.pass,
+          critical: false,
+          diagnostic: 'No tappable-without-name warnings in current tree.',
+          fixCommand:
+              'Keep Semantics(identifier:) on controls agents must address.',
+        );
+      }
+      final tappable = warnings
+          .whereType<Map>()
+          .where((w) => w['reason'] == 'tappable_without_name')
+          .length;
+      final labelIds = warnings
+          .whereType<Map>()
+          .where((w) => w['reason'] == 'label_looks_like_identifier')
+          .length;
+      return _check(
+        id: 'semantic_snapshot_naming',
+        status: DoctorCheckStatus.warn,
+        critical: false,
+        diagnostic:
+            'Semantic snapshot reports $tappable tappable ref(s) without '
+            'Semantics(identifier:) and $labelIds label(s) that look like '
+            'contract identifiers — agents may miss them or tap the wrong ref.',
+        fixCommand:
+            'Publish Semantics(identifier:…) on interactive widgets; move '
+            'dotted contract names from label to identifier.',
+      );
+    } on TimeoutException {
+      return _check(
+        id: 'semantic_snapshot_naming',
+        status: DoctorCheckStatus.warn,
+        critical: false,
+        diagnostic: 'Timed out reading semantic snapshot for naming warnings.',
+        fixCommand: 'Increase --timeout-ms and reconnect, then re-run doctor.',
       );
     }
   }

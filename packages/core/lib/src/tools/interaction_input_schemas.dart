@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 import '../connection/connection_override.dart';
+import 'interaction_tool_descriptions.dart';
 
 export 'package:intentcall_schema/intentcall_schema.dart'
     show
@@ -23,6 +24,24 @@ const _permissionPolicyValues = <String>[
   'request_always',
 ];
 
+Map<String, Object?> _awaitChangeJsonSchema() => <String, Object?>{
+  'type': 'object',
+  'additionalProperties': false,
+  'properties': <String, Object?>{
+    'settleMs': <String, Object?>{
+      'type': 'integer',
+      'minimum': 0,
+      'description':
+          'Milliseconds to wait after the action before diffing the tree.',
+    },
+    'timeoutMs': <String, Object?>{
+      'type': 'integer',
+      'minimum': 1,
+      'description': 'Reserved for future bounded await-change polling.',
+    },
+  },
+};
+
 /// Shared JSON Schema for [tap_widget] / `fmt_tap_widget` (app + server catalog).
 Map<String, Object?> tapWidgetInputSchema() => <String, Object?>{
   'type': 'object',
@@ -40,6 +59,7 @@ Map<String, Object?> tapWidgetInputSchema() => <String, Object?>{
           'semantic_snapshot. If provided and stale, the call fails '
           'with stale_snapshot.',
     },
+    'awaitChange': _awaitChangeJsonSchema(),
     'connection': connectionOverrideJsonSchema(),
   },
 };
@@ -77,7 +97,13 @@ Map<String, Object?> semanticSnapshotInputSchema() => <String, Object?>{
       'description':
           'Return only nodes whose Semantics identifier starts with this '
           'prefix ("nav." for one navigation rail). Refs are those of the '
-          'full tree, so a ref from a filtered snapshot works everywhere.',
+          'full tree, so a ref from a filtered snapshot works everywhere. '
+          'Does not search labels — use labelPrefix for visible text.',
+    },
+    'labelPrefix': <String, Object?>{
+      'type': 'string',
+      'description':
+          'Return only nodes whose Semantics label starts with this prefix.',
     },
     'subtreeOf': <String, Object?>{
       'type': 'string',
@@ -99,6 +125,25 @@ Map<String, Object?> semanticSnapshotInputSchema() => <String, Object?>{
           'Node fields to return; "ref" is always included. Omit for every '
           'field. A name outside the list is refused before the call reaches '
           'the app.',
+    },
+    'maxNodes': <String, Object?>{
+      'type': 'integer',
+      'minimum': 1,
+      'description':
+          'Cap returned nodes in walk order; truncated:true when the tail is '
+          'hidden. Refs stay full-walk.',
+    },
+    'render': <String, Object?>{
+      'type': 'boolean',
+      'description':
+          'When true, include family numbered-text render under render.',
+    },
+    'diff': <String, Object?>{
+      'type': 'boolean',
+      'description':
+          'When true, include baseline (prior public snapshot id as int, or '
+          'null with baselineReason when no prior same-filter snapshot) and '
+          'delta (null when no baseline exists).',
     },
     'lens': <String, Object?>{
       'type': 'string',
@@ -124,19 +169,7 @@ Map<String, Object?> waitForInputSchema() => <String, Object?>{
     'predicate': <String, Object?>{
       'type': 'object',
       'additionalProperties': true,
-      'description':
-          'Predicate map. Shapes: '
-          '{kind:"time", ms:int} | '
-          '{kind:"text", text:String} | '
-          '{kind:"noText", text:String} | '
-          '{kind:"node", identifier:String, selected/enabled/focused/checked/'
-          'toggled:bool, absent:bool} | '
-          '{kind:"stable", stableWindowMs:int} — sampled once per frame and '
-          'matched after the tree remains unchanged for the requested wall '
-          'time; stableWindowMs must be less than effective timeoutMs, or the '
-          'call fails with invalid_predicate before sampling; a match reports '
-          'stableFor.sampledFrames and stableFor.elapsedMs, '
-          '{kind:"noError"}',
+      'description': waitForPredicateKindsDescription,
     },
     'timeoutMs': <String, Object?>{
       'type': 'integer',
@@ -169,6 +202,7 @@ Map<String, Object?> enterTextInputSchema() => <String, Object?>{
           'semantic_snapshot. If provided and stale, the call fails '
           'with stale_snapshot.',
     },
+    'awaitChange': _awaitChangeJsonSchema(),
     'connection': connectionOverrideJsonSchema(),
   },
 };
@@ -400,6 +434,7 @@ Map<String, Object?> fillFormInputSchema() => <String, Object?>{
           'Optional: snapshotId input. Use the snapshot_id returned by most recent '
           'semantic_snapshot. Checked on the first field only.',
     },
+    'awaitChange': _awaitChangeJsonSchema(),
     'connection': connectionOverrideJsonSchema(),
   },
 };
@@ -759,6 +794,7 @@ Map<String, Object?> pressKeyInputSchema() => <String, Object?>{
     'shift': <String, Object?>{'type': 'boolean'},
     'alt': <String, Object?>{'type': 'boolean'},
     'meta': <String, Object?>{'type': 'boolean'},
+    'awaitChange': _awaitChangeJsonSchema(),
     'connection': connectionOverrideJsonSchema(),
   },
 };

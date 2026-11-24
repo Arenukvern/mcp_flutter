@@ -762,11 +762,19 @@ Returns: `{"key": "Enter", "handled": bool}` — `handled` says whether either d
 
 ### wait_for
 
-Wait for a UI predicate; returns fresh semantic snapshot. Predicates: `{kind:"text",text}` | `{kind:"noText",text}` | `{kind:"time",ms}` | `{kind:"stable",stableWindowMs}`. `stable` samples once per frame and matches after the semantics tree has remained unchanged for the requested wall time; the match reports `stableFor.sampledFrames` and `stableFor.elapsedMs`. `stableWindowMs` must be less than `timeoutMs` (default 5000); an impossible budget fails immediately with `invalid_predicate`. `predicate` • object • required. `timeoutMs` • integer • optional • default 5000 • max 30000. `connection` • object • optional.
+Wait for a UI predicate; returns a **fresh semantic snapshot envelope** on success (missing `nodes` means not observed — never treat as empty). **Do not keyword-filter snapshots** to discover new content; use `changed` or `semantic_snapshot` with `diff:true` when you do not know the text in advance. Put contract handles in `Semantics(identifier:)`, not `label`.
+
+Predicates: `{kind:"text",text}` | `{kind:"noText",text}` | `{kind:"node",identifier,…}` | `{kind:"stable",stableWindowMs}` | `{kind:"time",ms,observe?:bool}` (observe defaults **true** — peek snapshot, no `snapshot_id` bump; `observe:false` sets `observed:false`) | `{kind:"noError"}` | `{kind:"changed",since:<snapshotId>,settleMs?}` (diff vs a prior **public** snapshot; ring capacity 32; `baseline_evicted` when `since` left the ring).
+
+Timeout carries `observedRevision`, `lastSnapshotId` (public id at wait start), and a capped `delta` vs the tree at wait start. `predicate` • object • required. `timeoutMs` • integer • optional • default 5000 • max 30000.
 ```json
-{"name": "wait_for", "arguments": {"predicate": {"kind": "text", "text": "Dashboard"}, "timeoutMs": 8000}}
+{"name": "wait_for", "arguments": {"predicate": {"kind": "changed", "since": 12}, "timeoutMs": 8000}}
 ```
-Returns: fresh semantic snapshot — Failures: `timeout`, `invalid_predicate`
+Failures: `timeout`, `invalid_predicate`, `baseline_evicted`
+
+### semantic_snapshot (diff / filters)
+
+`identifierPrefix` matches **Semantics identifier** only. Use `labelPrefix` for visible label text. `diff:true` returns `baseline` + `delta` (`baseline:null` + `baselineReason` on first call). `render:true` adds compact numbered text.
 
 ### navigate
 Drive the registered Navigator. Requires `MCPToolkitBinding.instance.navigatorKey = key` in the app. `action` • string • required (`push|pop|popUntil`). `route` • string • required for push/popUntil. `arguments` • object • optional (for push). `connection` • object • optional.
