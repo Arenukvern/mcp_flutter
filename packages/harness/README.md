@@ -78,6 +78,7 @@ failure aborts, cleanup still runs, exit code reflects the result.
 | Drive the UI through the universal `AutomationDriver` contract | `ToolkitDriver`: `snapshot` (semantic `AxNode` tree), `perform` (click/type/keys/navigate/evaluate), `screenshot` |
 | Stream frames from a running app / browser | frame sources + `universal_screencast` — composition-level, see `showcase/drivers` (the harness itself stays pipeline-free) |
 | Structure steps, assertions, cleanup | `Scenario`, `Check`, `ScenarioReport`, `HarnessContext`, `retry` |
+| Machine-readable report (agents / CI) | `HarnessReportArgs`, `ScenarioRunOptions`, `--report=agent\|json\|junit` |
 | Evaluate Dart / hot-reload / discover extensions in the app | `VmClient.evaluate` / `hotReload` / `extensionNames` |
 | Reference the toolkit verb names | `ToolkitExtensions` (mirrors `mcp_toolkit`'s interaction toolkit) |
 
@@ -102,7 +103,9 @@ failure aborts, cleanup still runs, exit code reflects the result.
   seam.
 - `lib/src/toolkit_extensions.dart` — the extension verb names the driver
   calls (source of truth: `mcp_toolkit`'s interaction toolkit).
-- `lib/src/scenario.dart`, `lib/src/check.dart` — steps, checks, report.
+- `lib/src/scenario.dart`, `lib/src/check.dart`, `lib/src/scenario_report.dart` — steps, checks, report writers.
+- `schema/harness_scenario_report_v1.schema.json` — full JSON contract (ADR-0023).
+- `tool/scenario_report.dart` — report **smoke check** (synthetic; `--smoke --report=…`).
 - `example/desktop_pair.dart` — a full two-instance composition root.
 - `tool/showcase.dart` — this repo's showcase launcher (macOS / `--web` /
   `--stop`), the Dart rewrite of the former `scripts/*.sh` showcase.
