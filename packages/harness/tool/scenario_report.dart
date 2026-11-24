@@ -8,6 +8,8 @@ import 'dart:io';
 
 import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
 
+import 'harness_report_argv.dart';
+
 Future<void> main(List<String> args) async {
   if (args.contains('--help') || args.contains('-h')) {
     // ignore: avoid_print

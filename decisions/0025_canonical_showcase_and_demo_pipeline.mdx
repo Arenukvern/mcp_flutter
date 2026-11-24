@@ -1,0 +1,121 @@
+# ADR 0025: Canonical showcase, demo assets, and examples layout
+
+## Status
+
+Accepted (2026-11-24). P2–P4 follow-ups landed: `flutter_demo` removed; drives target
+`flutter_test_app`; fixture under `showcase/fixtures/`; snippet CI;
+`.github/workflows/showcase_drive_weekly.yml` (non-gating). P2 GIF re-record still open.
+
+## Context
+
+README and docs GIFs showed repository plumbing (`make drive-*`) more than the
+product (agents driving a live Flutter app). Examples were scattered across
+five showcase targets, package `example/` stubs, harness tools, and docs snippets
+with overlapping counter/Fibonacci flows. Anton decided to keep a single canonical
+showcase app, fix the recording pipeline for phase 2 GIFs, and clarify where
+each kind of example lives without weakening integration or exec-sweep gates.
+
+## Decision
+
+### Canonical showcase
+
+- **`showcase/flutter_test_app`** is the only **product-facing** showcase.
+- Default route `/` is a polished mini-product journey (shipments: form
+  validation, async submit, navigable list) with explicit semantics for fmtk.
+- Maintainer **QA lab** (former kitchen-sink `ShowcaseScreen`) lives at **`/qa`**.
+  Exec sweep and interaction regression targets navigate to `/qa` before driving
+  legacy identifiers (`greeting_input_field`, counters, scroll fixtures).
+- **`showcase/flutter_test_app`** is also the **instrumented drive target**
+  (`/qa` lab + `/profile`); the former `flutter_demo` minimal app was removed.
+- **`showcase/web_demo`** stays the CDP tier; its GIF is **advanced** E2E docs
+  only.
+
+### Demo storyboard (assets; phase 2 records GIFs)
+
+| ID | Audience | Capture | Entrypoints |
+| --- | --- | --- | --- |
+| **G1** | Agent user | Manual Cursor session from shot list in `docs/assets/gifs/README.md` | Live MCP in Cursor; app = canonical showcase |
+| **G2** | CLI / agent | vhs tape `cli-exec.tape` | `dart run packages/harness/tool/showcase.dart --web --detach`; `flutter-mcp-toolkit exec --name fmt_semantic_snapshot` from app cwd |
+| **G3** | Harness author | Composite / vhs | `dart run showcase/drivers/bin/drive_flutter.dart` against canonical or minimal target |
+| **G4** | Inspect | vhs `view-screenshots.tape` (phase 2) | `dart run packages/harness/tool/shot.dart`; `fmt_get_screenshots` |
+
+### Recording pipeline
+
+- **vhs `.tape` files** type only first-class commands (`dart run …`,
+  `flutter-mcp-toolkit …`) — never `make`.
+- **`dart run docs/assets/gifs/regenerate.dart`** replaces
+  `regenerate_cli_gifs.sh`; compiles workspace CLI (no release-binary drift).
+- **GIF size gate** applies to the three vhs outputs under
+  `docs/assets/gifs/` (2 MiB warn / 5 MiB hard cap; missing output fails the
+  run). Legacy manual `docs/view_screenshots.gif` is reported but not capped
+  (vhs cannot regenerate it; Phase 2 `view-screenshots.tape` replaces it).
+- **G1** is maintainer-recorded; not automated in Linux CI.
+
+### Session discovery
+
+- User and maintainer docs reference
+  `showcase/<app>/.flutter_mcp/runner-session.json` (ADR-0014) instead of
+  grepping `.showcase/*.log` for `WS_URI`.
+- `packages/harness/tool/exec_sweep.dart` and `web_showcase_tests.dart` resolve
+  the VM URI from runner-session or optional `WS_URI` override.
+
+### Bash script retirement (phase 1)
+
+Deleted: `scripts/run_showcase.sh`, `run_web_showcase.sh`, `stop_showcase.sh`,
+`run_web_showcase_tests.sh`, `run_exec_sweep.sh`. Make targets call harness
+Dart tools only.
+
+### Phased follow-up
+
+| Phase | Work |
+| --- | --- |
+| **P1 (this ADR)** | App split `/` vs `/qa`; tapes + `regenerate.dart`; Dart exec sweep; examples map; Fibonacci single implementation |
+| **P2** | **Partial** — CLI/harness GIFs re-recorded with `regenerate.dart`; `view-screenshots.tape` and the G1 asset in repo still pending |
+| **P3** | **Done** — `tool/docs/example_snippets.yaml` + `dart run tool/docs/check_example_snippets.dart` (Docs contracts CI) |
+| **P4** | **Done** — weekly `showcase_drive_weekly.yml` (read-only, not PR-gating) |
+
+### Key design decisions
+
+1. **One instrumented app** — product `/` stays fast; `/qa` holds harness semantics (no second app).
+2. **QA route** preserves exec-sweep identifiers without polluting the product home.
+3. **One Fibonacci registration** via `mcp_toolkit` `buildCalculateFibonacciTool()`; showcase keeps it only for integration catalog tests.
+
+## Examples layout (inventory summary)
+
+Full table: `docs/contributing/examples_map.md` (repo path; see parity section there).
+
+| Kind | Canonical location | Audience |
+| --- | --- | --- |
+| Product showcase | `showcase/flutter_test_app` | Agent user, docs hero |
+| CDP static page | `showcase/web_demo` | Maintainer, advanced docs |
+| Custom tool (pub.dev) | `mcp_toolkit/example/fibonacci_tool_example.dart` + `lib/examples/fibonacci.dart` (demo helper) | Package consumer |
+| AgentCallEntry snippet | `mcp_toolkit/example/agent_call_entry_starter.dart` | Package consumer |
+| Harness scenario template | `packages/harness/example/desktop_pair.dart` | Maintainer |
+| Harness tools | `packages/harness/tool/*.dart` | Maintainer |
+| Driver compositions | `showcase/drivers/bin/*.dart` | Maintainer, docs G3 |
+| CI capture fixture | `showcase/fixtures/native_layer_capture_fixture` | CI only |
+| Package stubs → real minimal | `packages/*/example/main.dart` | pub.dev consumer |
+
+**Convention (enforced going forward):**
+
+- One **meaningful** `example/` per published pub package; no version-print stubs.
+- **One source of truth per concept** — custom tools: `mcp_toolkit` example; E2E:
+  `showcase/drivers`; session discovery: ADR-0014 runner-session; showcase app:
+  `flutter_test_app`.
+- Docs link to paths in `examples_map.md`; snippet fences are gated by
+  `dart run tool/docs/check_example_snippets.dart` (start with E2E driver commands).
+
+**Deferred:** consolidating all harness `tool/` into a separate package;
+full docs snippet extraction beyond the curated manifest.
+
+## Consequences
+
+- README hero GIF unchanged in this train (separate PR).
+- Newcomers land on a credible app flow; maintainers use **QA lab** explicitly.
+- Exec sweep must push `/qa` before widget identifiers.
+- `make sync-skills` / docs must stop teaching `grep WS_URI`.
+
+## Notes
+
+- Plugin marketplace screenshots remain sourced from `flutter_test_app` /
+  `validate-runtime` (see `plugin/assets/README.md`).

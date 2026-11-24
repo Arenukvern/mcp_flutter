@@ -7,25 +7,29 @@ description: Repeatable Dart scenarios with flutter_mcp_harness.
 
 When a flow should run in **CI** or on a schedule, promote it from chat to **checked-in Dart** using **`flutter_mcp_harness`**. Showcase demos live under [`showcase/`](../../showcase/README.md).
 
-## Browser tier (`showcase/web_demo`)
+## Instrumented tier (canonical showcase)
 
-![make drive-web: CdpDriver observe → act → verify](../assets/gifs/harness-web.gif)
+![Terminal recording: dart run showcase/drivers/bin/drive_flutter.dart --device chrome](../assets/gifs/harness-flutter.gif)
 
+<!-- example-snippet: e2e_drive_flutter_bash -->
 ```bash
-make drive-web
+dart run showcase/drivers/bin/drive_flutter.dart --device chrome
 ```
 
-Case: static page in headless Chrome — CDP accessibility tree, increment/type/profile, **`OK`** on stdout. Sources: [`showcase/web_demo/`](../../showcase/web_demo/), [`showcase/drivers/bin/drive_web.dart`](../../showcase/drivers/bin/drive_web.dart).
+Case: `ToolkitDriver` over the VM service — semantic tree, taps, screenshots, named routes, ending **`OK`**. Drive target: [`showcase/flutter_test_app/`](../../showcase/flutter_test_app/) (navigates to `/qa` for the interaction lab, then `/profile`).
 
-## Instrumented tier (`showcase/flutter_demo`)
+Requires sibling **intentcall** checkout (`tool/ci/checkout_intentcall.sh`) when the drive uses IntentCall routing.
 
-![make drive-flutter-chrome: ToolkitDriver on the showcase Flutter app](../assets/gifs/harness-flutter.gif)
+## Advanced: browser tier (CDP, not Flutter MCP)
 
+![Terminal recording: dart run showcase/drivers/bin/drive_web.dart](../assets/gifs/harness-web.gif)
+
+<!-- example-snippet: e2e_drive_web_bash -->
 ```bash
-make drive-flutter-chrome
+dart run showcase/drivers/bin/drive_web.dart
 ```
 
-Case: `ToolkitDriver` over the VM service — semantic tree, **Count: 3**, screencast frames, named route, ending **`OK — one driver contract, one instrumented Flutter app.`** Sources: [`showcase/flutter_demo/`](../../showcase/flutter_demo/), [`showcase/drivers/bin/drive_flutter.dart`](../../showcase/drivers/bin/drive_flutter.dart). Requires sibling **intentcall** checkout (`tool/ci/checkout_intentcall.sh`).
+Static page in headless Chrome — CDP accessibility tree, increment/type/profile, **`OK`** on stdout. Sources: [`showcase/web_demo/`](../../showcase/web_demo/), [`showcase/drivers/bin/drive_web.dart`](../../showcase/drivers/bin/drive_web.dart).
 
 ## Shape
 
@@ -38,7 +42,8 @@ Case: `ToolkitDriver` over the VM service — semantic tree, **Count: 3**, scree
 
 - Package: [`packages/harness`](../../packages/harness)
 - Package README: [`packages/harness/README.md`](../../packages/harness/README.md)
-- Showcase launcher: `make showcase`, `packages/harness` tools
+- Showcase launcher: `dart run packages/harness/tool/showcase.dart`
+- Examples map: [`contributing/examples_map.md`](../contributing/examples_map.md)
 
 ## Skills
 

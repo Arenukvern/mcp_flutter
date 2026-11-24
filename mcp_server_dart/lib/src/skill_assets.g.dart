@@ -762,11 +762,19 @@ Returns: `{"key": "Enter", "handled": bool}` — `handled` says whether either d
 
 ### wait_for
 
-Wait for a UI predicate; returns fresh semantic snapshot. Predicates: `{kind:"text",text}` | `{kind:"noText",text}` | `{kind:"time",ms}` | `{kind:"stable",stableWindowMs}`. `stable` samples once per frame and matches after the semantics tree has remained unchanged for the requested wall time; the match reports `stableFor.sampledFrames` and `stableFor.elapsedMs`. `stableWindowMs` must be less than `timeoutMs` (default 5000); an impossible budget fails immediately with `invalid_predicate`. `predicate` • object • required. `timeoutMs` • integer • optional • default 5000 • max 30000. `connection` • object • optional.
+Wait for a UI predicate; returns a **fresh semantic snapshot envelope** on success (missing `nodes` means not observed — never treat as empty). **Do not keyword-filter snapshots** to discover new content; use `changed` or `semantic_snapshot` with `diff:true` when you do not know the text in advance. Put contract handles in `Semantics(identifier:)`, not `label`.
+
+Predicates: `{kind:"text",text}` | `{kind:"noText",text}` | `{kind:"node",identifier,…}` | `{kind:"stable",stableWindowMs}` | `{kind:"time",ms,observe?:bool}` (observe defaults **true** — peek snapshot, no `snapshot_id` bump; `observe:false` sets `observed:false`) | `{kind:"noError"}` | `{kind:"changed",since:<snapshotId>,settleMs?}` (diff vs a prior **public** snapshot; ring capacity 32; `baseline_evicted` when `since` left the ring).
+
+Timeout carries `observedRevision`, `lastSnapshotId` (public id at wait start), and a capped `delta` vs the tree at wait start. `predicate` • object • required. `timeoutMs` • integer • optional • default 5000 • max 30000.
 ```json
-{"name": "wait_for", "arguments": {"predicate": {"kind": "text", "text": "Dashboard"}, "timeoutMs": 8000}}
+{"name": "wait_for", "arguments": {"predicate": {"kind": "changed", "since": 12}, "timeoutMs": 8000}}
 ```
-Returns: fresh semantic snapshot — Failures: `timeout`, `invalid_predicate`
+Failures: `timeout`, `invalid_predicate`, `baseline_evicted`
+
+### semantic_snapshot (diff / filters)
+
+`identifierPrefix` matches **Semantics identifier** only. Use `labelPrefix` for visible label text. `diff:true` returns `baseline` + `delta` (`baseline:null` + `baselineReason` on first call). `render:true` adds compact numbered text.
 
 ### navigate
 Drive the registered Navigator. Requires `MCPToolkitBinding.instance.navigatorKey = key` in the app. `action` • string • required (`push|pop|popUntil`). `route` • string • required for push/popUntil. `arguments` • object • optional (for push). `connection` • object • optional.
@@ -2113,8 +2121,8 @@ toolkit's tool catalog onto that registry is the tracked bridge.
 
 ```bash
 make web-showcase
-# WS_URI from .showcase/web_app.log (re-grep after hot reload)
-grep -Eo 'ws://127\.0\.0\.1:[0-9]+/[A-Za-z0-9_=-]+/ws' .showcase/web_app.log | tail -1
+# vm_service_uri from runner-session (re-read after hot reload if needed)
+jq -r .vm_service_uri showcase/flutter_test_app/.flutter_mcp/runner-session.json
 ```
 
 ```bash
@@ -2267,7 +2275,7 @@ make showcase-stop && make showcase
 - WS URI: grep `ws://127.0.0.1:…/ws` from log (default VM port **8181**)
 
 ```bash
-grep -Eo 'ws://127\.0\.0\.1:[0-9]+/[A-Za-z0-9_=-]+/ws' .showcase/flutter_app.log | tail -1
+jq -r .vm_service_uri showcase/flutter_test_app/.flutter_mcp/runner-session.json
 ```
 
 Stop: `make showcase-stop`.
@@ -2366,7 +2374,8 @@ Task Progress:
 
 ```bash
 make web-showcase
-export WS_URI="$(grep -Eo 'ws://127\.0\.0\.1:[0-9]+/[A-Za-z0-9_=-]+/ws' .showcase/web_app.log | tail -1)"
+# VM URI: showcase/flutter_test_app/.flutter_mcp/runner-session.json → vm_service_uri
+# Or: dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart --runner-session-file showcase/flutter_test_app/.flutter_mcp/runner-session.json …
 bash tool/evals/run_dogfood_eval.sh --ws-uri "$WS_URI" --merge --skip-visual   # yq or dart fallback
 # or without merge:
 bash tool/evals/run_dogfood_eval.sh --ws-uri "$WS_URI"
@@ -2616,6 +2625,8 @@ exit(passed ? 0 : 1);
 Console output stays the default (`printSummary`). Agents and CI opt in:
 
 ```dart
+import '../tool/harness_report_argv.dart'; // composition roots only
+
 final reportArgs = requireHarnessReportArgs(platformArgs);
 passed = await scenario.run(runOptions: reportArgs.toRunOptions());
 scenario.report.printSummary();
@@ -2651,8 +2662,8 @@ dart run packages/harness/tool/scenario_report.dart --smoke \
 ```
 
 For real E2E, run a checked-in composition root with the same flags;
-`requireHarnessReportArgs(args)` in `main` for validation (library uses
-`HarnessReportParseResult.parse` without calling `exit`).
+`requireHarnessReportArgs` from `packages/harness/tool/harness_report_argv.dart`
+in `main` (library: `HarnessReportParseResult.parse` only).
 
 ## Driving widgets (`ToolkitDriver`)
 
@@ -2697,7 +2708,7 @@ make showcase-stop   # kill stray sessions, free VM port 8181 (idempotent)
   `INTENTCALL_ROOT`, sibling checkouts, or `PATH`.
 - Interactive mode tees every line to the log (which `make exec-sweep` greps)
   and tears the session down on exit or Ctrl-C.
-- WS URI for follow-up calls: `grep -Eo 'ws://127\.0\.0\.1:[0-9]+/[A-Za-z0-9_=-]+/ws' .showcase/flutter_app.log | tail -1`.
+- VM URI for follow-up calls: read `showcase/flutter_test_app/.flutter_mcp/runner-session.json` field `vm_service_uri` (or `dart run packages/harness/tool/showcase.dart --web --detach`, then exec from the app directory with runner discovery).
 
 ## Hard boundaries
 

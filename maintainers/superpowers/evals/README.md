@@ -42,13 +42,23 @@ IntentCall libraries live in the sibling IntentCall workspace during local devel
 **Web with WebMCP flags (recommended — repeatable across machines):**
 
 ```bash
-make web-showcase
+# Chrome + WebMCP flags (writes runner-session under the showcase app):
+dart run packages/harness/tool/showcase.dart --web --detach
 # Visual reconstruct dogfood (boots /visual-reconstruct, no showcase tap):
-DOGFOOD_VISUAL=1 make web-showcase
+DOGFOOD_VISUAL=1 dart run packages/harness/tool/showcase.dart --web --detach
+# Shortcut (same entrypoint):
+make web-showcase
 # or: dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart webmcp chrome-args
 ```
 
-Copy `WS_URI` from `.showcase/web_app.log` (printed when ready).
+VM URI (prefer runner-session over log grep; requires **jq** on PATH):
+
+```bash
+export WS_URI="$(jq -r .vm_service_uri showcase/flutter_test_app/.flutter_mcp/runner-session.json)"
+# Some batteries still expect WS_URI in the environment.
+```
+
+> The enter-text adoption proof is `dart run tool/evals/run_runtime_enter_text_greeting.dart --platform web` (Dart port of the former bash script; same steps and acceptance check). Use `--platform macos` when the showcase is a macOS/desktop run.
 
 **Web (plain Chrome — WebMCP API usually inactive):**
 
@@ -95,14 +105,14 @@ bash tool/evals/run_dogfood_eval.sh --skip-runtime
 bash tool/evals/run_dogfood_eval.sh --ws-uri "$WS_URI" --skip-visual
 ```
 
-**Visual fidelity (warm path):** PAUSED — the fixture home (external `flutter_harness`) is retired (ADR-0017); regenerate only after the visual track is re-homed. Previously: when `WS_URI` is set and sibling `flutter_harness` exists, the battery runs **`warm_path_direct.hs.yaml`** (canonical — not scroll/tap `warm_path.hs.yaml`). The app should boot on `/visual-reconstruct` via **`DOGFOOD_VISUAL=1`** (see `scripts/run_web_showcase.sh` → `--dart-define=DOGFOOD_VISUAL=true`). Capture uses `screenshot_mode: flutter_layer` on Chrome. Golden: `flutter_test_app/test/goldens/visual_reconstruct.png`. Guild: `flutter_visual_reconstruct/profiles/dogfood_warm.yaml`. Verdict: copied to `.showcase/eval_runs/<id>/visual_verdict.yaml` (and harness `artifacts/verdict.yaml`). Override script: `VISUAL_HS=…/warm_path_direct.hs.yaml`. Requires `HARNESS_ROOT` if not at `../flutter_harness`.
+**Visual fidelity (warm path):** PAUSED — the fixture home (external `flutter_harness`) is retired (ADR-0017); regenerate only after the visual track is re-homed. Previously: when `WS_URI` is set and sibling `flutter_harness` exists, the battery runs **`warm_path_direct.hs.yaml`** (canonical — not scroll/tap `warm_path.hs.yaml`). The app should boot on `/visual-reconstruct` via **`DOGFOOD_VISUAL=1`** (`dart run packages/harness/tool/showcase.dart --web --detach` with that env set). Capture uses `screenshot_mode: flutter_layer` on Chrome. Golden: `flutter_test_app/test/goldens/visual_reconstruct.png`. Guild: `flutter_visual_reconstruct/profiles/dogfood_warm.yaml`. Verdict: copied to `.showcase/eval_runs/<id>/visual_verdict.yaml` (and harness `artifacts/verdict.yaml`). Override script: `VISUAL_HS=…/warm_path_direct.hs.yaml`. Requires `HARNESS_ROOT` if not at `../flutter_harness`.
 
 **Viewport / DPR (Chrome :8080):** Warm scores are only comparable when the browser viewport and device pixel ratio match the golden. Default dogfood uses **`WEB_PORT=8080`** and a maximized or consistent Chrome window. Widget tests generate the golden at **1.0 DPR** in the test binding; live Chrome capture may differ if the window is scaled or DPR ≠ 1 — `dogfood_warm.yaml` relaxes thresholds accordingly. For reproducible scores: same machine, same Chrome zoom (100%), avoid fractional OS display scaling, and prefer `DOGFOOD_VISUAL=1` over tap navigation.
 
 ```bash
 # Manual warm path (canonical)
-DOGFOOD_VISUAL=1 make web-showcase
-export WS_URI="$(grep -Eo 'ws://127\.0\.0\.1:[0-9]+/[A-Za-z0-9_=-]+/ws' .showcase/web_app.log | tail -1)"
+DOGFOOD_VISUAL=1 dart run packages/harness/tool/showcase.dart --web --detach
+export WS_URI="$(jq -r .vm_service_uri showcase/flutter_test_app/.flutter_mcp/runner-session.json)"
 cd ../flutter_harness
 bundle=$(mktemp -d)
 dart run bin/flutter_harness.dart --save-images run \

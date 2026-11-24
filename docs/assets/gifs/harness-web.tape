@@ -11,6 +11,6 @@ Set Theme "GitHub Dark"
 Set PlaybackSpeed 2.25
 Set MarginFill "#0d1117"
 
-Type "make drive-web"
+Type "dart run showcase/drivers/bin/drive_web.dart"
 Enter
 Sleep 8s

@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
 import 'package:path/path.dart' as p;
 
+import '../tool/harness_report_argv.dart';
+
 /// Two-instance desktop pair E2E (the shape proven in the vosges project).
 ///
 /// Instance A hosts; instance B launches in a "controller" role via an env
@@ -19,7 +21,10 @@ import 'package:path/path.dart' as p;
 Future<void> main(List<String> args) async {
   final reportArgs = requireHarnessReportArgs(args);
   final build = !args.contains('--skip-build');
-  final appDir = 'flutter_test_app'; // adapt: your Flutter desktop project
+  final repoRoot = p.normalize(
+    p.join(p.dirname(Platform.script.toFilePath()), '..', '..', '..'),
+  );
+  final appDir = p.join(repoRoot, 'showcase', 'flutter_test_app');
   final binary = p.join(
     appDir,
     'build',
@@ -27,10 +32,10 @@ Future<void> main(List<String> args) async {
     'Build',
     'Products',
     'Debug',
-    'Your App.app', // adapt: build/.../YourApp.app/Contents/MacOS/YourApp
+    'test_app.app',
     'Contents',
     'MacOS',
-    'Your App',
+    'test_app',
   );
 
   LaunchedApp? host;

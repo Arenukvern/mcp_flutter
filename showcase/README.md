@@ -10,41 +10,35 @@ Every example proves the same claim at a different tier: **one
 
 | Tier | Target | Driver | Transport |
 |---|---|---|---|
-| Instrumented | [`flutter_demo/`](flutter_demo/) (Flutter app) | `ToolkitDriver` (`packages/harness`) | Dart VM service (`ext.mcp.toolkit.*`) |
+| Instrumented | [`flutter_test_app/`](flutter_test_app/) (canonical Flutter app) | `ToolkitDriver` (`packages/harness`) | Dart VM service (`ext.mcp.toolkit.*`) |
 | Browser | [`web_demo/`](web_demo/) (static page in Chrome) | `CdpDriver` (`universal_browser_cdp`) | Chrome DevTools Protocol |
 | OS-native | *(no example needed — the machine itself)* | `CaptureKit*` (`universal_capture_macos`) | Swift bridge via Dart native assets |
 
 ## Examples
 
-### `flutter_demo/` — the instrumented tier
+### `flutter_test_app/` — canonical instrumented + product tier
 
-A deliberately small Flutter app bound to `MCPToolkitBinding`: a counter
-button, a text field, and a named `/profile` route. Every control has a
-plain text label so a `ToolkitDriver` can resolve it from a semantic
-snapshot by name — exactly how the toolkit's MCP tools resolve widgets.
-
-Driven end-to-end by:
+The **product** surface (`/` shipments journey) and the **maintainer lab** (`/qa`)
+share one instrumented app. End-to-end driver programs target the lab route
+(counter, name field, `/profile`) while exec sweep and integration gates
+exercise the same semantics.
 
 ```bash
 make drive-flutter            # macOS (first build takes minutes)
 make drive-flutter-chrome     # Flutter web
 ```
 
-Recording: [E2E scenarios — instrumented tier](../docs/use-cases/e2e-scenarios.mdx#instrumented-tier-showcaseflutter_demo).
-
-or directly:
+Recording: [E2E scenarios — instrumented tier](../docs/use-cases/e2e-scenarios.mdx).
 
 ```bash
 dart run showcase/drivers/bin/drive_flutter.dart
 ```
 
-The drive tool: observes the semantic tree → taps `Increment` ×3 →
-types `Ada` into `Name` → verifies `Count: 3` → captures a PNG →
-streams PNG frames from the app through the `universal_screencast`
-pipeline (via this package's `FlutterAppFrames` adapter over the
-harness's VM client) into a file recorder → routes a click/type hint
-through the `IntentDriverRouter` → pushes the `/profile` route and
-verifies the greeting. Artifacts land in `.showcase/`.
+The drive tool: navigates to `/qa` → observes the semantic tree → taps
+`Increment` ×3 → types `Ada` into `Name` → verifies `Count: 3` → captures
+a PNG → streams frames through `universal_screencast` → routes hints through
+`IntentDriverRouter` → pushes `/profile` and verifies the greeting. Artifacts
+land in `.showcase/`.
 
 ### `web_demo/` — the browser tier
 
@@ -56,10 +50,6 @@ make drive-web                # headless Chrome
 make drive-web VISIBLE=1      # watch it
 ```
 
-Recording: [E2E scenarios — browser tier](../docs/use-cases/e2e-scenarios.mdx#browser-tier-showcaseweb_demo).
-
-or directly:
-
 ```bash
 dart run showcase/drivers/bin/drive_web.dart
 ```
@@ -68,59 +58,35 @@ Same loop, different transport: the CDP accessibility tree for
 observation, `Input.dispatchMouseEvent`/`insertText` for action, the
 page's own screencast domain for frames.
 
-### The macOS tier
-
-No app to write — the OS-native tier observes apps that never opted
-into any protocol. Try it from the family repo:
-
-```bash
-cd ../../../xs/storage_problem/dart_flutter_packages
-dart test pkgs/universal_capture_macos   # screenshots + ScreenCaptureKit stream
-```
-
-## Why these demos exist
-
-1. **Compositional proof.** The harness target brings up the app, the
-   driver speaks one contract, the screencast pipeline accepts any
-   frame source and any sink — the pieces interlock without adapters
-   because they were designed to (`universal_automation_interface`).
-2. **Conformance, not vibes.** `ToolkitDriver` and
-   `ToolkitFrameSource` both pass the family's conformance suites
-   (`universal_automation_conformance`) in unit tests; these demos are
-   the live end-to-end pass.
-3. **An OSS on-ramp.** Each demo is a page or ~100-line app: the
-   smallest honest thing that exercises the real surfaces.
-
 ## Layout
 
 ```
 showcase/
-├── README.md              ← you are here
-├── flutter_test_app/      ← the full dogfood showcase app (dynamic tools,
-│                            WebMCP, IntentCall bootstrap, platform views)
-│                            behind `make showcase` / `make web-showcase`
-├── drivers/               ← composition package: drive programs + the
-│                            FlutterAppFrames adapter (owns the pipeline
-│                            policy, so the harness stays pipeline-free)
-├── flutter_demo/          ← minimal instrumented target (mcp_toolkit bound)
-└── web_demo/              ← minimal static page + serve.dart (CDP target)
+├── README.md                    ← you are here
+├── flutter_test_app/            ← canonical product + `/qa` maintainer lab (ADR-0025)
+├── drivers/                     ← composition: drive programs + FlutterAppFrames
+├── web_demo/                    ← static HTML + serve.dart (CDP tier)
+└── fixtures/
+    └── native_layer_capture_fixture/  ← CI capture tests only
 ```
 
-The big app and the minimal demos are complementary: `flutter_test_app`
-exercises every product hook and is the consumer proof target
-(`make showcase` on macOS, `make web-showcase` for Chrome, IntentCall
-doors via `intentcall_session.dart`); `flutter_demo`/`web_demo` are the
-smallest honest things the `drivers/` programs can drive end-to-end.
+### Examples index
+
+| Goal | Path |
+| --- | --- |
+| Run the canonical app | `dart run packages/harness/tool/showcase.dart` |
+| Custom tool sample | [`mcp_toolkit/example/fibonacci_tool_example.dart`](../mcp_toolkit/example/fibonacci_tool_example.dart) |
+| Code-first drive | [`drivers/bin/drive_flutter.dart`](drivers/bin/drive_flutter.dart) |
+| Full map | [`docs/contributing/examples_map.md`](../docs/contributing/examples_map.md) |
+
+Session discovery: `showcase/flutter_test_app/.flutter_mcp/runner-session.json` (not log grep).
+
+`flutter_test_app` exercises every product hook; `web_demo` is the smallest
+honest CDP target the `drivers/` programs can drive in headless Chrome.
 
 #### Dependency inversion
 
-The drive programs used to live in `packages/harness/tool/` — which
-dragged `universal_screencast` into the harness pubspec even though the
-harness library never imported it. The composition now lives where it
-belongs: `showcase/drivers` depends on the harness AND the pipeline and
-wires them together; `flutter_mcp_harness` depends only on contracts
-(`universal_automation_interface`, `intentcall_core`), protocol clients
-(`vm_service`, `universal_browser_cdp`), and `path`.
-[`FlutterAppFrames`](drivers/lib/flutter_app_frames.dart) is the seam
-made explicit: a small `FrameSource` over the harness's own `VmClient`,
-owned by the composition that needs it.
+Drive programs live in `showcase/drivers`: composition depends on the harness
+and `universal_screencast` without dragging screencast into `flutter_mcp_harness`.
+[`FlutterAppFrames`](drivers/lib/flutter_app_frames.dart) is the seam over the
+harness `VmClient`, owned by the composition that needs it.

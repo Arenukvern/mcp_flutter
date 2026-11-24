@@ -33,6 +33,8 @@ final class Check {
 
   bool get passed => status == CheckStatus.pass;
 
+  bool get isFailure => status == CheckStatus.fail;
+
   @override
   String toString() => switch (status) {
         CheckStatus.pass => 'PASS: $name',
@@ -104,7 +106,10 @@ final class ScenarioReport {
         ),
       );
 
-  bool get allPassed => checks.every((c) => c.passed);
+  /// True when no check has [CheckStatus.fail] (skip and not_run are allowed).
+  bool get allPassed => !checks.any((c) => c.isFailure);
+
+  bool get hasFailures => checks.any((c) => c.isFailure);
 
   void printSummary() {
     for (final check in checks) {

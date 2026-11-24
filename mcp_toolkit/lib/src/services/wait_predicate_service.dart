@@ -1,15 +1,19 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
+import 'package:universal_automation_semantics/universal_automation_semantics.dart';
 
 import '../mcp_toolkit_binding.dart';
 import 'background_frame_pump.dart';
+import 'semantic_delta_wire.dart';
+import 'semantic_observation_history.dart';
 import 'semantic_snapshot_service.dart';
 
 /// Service that blocks until a UI predicate holds or a timeout elapses.
 ///
 /// Predicate kinds:
-///   - `time`:    {kind: 'time', ms: int} — pure delay, no UI inspection.
+///   - `time`:    {kind: 'time', ms: int, observe: bool?} — delay; observes
+///                by default (`observe: true`).
 ///   - `text`:    {kind: 'text', text: String} — substring appears in snapshot.
 ///   - `noText`:  {kind: 'noText', text: String} — substring absent.
 ///   - `node`:    {kind: 'node', identifier: String, selected/enabled/focused/
@@ -18,8 +22,8 @@ import 'semantic_snapshot_service.dart';
 ///   - `stable`:  {kind: 'stable', stableWindowMs: int} — no semantic change
 ///                for the requested wall time, sampled once per frame.
 ///   - `noError`: {kind: 'noError'} — Flutter error monitor has no entries.
-///
-/// Implemented incrementally — see plan tasks 2–5.
+///   - `changed`: {kind: 'changed', since: int, settleMs?: int} — tree differs
+///                from public snapshot [since] (ring buffer).
 class WaitPredicateService {
   const WaitPredicateService._();
 
@@ -42,9 +46,40 @@ class WaitPredicateService {
 
     if (kind == 'time') {
       final ms = (predicate['ms'] as num?)?.toInt() ?? 0;
+      final observe = predicate['observe'] as bool? ?? true;
       await Future<void>.delayed(Duration(milliseconds: ms));
-      return _successNoSnapshot(predicate, stopwatch.elapsedMilliseconds);
+      if (!observe) {
+        return <String, Object?>{
+          'matched': true,
+          'observed': false,
+          'predicate': predicate,
+          'elapsedMs': stopwatch.elapsedMilliseconds,
+        };
+      }
+      final observed =
+          await SemanticSnapshotService.peekSemanticSnapshot();
+      return _successWithSnapshot(
+        predicate,
+        stopwatch.elapsedMilliseconds,
+        observed,
+      );
     }
+
+    if (kind == 'changed') {
+      return _waitForChanged(
+        predicate: predicate,
+        timeoutMs: timeoutMs,
+        stopwatch: stopwatch,
+      );
+    }
+
+    final waitStartSnapshotId = SemanticSnapshotService.currentSnapshotId;
+    final waitRecord =
+        SemanticSnapshotService.lookupPublicObservation(waitStartSnapshotId);
+    final waitFilter = waitRecord != null
+        ? SemanticSnapshotFilter.fromFilterKey(waitRecord.filterKey)
+        : null;
+    final waitStartBaseline = waitRecord?.observation;
 
     if (kind == 'noError') {
       final binding = WidgetsBinding.instance;
@@ -65,6 +100,8 @@ class WaitPredicateService {
         predicate,
         stopwatch.elapsedMilliseconds,
         await SemanticSnapshotService.peekSemanticSnapshot(),
+        waitStartSnapshotId: waitStartSnapshotId,
+        waitStartBaseline: waitStartBaseline,
       );
     }
 
@@ -137,7 +174,203 @@ class WaitPredicateService {
       stopwatch.elapsedMilliseconds,
       lastSnapshot,
       changeCount: changeCount,
+      waitStartSnapshotId: waitStartSnapshotId,
+      waitStartBaseline: waitStartBaseline,
     );
+  }
+
+  static Future<Map<String, Object?>> _waitForChanged({
+    required Map<String, Object?> predicate,
+    required int timeoutMs,
+    required Stopwatch stopwatch,
+  }) async {
+    final since = (predicate['since'] as num?)?.toInt();
+    if (since == null) {
+      return <String, Object?>{
+        'matched': false,
+        'error': 'invalid_predicate',
+        'reason': 'changed_since_required',
+        'predicate': predicate,
+        'elapsedMs': stopwatch.elapsedMilliseconds,
+        'hint': 'Pass {"kind":"changed","since":<snapshotId from a public '
+            'semantic_snapshot>}',
+      };
+    }
+
+    final record = SemanticObservationHistory.instance.lookupSince(since);
+    if (record == null) {
+      final eviction =
+          SemanticObservationHistory.instance.evictionInfoFor(since);
+      final cap = SemanticObservationHistory.publicObservationRingCapacity;
+      final hint = switch (eviction) {
+        BaselineEvictionInfo(neverRecorded: true) =>
+          'No public snapshot with id $since is in the observation ring '
+              '(capacity $cap). Take semantic_snapshot and use its snapshot_id.',
+        BaselineEvictionInfo(publicSnapshotsSince: final n?) =>
+          'Snapshot $since was evicted from the observation ring (capacity '
+              '$cap; $n public snapshot(s) recorded since). Take a fresh '
+              'semantic_snapshot and wait again.',
+        _ =>
+          'Snapshot $since is not available. Take a fresh semantic_snapshot.',
+      };
+      return <String, Object?>{
+        'matched': false,
+        'error': 'baseline_evicted',
+        'predicate': predicate,
+        'elapsedMs': stopwatch.elapsedMilliseconds,
+        'since': since,
+        if (eviction?.publicSnapshotsSince != null)
+          'publicSnapshotsSince': eviction!.publicSnapshotsSince,
+        'ringCapacity': cap,
+        'hint': hint,
+      };
+    }
+
+    final baseline = record.observation;
+    final filter = SemanticSnapshotFilter.fromFilterKey(record.filterKey);
+    final optionalFilterKey = predicate['filterKey'];
+    if (optionalFilterKey is String &&
+        optionalFilterKey.isNotEmpty &&
+        optionalFilterKey != record.filterKey) {
+      return <String, Object?>{
+        'matched': false,
+        'error': 'baseline_filtered',
+        'predicate': predicate,
+        'elapsedMs': stopwatch.elapsedMilliseconds,
+        'since': since,
+        'hint':
+            'The predicate filterKey does not match the filter recorded with '
+            'snapshot $since. Use the same filter as that snapshot, or take a '
+            'fresh baseline.',
+      };
+    }
+
+    final settleMs = (predicate['settleMs'] as num?)?.toInt();
+    final binding = WidgetsBinding.instance;
+    final deadline = Duration(milliseconds: timeoutMs);
+    Map<String, Object?>? lastPeek;
+
+    while (stopwatch.elapsed < deadline) {
+      lastPeek = await SemanticSnapshotService.peekSemanticSnapshot(
+        filter: filter.isEmpty ? null : filter,
+      );
+      final current = SemanticSnapshotService.observationFromSnapshot(
+        lastPeek,
+        filter: filter.isEmpty ? null : filter,
+      );
+      final delta = current.diff(baseline);
+      if (!delta.isEmpty) {
+        var settled = true;
+        if (settleMs != null && settleMs > 0) {
+          final remainingMs =
+              deadline.inMilliseconds - stopwatch.elapsedMilliseconds;
+          if (remainingMs < settleMs) {
+            final late = SemanticSnapshotService.observationFromSnapshot(
+              lastPeek!,
+              filter: filter.isEmpty ? null : filter,
+            );
+            return _successWithSnapshot(
+              predicate,
+              stopwatch.elapsedMilliseconds,
+              lastPeek!,
+              measured: <String, Object?>{
+                'settled': false,
+                'since': since,
+                ...cappedDeltaRender(late.diff(baseline)),
+              },
+            );
+          }
+          final settle = await _settleForMs(
+            binding: binding,
+            settleMs: settleMs,
+            stopwatch: stopwatch,
+            deadline: deadline,
+            filter: filter.isEmpty ? null : filter,
+          );
+          settled = settle.settled;
+          lastPeek = settle.lastPeek ?? lastPeek;
+          if (!settled) {
+            final late = SemanticSnapshotService.observationFromSnapshot(
+              lastPeek!,
+              filter: filter.isEmpty ? null : filter,
+            );
+            return _successWithSnapshot(
+              predicate,
+              stopwatch.elapsedMilliseconds,
+              lastPeek!,
+              measured: <String, Object?>{
+                'settled': false,
+                'since': since,
+                ...cappedDeltaRender(late.diff(baseline)),
+              },
+            );
+          }
+        }
+        final finalSnapshot = await SemanticSnapshotService.buildSemanticSnapshot(
+          filter: filter.isEmpty ? null : filter,
+        );
+        final finalObs = SemanticSnapshotService.observationFromSnapshot(
+          finalSnapshot,
+          filter: filter.isEmpty ? null : filter,
+        );
+        return _successWithSnapshot(
+          predicate,
+          stopwatch.elapsedMilliseconds,
+          finalSnapshot,
+          measured: <String, Object?>{
+            ...cappedDeltaRender(finalObs.diff(baseline)),
+            'since': since,
+            if (settleMs != null && settleMs > 0) 'settled': settled,
+          },
+        );
+      }
+      await _awaitNextFrame(binding);
+    }
+
+    return _timeoutResponse(
+      predicate,
+      stopwatch.elapsedMilliseconds,
+      lastPeek,
+      waitStartSnapshotId: since,
+      waitStartBaseline: baseline,
+    );
+  }
+
+  static Future<({bool settled, Map<String, Object?>? lastPeek})>
+      _settleForMs({
+    required WidgetsBinding binding,
+    required int settleMs,
+    required Stopwatch stopwatch,
+    required Duration deadline,
+    SemanticSnapshotFilter? filter,
+  }) async {
+    var stableSamples = 0;
+    String? lastSerialised;
+    var unchangedSinceMs = 0;
+    Map<String, Object?>? lastPeek;
+    while (stopwatch.elapsed < deadline) {
+      await _awaitNextFrame(binding);
+      if (stopwatch.elapsed >= deadline) break;
+      // Yield so widget tests can interleave pumps between settle samples.
+      await Future<void>.delayed(Duration.zero);
+      final snapshot = await SemanticSnapshotService.peekSemanticSnapshot(
+        filter: filter?.isEmpty == false ? filter : null,
+      );
+      lastPeek = snapshot;
+      final serialised = _serialiseNodes(snapshot);
+      final sampledAtMs = stopwatch.elapsedMilliseconds;
+      if (lastSerialised == null || serialised != lastSerialised) {
+        stableSamples = 1;
+        lastSerialised = serialised;
+        unchangedSinceMs = sampledAtMs;
+      } else {
+        stableSamples++;
+        if (sampledAtMs - unchangedSinceMs >= settleMs) {
+          return (settled: true, lastPeek: lastPeek);
+        }
+      }
+    }
+    return (settled: false, lastPeek: lastPeek);
   }
 
   static Future<void> _awaitNextFrame(WidgetsBinding binding) async {
@@ -242,27 +475,35 @@ class WaitPredicateService {
     return false;
   }
 
-  static Map<String, Object?> _successNoSnapshot(
-    Map<String, Object?> predicate,
-    int elapsedMs,
-  ) => <String, Object?>{
-    'matched': true,
-    'predicate': predicate,
-    'elapsedMs': elapsedMs,
-  };
-
   static Map<String, Object?> _successWithSnapshot(
     Map<String, Object?> predicate,
     int elapsedMs,
     Map<String, Object?> snapshot, {
     Map<String, Object?> measured = const <String, Object?>{},
-  }) => <String, Object?>{
-    'matched': true,
-    'predicate': predicate,
-    'elapsedMs': elapsedMs,
-    ...measured,
-    ...snapshot,
-  };
+  }) {
+    final observed = predicate['observe'] as bool?;
+    final nodes = snapshot['nodes'];
+    final nodesAbsent = nodes is! List;
+    if (nodesAbsent && observed != false) {
+      return <String, Object?>{
+        'matched': false,
+        'error': 'invalid_observation',
+        'predicate': predicate,
+        'elapsedMs': elapsedMs,
+        ...measured,
+        'hint':
+            'Success promised an observed tree but the snapshot carried no '
+            'nodes. Use buildSemanticSnapshot or set observe:false on time.',
+      };
+    }
+    return <String, Object?>{
+      'matched': true,
+      'predicate': predicate,
+      'elapsedMs': elapsedMs,
+      ...measured,
+      ...snapshot,
+    };
+  }
 
   static Map<String, Object?> _invalidStableBudget({
     required Map<String, Object?> predicate,
@@ -286,27 +527,39 @@ class WaitPredicateService {
     int elapsedMs,
     Map<String, Object?>? lastSnapshot, {
     int changeCount = 0,
-  }) => <String, Object?>{
-    'matched': false,
-    'predicate': predicate,
-    'elapsedMs': elapsedMs,
-    if (lastSnapshot != null && lastSnapshot['snapshot_id'] is int)
-      'lastSnapshotId': lastSnapshot['snapshot_id'],
-    ..._timeoutDiagnosis(
-      predicate: predicate,
-      lastSnapshot: lastSnapshot,
-      changeCount: changeCount,
-    ),
-  };
+    int? waitStartSnapshotId,
+    Observation? waitStartBaseline,
+  }) {
+    final observedRevision =
+        (lastSnapshot?['observedRevision'] as num?)?.toInt();
+    Map<String, Object?>? deltaWire;
+    if (waitStartBaseline != null && lastSnapshot != null) {
+      final filter = waitStartSnapshotId != null
+          ? SemanticSnapshotService.filterForPublicSnapshot(
+              waitStartSnapshotId,
+            )
+          : null;
+      final current = SemanticSnapshotService.observationFromSnapshot(
+        lastSnapshot,
+        filter: filter?.isEmpty == false ? filter : null,
+      );
+      deltaWire = cappedDeltaRender(current.diff(waitStartBaseline));
+    }
+    return <String, Object?>{
+      'matched': false,
+      'predicate': predicate,
+      'elapsedMs': elapsedMs,
+      if (waitStartSnapshotId != null) 'lastSnapshotId': waitStartSnapshotId,
+      if (observedRevision != null) 'observedRevision': observedRevision,
+      if (deltaWire != null) ...deltaWire,
+      ..._timeoutDiagnosis(
+        predicate: predicate,
+        lastSnapshot: lastSnapshot,
+        changeCount: changeCount,
+      ),
+    };
+  }
 
-  /// Why the predicate never held, in a sentence the caller can act on.
-  ///
-  /// A timeout used to report only how long it waited, which is the one thing
-  /// the caller already knew. The tree it waited on is too big to inline — a
-  /// real screen runs to thousands of tokens — but the reason is small: the
-  /// identifier is absent, one flag disagrees, or the text differs only by
-  /// case. Named `hint` so it reaches the caller as the failure's recovery
-  /// summary, like every other refusal.
   static Map<String, Object?> _timeoutDiagnosis({
     required Map<String, Object?> predicate,
     required Map<String, Object?>? lastSnapshot,
@@ -319,7 +572,36 @@ class WaitPredicateService {
       'node' => _nodeTimeout(predicate, lastSnapshot),
       'stable' => _stableTimeout(predicate, changeCount),
       'noError' => _noErrorTimeout(),
+      'changed' => _changedTimeout(predicate, lastSnapshot),
       _ => const <String, Object?>{},
+    };
+  }
+
+  static Map<String, Object?> _changedTimeout(
+    Map<String, Object?> predicate,
+    Map<String, Object?>? lastSnapshot,
+  ) {
+    final since = (predicate['since'] as num?)?.toInt();
+    if (since == null) {
+      return const <String, Object?>{
+        'hint': 'changed requires since:<snapshotId>.',
+      };
+    }
+    if (SemanticSnapshotService.observationForPublicSnapshot(since) == null) {
+      final cap = SemanticObservationHistory.publicObservationRingCapacity;
+      return <String, Object?>{
+        'hint':
+            'Baseline snapshot $since was evicted from the observation ring '
+            '(capacity $cap).',
+      };
+    }
+    return <String, Object?>{
+      'hint':
+          'Nothing changed versus snapshot $since before the timeout ended. '
+          'The tree may already match the filtered baseline, or the change is '
+          'slower than timeoutMs.',
+      if (lastSnapshot != null)
+        'observedRevision': lastSnapshot['observedRevision'],
     };
   }
 
@@ -470,8 +752,6 @@ class WaitPredicateService {
     };
   }
 
-  /// Number of strings under [value], and the first one containing
-  /// [lowerNeedle] once case is set aside.
   static (int, String?) _scanStrings(
     Object? value,
     String lowerNeedle,
@@ -523,13 +803,6 @@ class WaitPredicateService {
     return null;
   }
 
-  /// The flags the snapshot actually published for [node].
-  ///
-  /// Only those: a snapshot emits a flag when the widget declares that state
-  /// at all, so filling the rest in as `false` would report a plain label as
-  /// a disabled, unchecked control. Matching still reads an absent flag as
-  /// `false` — see [_flagsHold] — but that is a rule about the predicate, not
-  /// a description of the widget.
   static Map<String, Object?> _stateOf(Map<Object?, Object?> node) =>
       <String, Object?>{
         for (final flag in _nodeFlags)
@@ -552,26 +825,22 @@ class WaitPredicateService {
     }
   }
 
-  /// Test-only surface for the timeout response shape.
-  ///
-  /// The integration path through [waitFor] is hard to drive deterministically
-  /// in `testWidgets` (the deadline check uses a real-time [Stopwatch] which
-  /// does not advance under fake-async pumps). Exposing the pure builder lets
-  /// tests lock the wire field name (`lastSnapshotId`, not `lastSnapshot`)
-  /// without flaky timing.
   static Map<String, Object?> buildTimeoutResponseForTesting({
     required Map<String, Object?> predicate,
     required int elapsedMs,
     Map<String, Object?>? lastSnapshot,
     int changeCount = 0,
+    int? waitStartSnapshotId,
+    Observation? waitStartBaseline,
   }) => _timeoutResponse(
     predicate,
     elapsedMs,
     lastSnapshot,
     changeCount: changeCount,
+    waitStartSnapshotId: waitStartSnapshotId,
+    waitStartBaseline: waitStartBaseline,
   );
 
-  /// Mutable per-call scratch space for predicates that need history.
   static bool _errorMonitorIsEmpty() {
     try {
       return MCPToolkitBinding.instance.errors.isEmpty;
@@ -583,6 +852,16 @@ class WaitPredicateService {
   static String _serialiseNodes(Map<String, Object?> snapshot) {
     final nodes = snapshot['nodes'];
     if (nodes is! List) return '';
-    return nodes.map((n) => n.toString()).join('|');
+    return nodes
+        .map((n) {
+          if (n is! Map) return n.toString();
+          final copy = Map<String, Object?>.from(n.cast<String, Object?>());
+          // Peeks omit ref/children; public builds include them. Stable/settle
+          // compares semantic content, not bind generation.
+          copy.remove('ref');
+          copy.remove('children');
+          return copy.toString();
+        })
+        .join('|');
   }
 }

@@ -14,7 +14,13 @@ Flutter-side library for [flutter-mcp-toolkit](https://github.com/Arenukvern/mcp
 
 **Not** the [Dart MCP server](https://github.com/dart-lang/ai/tree/main/pkgs/dart_mcp_server) (analyzer/tooling). This package targets a **running debug app**.
 
-![Screen recording of fmt_get_screenshots capturing a running Flutter debug app and returning UI frames to an AI assistant.](https://raw.githubusercontent.com/Arenukvern/mcp_flutter/main/docs/view_screenshots.gif)
+![Screen recording of the flutter-mcp-toolkit harness driving a debug Flutter app and returning UI frames to an AI assistant.](https://raw.githubusercontent.com/Arenukvern/mcp_flutter/main/docs/assets/gifs/harness-flutter.gif)
+
+## See it in Cursor (~6 MB)
+
+An early capture of the toolkit in Cursor: the agent grabs a screenshot of a running debug app and reads the UI back. Today's tool is `fmt_get_screenshots`; a fresh recording is coming with the demo rethink.
+
+[`docs/view_screenshots.gif`](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/view_screenshots.gif) — early screen recording of Cursor's agent calling the toolkit's screenshot tool (then named `view_screenshots`) on a running Flutter debug app and describing the captured UI (inlined in the [repo README](https://github.com/Arenukvern/mcp_flutter#see-it-in-cursor-6-mb)).
 
 See dynamic tools registration in this [short YouTube video](https://www.youtube.com/watch?v=Qog3x2VcO98).
 
@@ -37,7 +43,19 @@ Future<void> main() async {
 }
 ```
 
-Debug mode only (assert-guarded). After changing bootstrap code, **hot restart** — not just hot reload.
+Debug mode only (assert-guarded).
+
+### Hot reload vs hot restart
+
+The Dart VM **cannot unregister** service extensions. `addEntries` therefore:
+
+- Registers each `ext.mcp.toolkit.*` extension **once** per isolate.
+- Handler updates apply only when app code calls **`addEntries` again** with a new [AgentCallEntry] for that tool. `main()` does **not** re-run on hot reload, so tools registered once in `main()` keep the **same entry object** until the next `addEntries` — even though Dart may hot-reload new function bodies elsewhere.
+- A later `addEntries` with the same tool name replaces the **live handler** without re-registering the VM extension (VM and `agent_invoke` both read the same live table).
+- **Hot restart** starts a **new isolate** with a clean registry; extensions register from scratch.
+- **Removed tools** stay callable on the VM until hot restart — entries are never deleted from the registry or unregistered from the VM.
+
+After changing bootstrap wiring (first `initialize` / `addEntries` in `main`), use **hot restart** or a full rerun — not hot reload alone.
 
 ## Custom tools
 
@@ -60,7 +78,7 @@ await binding.addEntries(
 await binding.bootstrapFlutter(runApp: () => runApp(const MyApp()));
 ```
 
-Full example: [fibonacci_tool_example.dart](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_toolkit/example/fibonacci_tool_example.dart).
+Full example (pub.dev `example/`): [fibonacci_tool_example.dart](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_toolkit/example/fibonacci_tool_example.dart). Shared registration: `buildCalculateFibonacciTool()`.
 
 Agent discovery: `fmt_list_client_tools_and_resources` / `fmt_client_tool`.
 

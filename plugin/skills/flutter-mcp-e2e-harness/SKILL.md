@@ -173,6 +173,8 @@ exit(passed ? 0 : 1);
 Console output stays the default (`printSummary`). Agents and CI opt in:
 
 ```dart
+import '../tool/harness_report_argv.dart'; // composition roots only
+
 final reportArgs = requireHarnessReportArgs(platformArgs);
 passed = await scenario.run(runOptions: reportArgs.toRunOptions());
 scenario.report.printSummary();
@@ -208,8 +210,8 @@ dart run packages/harness/tool/scenario_report.dart --smoke \
 ```
 
 For real E2E, run a checked-in composition root with the same flags;
-`requireHarnessReportArgs(args)` in `main` for validation (library uses
-`HarnessReportParseResult.parse` without calling `exit`).
+`requireHarnessReportArgs` from `packages/harness/tool/harness_report_argv.dart`
+in `main` (library: `HarnessReportParseResult.parse` only).
 
 ## Driving widgets (`ToolkitDriver`)
 
@@ -254,7 +256,7 @@ make showcase-stop   # kill stray sessions, free VM port 8181 (idempotent)
   `INTENTCALL_ROOT`, sibling checkouts, or `PATH`.
 - Interactive mode tees every line to the log (which `make exec-sweep` greps)
   and tears the session down on exit or Ctrl-C.
-- WS URI for follow-up calls: `grep -Eo 'ws://127\.0\.0\.1:[0-9]+/[A-Za-z0-9_=-]+/ws' .showcase/flutter_app.log | tail -1`.
+- VM URI for follow-up calls: read `showcase/flutter_test_app/.flutter_mcp/runner-session.json` field `vm_service_uri` (or `dart run packages/harness/tool/showcase.dart --web --detach`, then exec from the app directory with runner discovery).
 
 ## Hard boundaries
 

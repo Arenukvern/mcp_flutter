@@ -12,6 +12,16 @@ import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:universal_automation_semantics/universal_automation_semantics.dart';
 
 import 'background_frame_pump.dart';
+import 'semantic_delta_wire.dart' as delta_wire;
+import 'semantic_observation_history.dart';
+
+/// Baseline peek retained for await-change closing diffs.
+typedef BaselineCapture = ({
+  Observation observation,
+  int snapshotId,
+  SemanticSnapshotFilter? filter,
+  String filterKey,
+});
 
 /// What a `semantic_snapshot` call keeps of the full tree.
 ///
@@ -24,11 +34,13 @@ import 'background_frame_pump.dart';
 extension type const SemanticSnapshotFilter._(Map<String, dynamic> value) {
   factory SemanticSnapshotFilter({
     String? identifierPrefix,
+    String? labelPrefix,
     String? subtreeOf,
     List<String>? fields,
     int? maxNodes,
   }) => SemanticSnapshotFilter._(<String, dynamic>{
     'identifierPrefix': ?identifierPrefix,
+    'labelPrefix': ?labelPrefix,
     'subtreeOf': ?subtreeOf,
     'fields': ?fields,
     'maxNodes': ?maxNodes,
@@ -44,6 +56,7 @@ extension type const SemanticSnapshotFilter._(Map<String, dynamic> value) {
   /// counts as unasked.
   factory SemanticSnapshotFilter.fromJson(Map<String, Object?> json) {
     final identifierPrefix = jsonDecodeString(json['identifierPrefix']);
+    final labelPrefix = jsonDecodeString(json['labelPrefix']);
     final subtreeOf = jsonDecodeString(json['subtreeOf']);
     final fields = jsonDecodeListAs<String>(json['fields']);
     final maxNodes = json['maxNodes'];
@@ -54,14 +67,35 @@ extension type const SemanticSnapshotFilter._(Map<String, dynamic> value) {
       identifierPrefix: identifierPrefix.trim().isEmpty
           ? null
           : identifierPrefix,
+      labelPrefix: labelPrefix.trim().isEmpty ? null : labelPrefix,
       subtreeOf: subtreeOf.trim().isEmpty ? null : subtreeOf,
       fields: fields.isEmpty ? null : fields,
       maxNodes: maxNodes as int?,
     );
   }
 
+  /// Rehydrates a filter from a history-record [filterKey] (`jsonEncode` of
+  /// [toJson]).
+  factory SemanticSnapshotFilter.fromFilterKey(String filterKey) {
+    if (filterKey.isEmpty) return SemanticSnapshotFilter.empty;
+    try {
+      final decoded = jsonDecode(filterKey);
+      if (decoded is Map) {
+        return SemanticSnapshotFilter.fromJson(
+          decoded.map((k, v) => MapEntry('$k', v as Object?)),
+        );
+      }
+    } on Object {
+      return SemanticSnapshotFilter.empty;
+    }
+    return SemanticSnapshotFilter.empty;
+  }
+
   /// Keep nodes whose identifier starts with this prefix.
   String? get identifierPrefix => _selector(value['identifierPrefix']);
+
+  /// Keep nodes whose visible label starts with this prefix.
+  String? get labelPrefix => _selector(value['labelPrefix']);
 
   /// Keep one node and its descendants: a ref from the latest snapshot or a
   /// Semantics identifier, the ref tried first.
@@ -80,6 +114,7 @@ extension type const SemanticSnapshotFilter._(Map<String, dynamic> value) {
 
   bool get isEmpty =>
       identifierPrefix == null &&
+      labelPrefix == null &&
       subtreeOf == null &&
       fields == null &&
       maxNodes == null;
@@ -127,6 +162,9 @@ mixin SemanticSnapshotService {
   static final Map<String, Observation> _lastFamilyObservations =
       <String, Observation>{};
 
+  /// Filter-signature → last public [snapshot_id] used for diff baselines.
+  static final Map<String, int> _lastFamilySnapshotIds = <String, int>{};
+
   /// Handle that keeps the semantics tree built for the lifetime of the app.
   /// Created lazily on first snapshot / semantic action call.
   static SemanticsHandle? _semanticsHandle;
@@ -135,8 +173,39 @@ mixin SemanticSnapshotService {
   /// clients can detect staleness.
   static int _snapshotCounter = 0;
 
+  /// Tree walks for predicate peeks and public builds — bumps every walk.
+  static int _observedRevision = 0;
+
+  /// Node maps (with refs) from the latest walk — used when peeks strip refs
+  /// from wire payloads but family projection still needs them.
+  static List<Map<String, Object?>>? _lastWalkNodesForFamily;
+
   /// The snapshot id of the most recently produced snapshot.
   static int get currentSnapshotId => _snapshotCounter;
+
+  /// Latest semantic walk revision (peeks and public builds).
+  static int get observedRevision => _observedRevision;
+
+  /// Public observation ring entry for [snapshotId], if not evicted.
+  static ObservationHistoryRecord? lookupPublicObservation(int snapshotId) =>
+      SemanticObservationHistory.instance.lookupSince(snapshotId);
+
+  /// Observation captured for a public [snapshotId], if still in the ring.
+  static Observation? observationForPublicSnapshot(int snapshotId) =>
+      lookupPublicObservation(snapshotId)?.observation;
+
+  /// Filter recorded with the public snapshot [snapshotId].
+  static SemanticSnapshotFilter? filterForPublicSnapshot(int snapshotId) {
+    final key = lookupPublicObservation(snapshotId)?.filterKey;
+    if (key == null) return null;
+    return SemanticSnapshotFilter.fromFilterKey(key);
+  }
+
+  /// Family observation for a snapshot wire payload (peek or public).
+  static Observation observationFromSnapshot(
+    Map<String, Object?> snapshot, {
+    SemanticSnapshotFilter? filter,
+  }) => _observationFromPayload(snapshot, filter);
 
   /// Look up a [SemanticsNode] captured during the last snapshot.
   static SemanticsNode? resolveRef(String ref) => _lastRefMap[ref];
@@ -291,18 +360,54 @@ mixin SemanticSnapshotService {
     SemanticSnapshotFilter? filter,
     bool render = false,
     bool diff = false,
+    String? lens,
   }) => _buildSnapshot(
     incrementId: true,
     filter: filter,
     render: render,
     diff: diff,
+    lens: lens,
   );
 
   /// Internal: read the snapshot without bumping the public id stream.
   /// Used by `WaitPredicateService` while polling so callers' outstanding
   /// snapshotIds remain valid.
-  static Future<Map<String, Object?>> peekSemanticSnapshot() =>
-      _buildSnapshot(incrementId: false);
+  static Future<Map<String, Object?>> peekSemanticSnapshot({
+    SemanticSnapshotFilter? filter,
+    bool render = false,
+    bool diff = false,
+    String? lens,
+  }) => _buildSnapshot(
+    incrementId: false,
+    filter: filter,
+    render: render,
+    diff: diff,
+    lens: lens,
+  );
+
+  /// Peeks the tree and retains an [Observation] for a later
+  /// [deltaAgainstBaseline].
+  static Future<BaselineCapture> captureBaselineObservation({
+    SemanticSnapshotFilter? filter,
+  }) async {
+    final payload = await peekSemanticSnapshot(filter: filter);
+    return _baselineFromPayload(payload, filter);
+  }
+
+  /// Diffs the latest peek against [baseline].
+  static Future<Map<String, Object?>> deltaAgainstBaseline(
+    BaselineCapture baseline,
+  ) async {
+    final payload = await peekSemanticSnapshot(filter: baseline.filter);
+    final current = _observationFromPayload(payload, baseline.filter);
+    final delta = current.diff(baseline.observation);
+    return <String, Object?>{
+      'baseline': baseline.snapshotId,
+      'observedRevision': _observedRevision,
+      'refBound': false,
+      ...delta_wire.cappedDeltaRender(delta),
+    };
+  }
 
   /// Non-mutating signature of visible descendants under [node].
   ///
@@ -371,6 +476,7 @@ mixin SemanticSnapshotService {
     SemanticSnapshotFilter? filter,
     bool render = false,
     bool diff = false,
+    String? lens,
   }) async {
     final unknownFields = filter?.fields
         ?.where((f) => !semanticSnapshotNodeFields.contains(f))
@@ -426,6 +532,7 @@ mixin SemanticSnapshotService {
         filter: filter,
         render: render,
         diff: diff,
+        lens: lens,
       );
     } finally {
       if (isTestBinding) {
@@ -446,6 +553,7 @@ mixin SemanticSnapshotService {
     SemanticSnapshotFilter? filter,
     bool render = false,
     bool diff = false,
+    String? lens,
   }) async {
     final refMap = <String, SemanticsNode>{};
     final boundsMap = <String, ui.Rect>{};
@@ -490,31 +598,41 @@ mixin SemanticSnapshotService {
     try {
       final renderViews = WidgetsBinding.instance.renderViews;
       if (renderViews.isEmpty) {
-        _lastRefMap = refMap;
-        _lastBoundsMap = boundsMap;
-        _lastCenterMap = centerMap;
-        return <String, Object?>{
-          'snapshot_id': snapshotId,
-          'nodes': const <Object?>[],
-          'nodeCount': 0,
-          'truncated': false,
-          'interactionSurface': 'empty',
-          'message': 'No render views available.',
-        };
+        _commitPublicRefs(
+          incrementId: incrementId,
+          refMap: refMap,
+          boundsMap: boundsMap,
+          centerMap: centerMap,
+        );
+        _observedRevision++;
+        return _snapshotEnvelope(
+          snapshotId: snapshotId,
+          refBound: incrementId,
+          nodes: const <Object?>[],
+          nodeCount: 0,
+          truncated: false,
+          interactionSurface: 'empty',
+          extra: <String, Object?>{'message': 'No render views available.'},
+        );
       }
       final owner = (_activeRenderView ?? renderViews.first).owner;
       if (owner == null) {
-        _lastRefMap = refMap;
-        _lastBoundsMap = boundsMap;
-        _lastCenterMap = centerMap;
-        return <String, Object?>{
-          'snapshot_id': snapshotId,
-          'nodes': const <Object?>[],
-          'nodeCount': 0,
-          'truncated': false,
-          'interactionSurface': 'empty',
-          'message': 'No pipeline owner available.',
-        };
+        _commitPublicRefs(
+          incrementId: incrementId,
+          refMap: refMap,
+          boundsMap: boundsMap,
+          centerMap: centerMap,
+        );
+        _observedRevision++;
+        return _snapshotEnvelope(
+          snapshotId: snapshotId,
+          refBound: incrementId,
+          nodes: const <Object?>[],
+          nodeCount: 0,
+          truncated: false,
+          interactionSurface: 'empty',
+          extra: <String, Object?>{'message': 'No pipeline owner available.'},
+        );
       }
       root = owner.semanticsOwner?.rootSemanticsNode;
     } on Exception {
@@ -522,19 +640,26 @@ mixin SemanticSnapshotService {
     }
 
     if (root == null) {
-      _lastRefMap = refMap;
-      _lastBoundsMap = boundsMap;
-      _lastCenterMap = centerMap;
-      return <String, Object?>{
-        'snapshot_id': snapshotId,
-        'nodes': const <Object?>[],
-        'nodeCount': 0,
-        'truncated': false,
-        'interactionSurface': 'game_canvas',
-        'message':
-            'Semantics tree unavailable (common for raw canvas/game UIs). '
-            'Use evaluate_dart_expression and screenshots instead of tap-by-ref.',
-      };
+      _commitPublicRefs(
+        incrementId: incrementId,
+        refMap: refMap,
+        boundsMap: boundsMap,
+        centerMap: centerMap,
+      );
+      _observedRevision++;
+      return _snapshotEnvelope(
+        snapshotId: snapshotId,
+        refBound: incrementId,
+        nodes: const <Object?>[],
+        nodeCount: 0,
+        truncated: false,
+        interactionSurface: 'game_canvas',
+        extra: <String, Object?>{
+          'message':
+              'Semantics tree unavailable (common for raw canvas/game UIs). '
+              'Use evaluate_dart_expression and screenshots instead of tap-by-ref.',
+        },
+      );
     }
 
     var counter = 0;
@@ -542,6 +667,7 @@ mixin SemanticSnapshotService {
     var truncated = false;
 
     final nodes = <Map<String, Object?>>[];
+    final warnings = <Map<String, Object?>>[];
 
     void walk(SemanticsNode node, List<String>? parentChildRefs) {
       if (counter >= maxNodes) {
@@ -606,15 +732,36 @@ mixin SemanticSnapshotService {
         if (childRefs.isNotEmpty) 'children': childRefs,
       };
 
+      if (data.hasAction(SemanticsAction.tap) &&
+          data.identifier.isEmpty &&
+          data.label.isEmpty) {
+        warnings.add(<String, Object?>{
+          'ref': ref,
+          'reason': 'tappable_without_name',
+        });
+      } else if (data.label.isNotEmpty &&
+          data.identifier.isEmpty &&
+          delta_wire.identifierLooksLikeContract(data.label)) {
+        warnings.add(<String, Object?>{
+          'ref': ref,
+          'reason': 'label_looks_like_identifier',
+          'label': data.label,
+          'hint': 'Move contract-like label text to Semantics(identifier:).',
+        });
+      }
+
       nodes.add(nodeMap);
       parentChildRefs?.add(ref);
     }
 
     walk(root, null);
 
-    _lastRefMap = refMap;
-    _lastBoundsMap = boundsMap;
-    _lastCenterMap = centerMap;
+    _commitPublicRefs(
+      incrementId: incrementId,
+      refMap: refMap,
+      boundsMap: boundsMap,
+      centerMap: centerMap,
+    );
 
     final viewport = viewportRect;
     for (final node in nodes) {
@@ -642,45 +789,145 @@ mixin SemanticSnapshotService {
     // full-walk, so interaction tools keep resolving trimmed rows.
     final capped = filter?.maxNodes != null && returned.length > filter!.maxNodes!;
 
+    List<String>? nearLabels;
+    if (filter?.identifierPrefix != null && returned.isEmpty) {
+      final prefix = filter!.identifierPrefix!;
+      final hits = <String>{};
+      for (final node in nodes) {
+        final label = node['label'];
+        if (label is String &&
+            label.startsWith(prefix) &&
+            hits.add(label) &&
+            hits.length >= 8) {
+          break;
+        }
+      }
+      if (hits.isNotEmpty) nearLabels = hits.toList(growable: false);
+    }
+
+    final view = filter?.toView() ?? const SemanticView();
+    final observation = Observation.of(
+      familySnapshotFromNodes(
+        returned,
+        snapshotId: snapshotId,
+        capturedAt: DateTime.now().toUtc(),
+      ),
+      view,
+    );
+
+    final cacheKey = _filterCacheKey(filter);
+    final previous = diff ? _lastFamilyObservations[cacheKey] : null;
+    _lastFamilyObservations[cacheKey] = observation;
+
+    final lensEnum = _semanticLens(lens);
+
     // The family projection (ADR 0052): the same emitted walk as a
     // family Snapshot + Observation — the render/diff grammar is shared
     // with the automation family, while `nodes` stays this tool's wire.
     Map<String, Object?>? familyKeys;
+    final previousSnapshotId = diff ? _lastFamilySnapshotIds[cacheKey] : null;
     if (render || diff) {
-      final view = filter?.toView() ?? const SemanticView();
-      final observation = Observation.of(
-        familySnapshotFromNodes(
-          returned,
-          snapshotId: snapshotId,
-          capturedAt: DateTime.now().toUtc(),
-        ),
-        view,
-      );
-      final cacheKey = filter == null ? '' : jsonEncode(filter.toJson());
-      final previous = diff ? _lastFamilyObservations[cacheKey] : null;
-      _lastFamilyObservations[cacheKey] = observation;
-      familyKeys = {
-        if (render) 'render': observation.render(),
-        if (diff && previous != null)
-          'delta': observation.diff(previous).render(),
+      familyKeys = <String, Object?>{
+        if (render) 'render': observation.render(lens: lensEnum),
+        if (diff && previousSnapshotId != null) 'baseline': previousSnapshotId,
+        if (diff && previousSnapshotId == null) ...<String, Object?>{
+          'baseline': null,
+          'baselineReason': 'no_prior_same_filter',
+        },
+        if (diff)
+          'delta': previous != null ? observation.diff(previous).render() : null,
       };
     }
 
-    return <String, Object?>{
-      'snapshot_id': snapshotId,
-      'nodes': returned,
-      'nodeCount': returned.length,
-      if (filter != null && !filter.isEmpty) ...<String, Object?>{
-        'totalNodeCount': totalNodeCount,
-        'filter': filter.toJson(),
+    if (incrementId) {
+      _lastFamilySnapshotIds[cacheKey] = snapshotId;
+      SemanticObservationHistory.instance.record(
+        observation,
+        snapshotId,
+        cacheKey,
+      );
+    }
+
+    _observedRevision++;
+
+    _lastWalkNodesForFamily = returned;
+
+    final wireNodes = _nodesForWire(returned, refBound: incrementId);
+
+    return _snapshotEnvelope(
+      snapshotId: snapshotId,
+      refBound: incrementId,
+      nodes: wireNodes,
+      nodeCount: returned.length,
+      truncated: truncated || capped,
+      interactionSurface: _classifyInteractionSurface(totalNodeCount),
+      extra: <String, Object?>{
+        if (filter != null && !filter.isEmpty) ...<String, Object?>{
+          'totalNodeCount': totalNodeCount,
+          'filter': filter.toJson(),
+        },
+        ...?familyKeys,
+        if (nearLabels != null) 'nearLabels': nearLabels,
+        if (warnings.isNotEmpty) 'warnings': warnings,
+        if (viewport != null) 'viewport': _rectToMap(viewport),
       },
-      'truncated': truncated || capped,
-      ...?familyKeys,
-      // The surface describes the app, not the slice asked for.
-      'interactionSurface': _classifyInteractionSurface(totalNodeCount),
-      if (viewport != null) 'viewport': _rectToMap(viewport),
-    };
+    );
   }
+
+  static List<Map<String, Object?>> _nodeMaps(Object? raw) {
+    if (raw is! List) return const <Map<String, Object?>>[];
+    return raw
+        .whereType<Map<Object?, Object?>>()
+        .map((m) => m.cast<String, Object?>())
+        .toList(growable: false);
+  }
+
+  static void _commitPublicRefs({
+    required bool incrementId,
+    required Map<String, SemanticsNode> refMap,
+    required Map<String, ui.Rect> boundsMap,
+    required Map<String, ui.Offset> centerMap,
+  }) {
+    if (!incrementId) return;
+    _lastRefMap = refMap;
+    _lastBoundsMap = boundsMap;
+    _lastCenterMap = centerMap;
+  }
+
+  static List<Object?> _nodesForWire(
+    List<Map<String, Object?>> nodes, {
+    required bool refBound,
+  }) {
+    if (refBound) return nodes.cast<Object?>();
+    return nodes
+        .map((node) {
+          final copy = Map<String, Object?>.from(node);
+          copy.remove('ref');
+          copy.remove('children');
+          return copy;
+        })
+        .cast<Object?>()
+        .toList(growable: false);
+  }
+
+  static Map<String, Object?> _snapshotEnvelope({
+    required int snapshotId,
+    required bool refBound,
+    required List<Object?> nodes,
+    required int nodeCount,
+    required bool truncated,
+    required String interactionSurface,
+    Map<String, Object?> extra = const <String, Object?>{},
+  }) => <String, Object?>{
+    'snapshot_id': snapshotId,
+    'observedRevision': _observedRevision,
+    if (!refBound) 'refBound': false,
+    'nodes': nodes,
+    'nodeCount': nodeCount,
+    'truncated': truncated,
+    'interactionSurface': interactionSurface,
+    ...extra,
+  };
 
   /// The nodes a [filter] keeps: the producer-side predicate (identity
   /// containment and prefix matching — what the walk itself can see)
@@ -692,17 +939,98 @@ mixin SemanticSnapshotService {
     required SemanticSnapshotFilter filter,
     required SemanticsNode? subtreeRoot,
   }) {
-    final prefix = filter.identifierPrefix;
+    final idPrefix = filter.identifierPrefix;
+    final labelPrefix = filter.labelPrefix;
     return projectSnapshotNodes(
       nodes,
-      keep: (node) =>
-          (subtreeRoot == null ||
-              _isWithin(refMap[node['ref']! as String], subtreeRoot)) &&
-          (prefix == null ||
-              (node['identifier'] is String &&
-                  (node['identifier']! as String).startsWith(prefix))),
+      keep: (node) {
+        if (subtreeRoot != null &&
+            !_isWithin(refMap[node['ref']! as String], subtreeRoot)) {
+          return false;
+        }
+        if (idPrefix == null && labelPrefix == null) return true;
+        final idMatch =
+            idPrefix != null &&
+            node['identifier'] is String &&
+            (node['identifier']! as String).startsWith(idPrefix);
+        final labelMatch =
+            labelPrefix != null &&
+            node['label'] is String &&
+            (node['label']! as String).startsWith(labelPrefix);
+        if (idPrefix != null && labelPrefix != null) {
+          return idMatch || labelMatch;
+        }
+        if (idPrefix != null) return idMatch;
+        return labelMatch;
+      },
       fields: filter.fields,
     );
+  }
+
+  static String _filterCacheKey(SemanticSnapshotFilter? filter) =>
+      filter == null ? '' : jsonEncode(filter.toJson());
+
+  static SemanticLens _semanticLens(String? lens) => switch (lens) {
+    'compact' => SemanticLens.compact,
+    'design' => SemanticLens.design,
+    _ => SemanticLens.standard,
+  };
+
+  static BaselineCapture _baselineFromPayload(
+    Map<String, Object?> payload,
+    SemanticSnapshotFilter? filter,
+  ) {
+    final snapshotId = (payload['snapshot_id'] as num?)?.toInt() ?? 0;
+    return (
+      observation: _observationFromPayload(payload, filter),
+      snapshotId: snapshotId,
+      filter: filter,
+      filterKey: _filterCacheKey(filter),
+    );
+  }
+
+  static Observation _observationFromPayload(
+    Map<String, Object?> payload,
+    SemanticSnapshotFilter? filter,
+  ) {
+    final refBound = payload['refBound'] as bool? ?? true;
+    final nodes = refBound
+        ? _nodeMaps(payload['nodes'])
+        : (_lastWalkNodesForFamily ??
+            _rehydrateRefsForFamily(_nodeMaps(payload['nodes'])));
+    final snapshotId = (payload['snapshot_id'] as num?)?.toInt() ?? 0;
+    return Observation.of(
+      familySnapshotFromNodes(
+        nodes,
+        snapshotId: snapshotId,
+        capturedAt: DateTime.now().toUtc(),
+      ),
+      filter?.toView() ?? const SemanticView(),
+    );
+  }
+
+  /// Peeks strip `ref` from wire nodes; family projection still needs refs.
+  static List<Map<String, Object?>> _rehydrateRefsForFamily(
+    List<Map<String, Object?>> nodes,
+  ) {
+    final idToRef = <int, String>{};
+    for (final entry in _lastRefMap.entries) {
+      idToRef[entry.value.id] = entry.key;
+    }
+    return nodes
+        .map((node) {
+          final ref = node['ref'];
+          if (ref is String && ref.isNotEmpty) return node;
+          final id = node['id'];
+          if (id is int) {
+            final resolved = idToRef[id];
+            if (resolved != null) {
+              return <String, Object?>{...node, 'ref': resolved};
+            }
+          }
+          return node;
+        })
+        .toList(growable: false);
   }
 
   /// Whether [node] is [root] or sits below it.

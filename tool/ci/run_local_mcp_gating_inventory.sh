@@ -48,7 +48,7 @@ failed=0
     bash -c 'cd packages/harness && dart test --exclude-tags native-android,native-linux,compile-repro-opt-in' || failed=1
 
   for pkg in \
-    showcase/native_layer_capture_fixture \
+    showcase/fixtures/native_layer_capture_fixture \
     showcase/drivers \
     jaspr_web_example \
     mcp_toolkit \
@@ -110,7 +110,7 @@ failed=0
     echo "== NOTE $pkg covered by harness unit section =="
   done
 
-  for optional in showcase/flutter_demo showcase/flutter_test_app; do
+  for optional in showcase/flutter_test_app; do
     if [[ -f "$optional/pubspec.yaml" ]]; then
       echo "== OPTIONAL (not in default inventory): $optional — run manually if needed =="
     fi

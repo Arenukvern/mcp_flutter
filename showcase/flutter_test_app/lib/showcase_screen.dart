@@ -7,8 +7,8 @@ import 'package:mcp_toolkit/mcp_toolkit.dart';
 import 'package:test_app/agent_state.dart';
 import 'package:test_app/platform_view_showcase.dart';
 
-/// Showcase page for MCP Flutter — a single-page demonstration of every
-/// built-in interaction tool.
+/// Maintainer QA lab — every built-in interaction tool in one scroll surface.
+/// Reach via route `/qa` (ADR-0025); not the default product home.
 ///
 /// The design is deliberately restrained: type and whitespace do the work,
 /// sections are flat, and every interactive widget has a Semantics
@@ -297,63 +297,83 @@ class _TapSection extends StatelessWidget {
       hint:
           'Try: semantic_snapshot → tap_widget(ref). '
           'The tap dispatches through SemanticsAction.tap.',
-      child: Semantics(
-        explicitChildNodes: true,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            Semantics(
-              identifier: 'counter_demo_icon',
-              child: const SizedBox(
-                width: 44,
-                height: 44,
-                child: Icon(
-                  Icons.add_circle_outline,
-                  color: _kAccent,
-                  size: 28,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 16,
+        children: <Widget>[
+          Semantics(
+            explicitChildNodes: true,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: <Widget>[
+                Semantics(
+                  identifier: 'counter_demo_icon',
+                  child: const SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: Icon(
+                      Icons.add_circle_outline,
+                      color: _kAccent,
+                      size: 28,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            const SizedBox(width: 24),
-            Semantics(
-              identifier: 'stateful_counter_increment_button',
-              button: true,
-              onTap: state.increment,
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
+                const SizedBox(width: 24),
+                Semantics(
+                  identifier: 'stateful_counter_increment_button',
+                  button: true,
                   onTap: state.increment,
-                  customBorder: const StadiumBorder(),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: _kAccent),
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: const Text(
-                      'Increment',
-                      style: TextStyle(
-                        color: _kAccent,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: state.increment,
+                      customBorder: const StadiumBorder(),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: _kAccent),
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: const Text(
+                          'Increment',
+                          style: TextStyle(
+                            color: _kAccent,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
+                const Spacer(),
+                Semantics(
+                  identifier: 'counter_value_display',
+                  label: 'Counter value',
+                  value: '${state.counter}',
+                  child: Text('${state.counter}', style: _kValue),
+                ),
+              ],
             ),
-            const Spacer(),
-            Semantics(
-              identifier: 'counter_value_display',
-              label: 'Counter value',
-              value: '${state.counter}',
-              child: Text('${state.counter}', style: _kValue),
-            ),
-          ],
-        ),
+          ),
+          Text('Count: ${state.counter}', style: _kValue),
+          ElevatedButton(
+            onPressed: () {
+              final name = context
+                  .findAncestorStateOfType<_ShowcaseScreenState>()!
+                  ._textController
+                  .text;
+              Navigator.of(context).pushNamed(
+                '/profile',
+                arguments: name.isEmpty ? 'friend' : name,
+              );
+            },
+            child: const Text('Open profile'),
+          ),
+        ],
       ),
     );
   }
@@ -386,6 +406,7 @@ class _TypeSection extends StatelessWidget {
               style: _kBody,
               cursorColor: _kAccent,
               decoration: const InputDecoration(
+                labelText: 'Name',
                 hintText: 'Type a greeting…',
                 hintStyle: TextStyle(color: _kMuted),
                 border: UnderlineInputBorder(

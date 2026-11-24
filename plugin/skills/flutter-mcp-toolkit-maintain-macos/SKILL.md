@@ -25,7 +25,7 @@ make showcase-stop && make showcase
 - WS URI: grep `ws://127.0.0.1:…/ws` from log (default VM port **8181**)
 
 ```bash
-grep -Eo 'ws://127\.0\.0\.1:[0-9]+/[A-Za-z0-9_=-]+/ws' .showcase/flutter_app.log | tail -1
+jq -r .vm_service_uri showcase/flutter_test_app/.flutter_mcp/runner-session.json
 ```
 
 Stop: `make showcase-stop`.

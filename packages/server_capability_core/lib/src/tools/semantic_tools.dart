@@ -15,12 +15,7 @@ void registerSemanticTools(CapabilityContext context) {
   context.registerTool(
     ToolRegistration(
       name: 'semantic_snapshot',
-      description:
-          'Get compact semantic tree of interactive widgets with refs usable '
-          'by interaction tools (tap_widget, enter_text, etc.). '
-          'A control that appears only under the pointer is absent here: on '
-          'desktop and web, hover the element that should own it and '
-          'snapshot again.',
+      description: semanticSnapshotToolDescription,
       inputSchema: semanticSnapshotInputSchema(),
       handler: (args) async {
         final rawFields = args['fields'];
@@ -29,11 +24,15 @@ void registerSemanticTools(CapabilityContext context) {
           args,
           SemanticSnapshotCommand(
             identifierPrefix: stringArgOrNull(args['identifierPrefix']),
+            labelPrefix: stringArgOrNull(args['labelPrefix']),
             subtreeOf: stringArgOrNull(args['subtreeOf']),
             fields: rawFields is List
                 ? rawFields.map((f) => f.toString()).toList()
                 : null,
             lens: stringArgOrNull(args['lens']),
+            maxNodes: intArgOrNull(args['maxNodes']),
+            render: args['render'] == true,
+            diff: args['diff'] == true,
           ),
         );
       },

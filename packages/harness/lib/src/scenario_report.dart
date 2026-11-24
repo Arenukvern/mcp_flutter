@@ -114,17 +114,6 @@ final class HarnessReportParseResult {
   }
 }
 
-/// For composition-root `main` only — exits 2 with usage when invalid.
-HarnessReportArgs requireHarnessReportArgs(List<String> args) {
-  final result = HarnessReportParseResult.parse(args);
-  if (!result.isOk) {
-    // ignore: avoid_print
-    print('error: ${result.error}\n$HarnessReportArgs.usage');
-    exit(2);
-  }
-  return result.args!;
-}
-
 /// Options passed to [Scenario.run] for optional report emission.
 final class ScenarioRunOptions {
   const ScenarioRunOptions({
@@ -393,7 +382,7 @@ final class ScenarioReportWriter {
       .replaceAll('"', '&quot;');
 }
 
-/// Diff of failure ids vs a previous report (full JSON or agent JSONL).
+/// Status of reading a `--report-diff` baseline file from disk.
 enum BaselineStatus { ok, missing, unreadable }
 
 /// Outcome of reading a prior report from disk for `--report-diff`.
@@ -413,6 +402,7 @@ final class PreviousBaseline {
       PreviousBaseline._(BaselineStatus.ok, document);
 }
 
+/// Diff of failure ids vs a previous report (full JSON or agent JSONL).
 final class ReportDiff {
   ReportDiff({
     required this.newFailures,
@@ -506,6 +496,7 @@ final class ReportDiff {
 
   static PreviousBaseline _parseAgentJsonlBaseline(String content) {
     try {
+      var harnessLines = 0;
       final failures = <Map<String, Object?>>[];
       for (final line in content.split('\n')) {
         if (line.trim().isEmpty) continue;
@@ -513,9 +504,18 @@ final class ReportDiff {
         if (decoded is! Map) continue;
         final map = decoded.cast<String, Object?>();
         if (map['kind'] == 'diff') continue;
+        final isHeader = map.containsKey('verdict') || map.containsKey('v');
         final id = map['id'];
-        if (id is String) failures.add(<String, Object?>{'id': id});
+        if (isHeader) {
+          harnessLines++;
+          continue;
+        }
+        if (id is String) {
+          harnessLines++;
+          failures.add(<String, Object?>{'id': id});
+        }
       }
+      if (harnessLines == 0) return PreviousBaseline.unreadable();
       return PreviousBaseline.ok(<String, Object?>{'failures': failures});
     } on FormatException {
       return PreviousBaseline.unreadable();

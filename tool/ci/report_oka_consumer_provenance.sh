@@ -51,10 +51,10 @@ oka_cli="$(command -v oka || true)"
 oka_version="$(oka --version 2>&1)" || fail "oka --version failed"
 
 (cd "$repo_root" && flutter pub get >/dev/null)
-(cd "$repo_root/showcase/native_layer_capture_fixture" && flutter pub get >/dev/null)
+(cd "$repo_root/showcase/fixtures/native_layer_capture_fixture" && flutter pub get >/dev/null)
 
 (cd "$repo_root/packages/harness" && dart pub deps --style=compact >"$tmp/harness_deps.txt")
-(cd "$repo_root/showcase/native_layer_capture_fixture" && dart pub deps --style=compact >"$tmp/fixture_deps.txt")
+(cd "$repo_root/showcase/fixtures/native_layer_capture_fixture" && dart pub deps --style=compact >"$tmp/fixture_deps.txt")
 
 export REPORT_PIN="$pin"
 export REPORT_HEAD="$resolved"
@@ -103,7 +103,7 @@ def package_config_roots(pkg_dir: pathlib.Path, repo: pathlib.Path) -> dict[str,
     return out
 
 harness_roots = package_config_roots(repo / "packages/harness", repo)
-fixture_roots = package_config_roots(repo / "showcase/native_layer_capture_fixture", repo)
+fixture_roots = package_config_roots(repo / "showcase/fixtures/native_layer_capture_fixture", repo)
 required = {"oka_core", "oka_android", "oka_harness", "resource_composition"}
 missing_h = required - set(harness_roots)
 missing_f = {"oka_core", "oka_android"} - set(fixture_roots)
