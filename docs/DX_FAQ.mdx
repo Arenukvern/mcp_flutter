@@ -53,6 +53,7 @@ SKILLS SOURCE             → plugin/skills/ · make sync-skills
 
 ```dart
 // pubspec: mcp_toolkit (debug dependency)
+import 'package:flutter/widgets.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
 void main() {
@@ -81,12 +82,13 @@ Reference: [MCP tools](/reference/tools) · [See the UI](/use-cases/see-the-ui).
 ## 🕹️ Drive desk
 
 ```text
-fmtk exec --name status --args '{}'                    # connectivity smoke
+fmtk exec --name status --args '{}'                 # connectivity smoke
+fmtk exec --name semantic_snapshot --args '{}'      # refs come back in the result (s_0, s_1, …)
 fmtk batch --steps '[{"name":"semantic_snapshot"},
-  {"name":"tap_widget","args":{"ref":"s_0"}}]'     # one session: observe, then act
+  {"name":"tap_widget","args":{"ref":"<ref>"}}]'  # <ref>: a ref whose node reports a tap action
 ```
 
-Refs are scoped to the most recent `semantic_snapshot` in the same session, so pair snapshot and action inside one `batch` (or one MCP session) rather than across separate `exec` runs.
+Refs number the full semantics walk, so `s_0` is simply the first walked node — pick the ref of the widget you mean and make sure its node reports a tap action. Refs are also scoped to the most recent `semantic_snapshot` in the same session, so pair snapshot and action inside one `batch` (or one MCP session) rather than across separate `exec` runs.
 
 Use cases: [Drive the UI](/use-cases/drive-the-ui) · [CLI](/reference/cli).
 
