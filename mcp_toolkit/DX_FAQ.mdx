@@ -17,7 +17,9 @@ import 'package:mcp_toolkit/mcp_toolkit.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  McpToolkitBinding.instance.initialize();
+  MCPToolkitBinding.instance
+    ..initialize()
+    ..initializeFlutterToolkit(); // screenshot + interaction entries
   runApp(const MyApp());
 }
 ```

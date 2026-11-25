@@ -27,8 +27,8 @@ USER ONBOARDING           → docs/quickstart.mdx · llms.txt
 ADRs (canonical)          → decisions/  (mirror: docs/decisions/)
 INSTALL HOST              → MCPB primary · install.sh · docs/install/platforms.mdx
 WIRE APP                  → docs/install/app-setup.mdx · use-cases/custom-tools
-OBSERVE UI                → fmt_get_semantic_snapshot · fmt_get_screenshots
-DRIVE UI                  → fmt_tap · fmt_enter_text · fmt_wait_for
+OBSERVE UI                → fmt_semantic_snapshot · fmt_get_screenshots
+DRIVE UI                  → fmt_tap_widget · fmt_enter_text · fmt_wait_for
 CLI ONE-SHOTS             → fmtk exec · fmtk batch
 HARNESS E2E               → dart run showcase/drivers/bin/drive_flutter.dart
 SHOWCASE                  → showcase/flutter_test_app
@@ -57,19 +57,21 @@ import 'package:mcp_toolkit/mcp_toolkit.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  McpToolkitBinding.instance
+  MCPToolkitBinding.instance
     ..initialize()
-    ..registerTool(/* addMcpTool */);
+    ..initializeFlutterToolkit(); // built-in Flutter toolkit entries
   runApp(const MyApp());
 }
 ```
+
+Registered entries beyond the built-ins go through `addEntries`; hosts that want the zone-guarded lifecycle use `bootstrapFlutter`.
 
 Deep dive: [App setup](/install/app-setup) · [Custom tools](/use-cases/custom-tools) · package [mcp_toolkit/DX_FAQ](../mcp_toolkit/DX_FAQ.mdx).
 
 ## 👀 Observe desk
 
 ```text
-fmt_get_semantic_snapshot   # nodes, bounds — absent key = unknown (ADR 0024)
+fmt_semantic_snapshot       # nodes, bounds — absent key = unknown (ADR 0024)
 fmt_get_screenshots         # render pipeline; works backgrounded
 fmt_wait_for changed:…      # wait for UI change without keyword lists
 ```
@@ -79,9 +81,9 @@ Reference: [MCP tools](/reference/tools) · [See the UI](/use-cases/see-the-ui).
 ## 🕹️ Drive desk
 
 ```text
-fmtk exec fmt_tap --key "submit"
-fmtk exec fmt_enter_text --key "email" --text "user@example.com"
-fmtk batch --file steps.yaml
+fmtk exec --name semantic_snapshot --args '{}'
+fmtk exec --name tap_widget --args '{"ref":"s_0"}'
+fmtk batch --steps '[{"name":"semantic_snapshot"},{"name":"tap_widget","args":{"ref":"s_0"}}]'
 ```
 
 Use cases: [Drive the UI](/use-cases/drive-the-ui) · [CLI](/reference/cli).
@@ -89,7 +91,7 @@ Use cases: [Drive the UI](/use-cases/drive-the-ui) · [CLI](/reference/cli).
 ## 🧪 Harness workshop
 
 ```bash
-cd mcp_server_dart && make setup
+(cd mcp_server_dart && make setup)   # subshell: stay at repo root
 make check-contracts          # before large harness changes
 dart run showcase/drivers/bin/drive_flutter.dart --help
 ```

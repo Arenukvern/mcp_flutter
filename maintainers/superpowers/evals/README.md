@@ -27,6 +27,10 @@ Machine-readable source: [`tool_quality_rubric.yaml`](./tool_quality_rubric.yaml
 
 Tracker file (web dogfood history): [`maintainers/evidence/dogfood/dogfood_web_eval.yaml`](../../evidence/dogfood/dogfood_web_eval.yaml) ([ADR 0011](/decisions/0011_dogfood_tracker_evidence_split)).
 
+### Current warm-path status
+
+**Unverified since 2026-05-26.** Last recorded green visual warm path: iterations 12–17 (`visual_fidelity` 10/10, 2026-05-26). Iteration 18 skipped the visual dimension (`visual_fidelity_skipped`), and iterations 19–23 (latest run 2026-07-08) recorded verdict `blocked_no_runtime` with `visual_fidelity` 0. The tracker's own summary still reads `blocked_no_runtime`. Treat warm-path visual comparison as unproven until a fresh battery runs without `--skip-visual`.
+
 WebMCP-specific verification (separate from VM dogfood): [2026-05-26-webmcp-verification.md](./2026-05-26-webmcp-verification.md).
 
 Archived spec gap matrix (iter 1–11): [archive/2026-05-26-dogfood-spec-gap-matrix.md](./archive/2026-05-26-dogfood-spec-gap-matrix.md). Current iterations: [`maintainers/evidence/dogfood/dogfood_web_eval.yaml`](../../evidence/dogfood/dogfood_web_eval.yaml).

@@ -43,13 +43,13 @@ shipped as the v3.0.0 capability kernel.
 | --- | --- | --- |
 | `tap_widget` + `long_press` + `hover` → `tap(ref, mode=…)` | **Defer** | No evidence of mis-selection. Each tool has 1 incoming caller (verified via GitNexus). The verb-named API is more discoverable than a `mode` enum. The `hover` platform caveat ("Desktop/web only") is more prominent as a tool description than as a mode-parameter doc. |
 | `scroll` + `swipe` → `gesture(ref, kind, direction, distance)` | **Do not consolidate** | Behavioural divergence makes the shared shape harmful. `scroll` uses the semantic `scrollUp/Down/Left/Right` action via `SemanticsOwner.performAction`; `swipe` is a synthesized finger drag (`PointerDownEvent → moves → PointerUpEvent`). The shared parameter shape would *encourage* the agent to think of them as variants when they aren't — a regression in API truthfulness. |
-| `get_recent_logs` + future `get_network_requests` + future `get_errors` → `observe(kind=…)` | **Defer** | Designing the dispatcher API before two of three inputs exist is YAGNI. Revisit only after [P3 network](https://github.com/Arenukvern/mcp_flutter/blob/main/todo/p3_network_introspection.md) ships and errors-as-tool is on the roadmap. |
+| `get_recent_logs` + future `get_network_requests` + future `get_errors` → `observe(kind=…)` | **Defer** | Designing the dispatcher API before two of three inputs exist is YAGNI. Revisit only after [P3 network](https://github.com/Arenukvern/mcp_flutter/blob/main/maintainers/superpowers/plans/archive/p3_network_introspection.md) ships and errors-as-tool is on the roadmap. |
 
 **Capability gaps left open.**
 
 | Capability | Status | Reason |
 | --- | --- | --- |
-| `network_requests` | Deferred | Spec ready ([`todo/p3_network_introspection.md`](https://github.com/Arenukvern/mcp_flutter/blob/main/todo/p3_network_introspection.md)). Awaiting prioritisation. |
+| `network_requests` | Deferred | Spec ready ([`maintainers/superpowers/plans/archive/p3_network_introspection.md`](https://github.com/Arenukvern/mcp_flutter/blob/main/maintainers/superpowers/plans/archive/p3_network_introspection.md)). Awaiting prioritisation. |
 | `select_option` | Deferred | Expressible as `tap_widget → wait_for(text=label) → tap_widget` post-P0. A wrapper saves zero round-trips because `wait_for` already returns the snapshot in its payload. |
 | `file_upload` | Park as design candidate | Apps using `file_picker` are unreachable (`file_picker` is not a dep anywhere in the repo). Wide design surface (wire shape: inline base64 vs server-read path; bridging the platform-channel mock; permissions). Don't take on without a host-app driver. |
 | `navigate_back` | Deferred | Thin wrapper over `Navigator.pop`; bundle with any future Navigator-shaped revisit. |
