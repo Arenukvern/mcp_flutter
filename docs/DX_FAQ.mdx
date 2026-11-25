@@ -82,13 +82,12 @@ Reference: [MCP tools](/reference/tools) · [See the UI](/use-cases/see-the-ui).
 ## 🕹️ Drive desk
 
 ```text
-fmtk exec --name status --args '{}'                 # connectivity smoke
-fmtk exec --name semantic_snapshot --args '{}'      # refs come back in the result (s_0, s_1, …)
-fmtk batch --steps '[{"name":"semantic_snapshot"},
-  {"name":"tap_widget","args":{"ref":"<ref>"}}]'  # <ref>: a ref whose node reports a tap action
+fmtk exec --name semantic_snapshot --args '{}'        # read the refs from the result
+fmtk exec --name tap_widget --args '{"ref":"<ref>"}'  # <ref>: a node that reports a tap action
+fmtk batch --steps '[{"name":"semantic_snapshot"},{"name":"get_screenshots","args":{}}]'
 ```
 
-Refs number the full semantics walk, so `s_0` is simply the first walked node — pick the ref of the widget you mean and make sure its node reports a tap action. Refs are also scoped to the most recent `semantic_snapshot` in the same session, so pair snapshot and action inside one `batch` (or one MCP session) rather than across separate `exec` runs.
+Refs number the full semantics walk — `s_0` is the first walked node, not a default target. A `batch` sends one fixed payload and cannot interpolate a step's output into a later step, so pass refs you already read from a `semantic_snapshot` result.
 
 Use cases: [Drive the UI](/use-cases/drive-the-ui) · [CLI](/reference/cli).
 
