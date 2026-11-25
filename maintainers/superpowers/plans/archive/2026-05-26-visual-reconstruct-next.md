@@ -1,8 +1,8 @@
 # Plan — visual reconstruct (post warm-path)
 
 **Status:** **Maintenance** — checkpoint protocol + optional runtime E2E only  
-**Living tracker:** [`maintainers/evidence/dogfood/dogfood_web_eval.yaml`](../../evidence/dogfood/dogfood_web_eval.yaml) · [evals README](../evals/README.md)  
-**Archived critique:** [evals/archive/2026-05-26-visual-reconstruct-critique.md](../evals/archive/2026-05-26-visual-reconstruct-critique.md)
+**Living tracker:** [`maintainers/evidence/dogfood/dogfood_web_eval.yaml`](../../../evidence/dogfood/dogfood_web_eval.yaml) · [evals README](../../evals/README.md)  
+**Archived critique:** [evals/archive/2026-05-26-visual-reconstruct-critique.md](../../evals/archive/2026-05-26-visual-reconstruct-critique.md)
 
 ## Key design decisions
 
@@ -29,7 +29,7 @@
 
 - [x] HS `navigate` step (route name or URI) — harness v2 bump if needed
 - [x] `compare.out` may be relative to `--bundle-dir` when set
-- [x] Document viewport/DPR pinning for warm path (Chrome 8080) — [evals README](../evals/README.md), [goldens README](../../../showcase/flutter_test_app/test/goldens/README.md)
+- [x] Document viewport/DPR pinning for warm path (Chrome 8080) — [evals README](../../evals/README.md), [goldens README](../../../../showcase/flutter_test_app/test/goldens/README.md)
 - [x] Dogfood merge records `visual_guild_weighted_score` (tracker iterations 13–17+)
 
 ## Phase 5 (v1) — Perceptual & semantic regions
@@ -43,7 +43,7 @@
 - [x] IR v0 schema draft in `flutter_harness` — [specs/ir_v0.schema.yaml](https://github.com/Arenukvern/flutter_harness/blob/main/specs/ir_v0.schema.yaml)
 - [x] Deconstruct sidecar (MIT tile heuristics) — `flutter_visual_reconstruct` C2 (`deconstruct` CLI, `dart test` green)
 - [x] HS `deconstruct` / `reconstruct` ops + `deconstruct_smoke.hs.yaml` offline — `flutter_harness` C3
-- [x] intentcall: `dogfood_reconstruct_start` (`reconstruct.start` metadata, eval static hook) — [verification](../evals/2026-05-26-deconstruct-verification.md)
+- [x] intentcall: `dogfood_reconstruct_start` (`reconstruct.start` metadata, eval static hook) — [verification](../../evals/2026-05-26-deconstruct-verification.md)
 - [x] C5 offline integration — `check_hs_fixtures.sh`, `run_dogfood_eval.sh --skip-runtime --run-deconstruct-smoke`
 - [ ] checkpoint protocol (HS + human `.approved`) — deferred past C4 metadata
 
@@ -75,7 +75,7 @@ bash mcp_flutter/tool/evals/run_dogfood_eval.sh --merge
 | VR-03 | Dirty artifacts in harness repo | `.gitignore` + verdict copy to eval run dir (Phase A) |
 | VR-04 | No navigate op | HS `navigate` shipped (Phase B) |
 | VR-05 | bundle-relative compare out | `--bundle-dir` relative `compare.out` (Phase B) |
-| VR-06 | Cold deconstruct pipeline | C2–C5 offline green; [deconstruct verification](../evals/2026-05-26-deconstruct-verification.md) |
+| VR-06 | Cold deconstruct pipeline | C2–C5 offline green; [deconstruct verification](../../evals/2026-05-26-deconstruct-verification.md) |
 
 ## Remaining
 

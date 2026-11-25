@@ -1,0 +1,15 @@
+# Harness — Design FAQ (package scope)
+
+Package-level **why** for `flutter_mcp_harness`. Repo-wide charter and decisions: [docs/DESIGN_FAQ](../../docs/DESIGN_FAQ.mdx) · [NORTH_STAR](../../docs/NORTH_STAR.mdx).
+
+**Q: Why does harness exist separate from the MCP server?**
+A: CI and agents need programmatic launch, drive, and structured reports without stdio MCP in the loop. [ADR 0015](../../decisions/0015_flutter_mcp_harness_extraction.mdx)
+
+**Q: Why targets / session / driver / scenario layers?**
+A: Compose launch, attach, automation verbs, and evidence bundles without copying VM setup in every script. [ADR 0019](../../decisions/0019_harness_layering.mdx)
+
+**Q: Why web-specific types?**
+A: Web runs need CDP and build targets distinct from VM attach on mobile/desktop. [ADR 0018](../../decisions/0018_web_tier.mdx)
+
+**Q: Why scenario JSON reports?**
+A: Agents and CI consume machine-readable pass/fail, artifacts, and explicit non-claims. [ADR 0023](../../decisions/0023_harness_scenario_agent_report.mdx)

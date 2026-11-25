@@ -27,6 +27,15 @@ Machine-readable source: [`tool_quality_rubric.yaml`](./tool_quality_rubric.yaml
 
 Tracker file (web dogfood history): [`maintainers/evidence/dogfood/dogfood_web_eval.yaml`](../../evidence/dogfood/dogfood_web_eval.yaml) ([ADR 0011](/decisions/0011_dogfood_tracker_evidence_split)).
 
+### Current warm-path status
+
+**PAUSED by decision, and unverified since 2026-05-26.** Two separate facts, often conflated:
+
+- **Track status — paused.** The warm path's fixture home (external `flutter_harness`) was retired by ADR-0017, and the track is regenerated only after it is re-homed. Operational detail (env, golden, guild profile) lives in *Visual fidelity (warm path)* below.
+- **Evidence status — stale.** Last recorded green warm path: iterations 12–17 (`visual_fidelity` 10/10, 2026-05-26). Iteration 18 skipped the visual dimension (`visual_fidelity_skipped`); iterations 19–23 (latest run 2026-07-08) recorded `blocked_no_runtime` with `visual_fidelity` 0, and the tracker summary still reads `blocked_no_runtime`.
+
+Do not read `visual_fidelity: 0` in those later iterations as a regression score: those runs either skipped the visual dimension or were blocked before reaching it. There is no fresh warm-path proof after 2026-05-26.
+
 WebMCP-specific verification (separate from VM dogfood): [2026-05-26-webmcp-verification.md](./2026-05-26-webmcp-verification.md).
 
 Archived spec gap matrix (iter 1–11): [archive/2026-05-26-dogfood-spec-gap-matrix.md](./archive/2026-05-26-dogfood-spec-gap-matrix.md). Current iterations: [`maintainers/evidence/dogfood/dogfood_web_eval.yaml`](../../evidence/dogfood/dogfood_web_eval.yaml).

@@ -1,0 +1,136 @@
+# Design Decisions FAQ — Flutter MCP Toolkit
+
+Quick reference for **why** this repository is shaped the way it is. For the charter see [NORTH_STAR](NORTH_STAR.mdx). For operational how-to see [DX_FAQ](DX_FAQ.mdx).
+
+## Charter
+
+**Q: Where is the repo charter?**
+A: [NORTH_STAR](NORTH_STAR.mdx) is canonical (~80 lines). `AGENTS.md` is the agent map only. Scope changes need an ADR plus a North Star diff.
+
+**Q: Why platform-neutral framing?**
+A: Agents drive **Flutter debug apps** on whatever target you run (iOS, Android, macOS, Windows, Linux, web). Host **release binaries** ship for darwin-arm64 and linux-x64; other host OS use WSL/Docker per [Platforms](/install/platforms).
+
+**Q: Why debug-only?**
+A: The toolkit relies on VM service extensions and semantic bindings that exist in debug builds. Release mode is out of contract and unsupported.
+
+**Q: Why two copies of ADRs (`decisions/` and `docs/decisions/`)?**
+A: Root `decisions/` is canonical; `docs/decisions/` is a **copied** mirror for docs.page. `check_decisions_docs_sync.sh` keeps them identical — not a symlink. [Contributing — docs maintenance](/contributing/docs_maintenance)
+
+## Capability model
+
+**Q: Why the `fmt_` prefix and a capability kernel?**
+A: One registry surfaces stable MCP names, shared envelopes, and server wiring without scattering tool strings. [ADR 0001](/decisions/0001_capability_kernel_and_tool_prefix)
+
+**Q: Why defer tool consolidation?**
+A: v3 shipped Playwright-parity P0–P2 plus the kernel; merging overlapping tools risks breaking agents mid-migration. [ADR 0002](/decisions/0002_v3_scope_and_consolidation_deferrals)
+
+**Q: Why dynamic client tools via `addMcpTool()`?**
+A: App-specific automation belongs in the app process; the server bridges registrations without redeploying the host. [Custom tools](/use-cases/custom-tools)
+
+## Observation
+
+**Q: Why does an absent key never mean "empty"?**
+A: Filtered snapshots once implied an empty screen when text was present but unobserved. Responses now separate not-observed (key absent), not-computed (`delta` absent), and observed-empty. [ADR 0024](/decisions/0024_observation_vs_empty_and_change_waits)
+
+**Q: Why `changed` / diff waits instead of only keyword filters?**
+A: Agents need to wait for **unknown** UI copy; keyword lists cannot enumerate every app string. [ADR 0003](/decisions/0003_p0_wait_for_design) · [ADR 0024](/decisions/0024_observation_vs_empty_and_change_waits)
+
+**Q: Why render-pipeline screenshots, not OS screen capture?**
+A: Flutter UI proof should work when the window is backgrounded and stay tied to widget bounds. [ADR 0006](/decisions/0006_platform_view_capture_routing) · [ADR 0007](/decisions/0007_web_headful_tab_capture)
+
+**Q: Why DPR-normalized snapshot bounds?**
+A: Semantics rects can land in physical pixels while hit testing uses logical space; centers are divided by view DPR. See `mcp_toolkit` semantic snapshot service and regression tests.
+
+## Interaction
+
+**Q: Why is `wait_for` shaped this way?**
+A: One waiter covers semantic conditions, screenshots, and errors with explicit timeouts instead of ad-hoc polling tools. [ADR 0003](/decisions/0003_p0_wait_for_design)
+
+**Q: Why keyboard, dialog, and navigate as first-class tools?**
+A: Playwright-parity P1 verbs reduce custom glue for modal flows and routing. [ADR 0004](/decisions/0004_p1_keyboard_dialog_navigate)
+
+**Q: Why was `select_option` dropped?**
+A: Flutter dropdown semantics vary; hover + fill_form cover the supported cases without a flaky pseudo-select. [ADR 0005](/decisions/0005_p2_fill_form_hover_select_option)
+
+## Harness
+
+**Q: Why extract `flutter_mcp_harness`?**
+A: Repeatable scenarios and CLI drivers belong in a Dart package CI can import, not only behind MCP chat. [ADR 0015](/decisions/0015_flutter_mcp_harness_extraction)
+
+**Q: Why targets → session → driver → scenario layering?**
+A: Launch modes, attach-only, and evidence bundles compose without duplicating VM wiring in every script. [ADR 0019](/decisions/0019_harness_layering)
+
+**Q: Launch-and-own vs attach-only?**
+A: Harness can spawn the showcase or join an existing VM URI; ownership defines who tears down the process. [ADR 0020](/decisions/0020_app_ownership)
+
+**Q: Why an invoke tier separate from universal automation verbs?**
+A: App-specific surface actions read the tool registry instead of expanding the sealed `AutomationAction` enum for every product. [ADR 0017](/decisions/0017_harness_invoke_tier)
+
+**Q: Why a web tier in harness?**
+A: Web builds need CDP/WebBuildTarget glue distinct from mobile/desktop VM attach. [ADR 0018](/decisions/0018_web_tier)
+
+**Q: Why agent-first scenario reports?**
+A: Machines and agents need structured pass/fail, artifacts, and non-claims — not only human log grep. [ADR 0023](/decisions/0023_harness_scenario_agent_report)
+
+**Q: Why external dev session delegation?**
+A: Some workflows stay in consumer repos; harness exposes a stable Dart contract instead of shell runners. [ADR 0014](/decisions/0014_external_dev_sessions_runner_delegation)
+
+## CLI vs MCP
+
+**Q: Why both CLI and MCP server?**
+A: Same capability catalog: MCP for in-chat agents, `fmtk` for deterministic CI and scripts. [ADR 0012](/decisions/0012_fmtk_cli_alias_and_harness_boundary) · [CLI vs MCP](/concepts/cli-vs-mcp)
+
+## IntentCall and projections
+
+**Q: Why IntentCall consumer-only in this repo?**
+A: Architecture and publish cadence live in the upstream IntentCall workspace after extract; mcp_flutter gates hosted versions. [ADR 0010](/decisions/0010_intentcall_extract) · [IntentCall README](/intentcall/README)
+
+**Q: Why JS-only web `/agent/invoke`?**
+A: WebMCP bootstrap already POSTs to `/agent/invoke`; a duplicate Flutter route would fork dispatch. [ADR 0008](/decisions/0008_web_agent_invoke_js_only)
+
+**Q: Why compositional projections?**
+A: Platform-specific surfaces compose from shared toolkit primitives instead of forking the public API per target. [ADR 0016](/decisions/0016_toolkit_projections_composition)
+
+## Showcase and docs
+
+**Q: Why one canonical showcase app?**
+A: Multiple demos drifted from API and from each other; `showcase/flutter_test_app` is the single drive target for GIFs, harness, and snippets. [ADR 0025](/decisions/0025_canonical_showcase_and_demo_pipeline)
+
+**Q: Why snippet drift checks?**
+A: Doc code blocks must match runnable commands; CI runs `tool/docs/check_example_snippets.dart` against a manifest.
+
+**Q: Why first-class entrypoints only in examples?**
+A: Shell/Python glue hides real APIs and rots when `fmtk` or `dart run` paths change. [ADR 0025](/decisions/0025_canonical_showcase_and_demo_pipeline)
+
+**Q: Why no hard-coded tool counts in prose?**
+A: Generated reference is SSOT; marketing counts drift when tools ship. `check_no_hardcoded_tool_counts.sh` enforces.
+
+## Release and registry
+
+**Q: Why one version train?**
+A: Server, toolkit, capabilities, and plugin metadata release together so agents never mix incompatible halves. `VERSION` at repo root is SSOT.
+
+**Q: Why MCPB as primary install path?**
+A: Desktop MCP clients install a signed bundle without requiring users to run shell installers first. Tarballs + `install.sh` remain for CLI-only workflows. [Platforms](/install/platforms)
+
+**Q: Why per-package OIDC tokens for pub.dev?**
+A: Pub publish auth is per package; sharing one token across unrelated packages widens blast radius. [ADR 0021](/decisions/0021_pub_dev_oidc_token_per_package)
+
+**Q: Why no GitHub environment in the publish path?**
+A: OIDC to pub.dev does not need GitHub environment gates that complicate fork PRs. [ADR 0022](/decisions/0022_no_github_environment_in_publish_path)
+
+**Q: Why MCP Registry publish hardening?**
+A: Registry metadata and overlays are part of the shipped product surface; mistakes are public. [ADR 0013](/decisions/0013_mcp_registry_publish_hardening)
+
+## Deferred designs (archived plans)
+
+**Q: Where do deferred capabilities and open maintenance specs live?**
+A: Not in active `maintainers/todo/` scratch paths — archived under `maintainers/superpowers/plans/archive/`: [live-edit re-integration](../maintainers/superpowers/plans/archive/live_edit_reintegration.md), [P3 network introspection](../maintainers/superpowers/plans/archive/p3_network_introspection.md), [visual reconstruct (checkpoint protocol open)](../maintainers/superpowers/plans/archive/2026-05-26-visual-reconstruct-next.md). Scope deferrals: [ADR 0002](/decisions/0002_v3_scope_and_consolidation_deferrals).
+
+## Evidence
+
+**Q: Why split dogfood tracker from runtime artifacts?**
+A: Tracker YAML records iteration scores; `.showcase` and harness output stay runtime evidence — different retention and review. [ADR 0011](/decisions/0011_dogfood_tracker_evidence_split)
+
+**Q: Why native emulator + Linux proof before merge?**
+A: Host binaries and showcase drivers are platform-sensitive; contract gates plus showcase drive catch arch and path drift early. See `make check-contracts` and weekly showcase workflow.

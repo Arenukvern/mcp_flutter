@@ -2,13 +2,24 @@
 
 For **using** the toolkit on a Flutter app, read [llms.txt](./llms.txt) and [docs/quickstart.mdx](docs/quickstart.mdx). This file is for agents changing **this repository**.
 
+## Documentation router
+
+| Need | Canonical owner |
+| --- | --- |
+| Charter / scope | [docs/NORTH_STAR.mdx](docs/NORTH_STAR.mdx) |
+| Why (compressed) | [docs/DESIGN_FAQ.mdx](docs/DESIGN_FAQ.mdx) + [decisions/](decisions/) |
+| How (contributor + agent) | [docs/DX_FAQ.mdx](docs/DX_FAQ.mdx) |
+| Which FAQ to read | [.cursor/rules/faq_usage.mdc](.cursor/rules/faq_usage.mdc) |
+| User onboarding | [docs/quickstart.mdx](docs/quickstart.mdx), [docs/index.mdx](docs/index.mdx) |
+
 ## Repo map
 
 | Path | Purpose |
 | --- | --- |
 | `mcp_server_dart/` | MCP server + CLI (`flutter-mcp-toolkit`, `flutter-mcp-toolkit-server`) |
 | `mcp_toolkit/` | Flutter app package (pub.dev) |
-| `packages/core`, `capability_*` | Shared types and `fmt_*` capabilities |
+| `packages/core` | Shared MCP types |
+| `packages/server_capability_kernel`, `packages/server_capability_core` | `fmt_*` capability implementations |
 | `packages/harness/` | `flutter_mcp_harness` automation |
 | `plugin/skills/` | Source skills → `skill_assets.g.dart` |
 | `docs/` | docs.page site |

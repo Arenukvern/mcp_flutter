@@ -17,11 +17,16 @@ adoption:
     pillar: quality
 stewardship:
   governance:
+    north_star: docs/NORTH_STAR.mdx
     charter: AGENTS.md
     adr_dir: decisions/
-    ethics_charter: docs/NORTH_STAR.md
+    ethics_charter: docs/NORTH_STAR.mdx
+    faq:
+      design: docs/DESIGN_FAQ.mdx
+      dx: docs/DX_FAQ.mdx
   knowledge:
     docs_map: docs/index.mdx
+    agent_map: AGENTS.md
     source_policy: required_for_external_claims
   repo_quality:
     contract_spec: steward.yaml
@@ -42,7 +47,7 @@ stewardship:
   review_handoff:
     moe_required_for_architecture: true
   strategic_alignment:
-    vision_source: docs/NORTH_STAR.md
+    vision_source: docs/NORTH_STAR.mdx
     success_evidence: required
   security:
     action_effects: required
@@ -55,7 +60,9 @@ docs:
   "CLI vs MCP": docs/concepts/cli-vs-mcp.mdx
   "How it works": docs/concepts/how-it-works.mdx
   "Custom tools": docs/use-cases/custom-tools.mdx
-  "North Star": docs/NORTH_STAR.md
+  "North Star": docs/NORTH_STAR.mdx
+  "Design FAQ": docs/DESIGN_FAQ.mdx
+  "DX FAQ": docs/DX_FAQ.mdx
 actions:
   fmt.check.tool-prefix:
     kind: command
@@ -546,7 +553,7 @@ branding:
   ignored_paths: []
 governance:
   adr_directory: decisions/
-  ethics_charter: docs/NORTH_STAR.md
+  ethics_charter: docs/NORTH_STAR.mdx
 skills_distribution:
   source_dir: skills/
   output: skills.sh.json

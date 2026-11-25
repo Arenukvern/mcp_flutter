@@ -1,0 +1,28 @@
+# mcp_toolkit — DX FAQ (package scope)
+
+Package-level **how** for app authors. Repo router: [docs/DX_FAQ](../docs/DX_FAQ.mdx).
+
+## 🧭 Router
+
+```text
+INIT / BINDING            → docs/install/app-setup.mdx
+CUSTOM TOOLS              → docs/use-cases/custom-tools.mdx
+PACKAGE TESTS             → cd mcp_toolkit && flutter test
+```
+
+## 🔌 Wire desk
+
+```dart
+import 'package:flutter/widgets.dart';
+import 'package:mcp_toolkit/mcp_toolkit.dart';
+
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  MCPToolkitBinding.instance
+    ..initialize()
+    ..initializeFlutterToolkit(); // screenshot + interaction entries
+  runApp(const MyApp());
+}
+```
+
+Use `addMcpTool` for app-specific MCP surfaces; run app in **debug** with VM service enabled.

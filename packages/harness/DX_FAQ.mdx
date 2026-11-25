@@ -1,0 +1,23 @@
+# Harness — DX FAQ (package scope)
+
+Package-level **how** for `flutter_mcp_harness`. Repo router: [docs/DX_FAQ](../../docs/DX_FAQ.mdx).
+
+## 🧭 Router
+
+```text
+LAYER MODEL (why)         → packages/harness/DESIGN_FAQ.mdx
+DRIVE SHOWCASE            → dart run showcase/drivers/bin/drive_flutter.dart
+WEB SHOWCASE              → dart run packages/harness/tool/showcase.dart --web
+SCREENSHOT TOOL           → dart run packages/harness/tool/shot.dart
+PACKAGE TESTS             → cd packages/harness && dart test
+```
+
+## 🧪 Run desk
+
+```bash
+dart analyze packages/harness
+(cd packages/harness && dart test)   # subshell: stay at repo root
+dart run showcase/drivers/bin/drive_flutter.dart --help
+```
+
+Repo gate: `make check-contracts` before publishing harness API changes.

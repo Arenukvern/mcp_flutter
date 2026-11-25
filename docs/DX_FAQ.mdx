@@ -1,0 +1,148 @@
+# Flutter MCP Toolkit DX_FAQ — Memory Palace
+
+_How to work in this repo and drive Flutter apps with agents. Jump by emoji or start at 🧭 Router._
+
+## 🧭 Router
+
+### North Star impact check
+
+Use when a change might move charter, ownership, or boundaries — not for every typo.
+
+| `north_star_impact` | Meaning | Route |
+| --- | --- | --- |
+| `none` | Local fix; no stewardship meaning. | Native gate (`make` / `dart test`). |
+| `applies` | Uses current North Star paths. | Implement + run focused checks. |
+| `clarifies` | Explains an existing boundary. | Update FAQ row, skill, or map link. |
+| `sub_star` | Package-local boundary (harness vs toolkit). | Package FAQ pair + link to root [NORTH_STAR](NORTH_STAR.mdx). |
+| `amends` | Changes what we own, refuse, or ship. | ADR + [NORTH_STAR](NORTH_STAR.mdx) diff before merge. |
+| `conflicts` | Pulls toward a different center. | Stop; ADR or reject. |
+
+```text
+CHARTER / scope           → docs/NORTH_STAR.mdx
+WHY (compressed)          → docs/DESIGN_FAQ.mdx
+HOW (this file)           → docs/DX_FAQ.mdx
+AGENT MAP                 → AGENTS.md
+WHICH FAQ (Cursor rule)   → .cursor/rules/faq_usage.mdc
+USER ONBOARDING           → docs/quickstart.mdx · llms.txt
+ADRs (canonical)          → decisions/  (mirror: docs/decisions/)
+INSTALL HOST              → MCPB primary · install.sh · docs/install/platforms.mdx
+WIRE APP                  → docs/install/app-setup.mdx · use-cases/custom-tools
+OBSERVE UI                → fmt_semantic_snapshot · fmt_get_screenshots
+DRIVE UI                  → fmt_tap_widget · fmt_enter_text · fmt_wait_for
+CLI ONE-SHOTS             → fmtk exec · fmtk batch
+HARNESS E2E               → dart run showcase/drivers/bin/drive_flutter.dart
+SHOWCASE                  → showcase/flutter_test_app
+CONTRACT GATE             → make check-contracts
+SNIPPET DRIFT             → dart run tool/docs/check_example_snippets.dart
+ADR SYNC                  → rsync -a --delete decisions/ docs/decisions/
+DOCS REF GENERATED        → make docs-reference
+STEWARD                   → steward doctor --json · steward probe --json --profile quick
+SKILLS SOURCE             → plugin/skills/ · make sync-skills
+```
+
+## 📦 Install desk
+
+| Need | Go to |
+| --- | --- |
+| MCP client, no shell | [Platforms](/install/platforms) — MCPB `flutter-mcp-toolkit.mcpb` |
+| CLI + server on disk | [`install.sh`](https://github.com/Arenukvern/mcp_flutter/blob/main/install.sh) |
+| Container host | [Docker](/install/docker) |
+| Cursor / Claude wiring | [Client setup](/install/clients) |
+
+## 🔌 App wiring desk
+
+```dart
+// pubspec: mcp_toolkit (debug dependency)
+import 'package:flutter/widgets.dart';
+import 'package:mcp_toolkit/mcp_toolkit.dart';
+
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  MCPToolkitBinding.instance
+    ..initialize()
+    ..initializeFlutterToolkit(); // built-in Flutter toolkit entries
+  runApp(const MyApp());
+}
+```
+
+Registered entries beyond the built-ins go through `addEntries`; hosts that want the zone-guarded lifecycle use `bootstrapFlutter`.
+
+Deep dive: [App setup](/install/app-setup) · [Custom tools](/use-cases/custom-tools) · package [mcp_toolkit/DX_FAQ](../mcp_toolkit/DX_FAQ.mdx).
+
+## 👀 Observe desk
+
+```text
+fmt_semantic_snapshot       # nodes, bounds — absent key = unknown (ADR 0024)
+fmt_get_screenshots         # render pipeline; works backgrounded
+fmt_wait_for changed:…      # wait for UI change without keyword lists
+```
+
+Reference: [MCP tools](/reference/tools) · [See the UI](/use-cases/see-the-ui).
+
+## 🕹️ Drive desk
+
+```text
+fmtk exec --name semantic_snapshot --args '{}'        # read the refs from the result
+fmtk exec --name tap_widget --args '{"ref":"<ref>"}'  # <ref>: a node that reports a tap action
+fmtk batch --steps '[{"name":"semantic_snapshot"},{"name":"get_screenshots","args":{}}]'
+```
+
+Refs number the full semantics walk — `s_0` is the first walked node, not a default target. A `batch` sends one fixed payload and cannot interpolate a step's output into a later step, so pass refs you already read from a `semantic_snapshot` result.
+
+Use cases: [Drive the UI](/use-cases/drive-the-ui) · [CLI](/reference/cli).
+
+## 🧪 Harness workshop
+
+```bash
+(cd mcp_server_dart && make setup)   # subshell: stay at repo root
+make check-contracts          # before large harness changes
+dart run showcase/drivers/bin/drive_flutter.dart --help
+```
+
+Layering and reports: [ADR 0019](/decisions/0019_harness_layering) · package [packages/harness/DX_FAQ](../packages/harness/DX_FAQ.mdx) · skill `flutter-mcp-e2e-harness`.
+
+## 🏗️ Showcase garden
+
+- **Canonical app:** `showcase/flutter_test_app` — `/` shipments, `/qa` lab ([ADR 0025](/decisions/0025_canonical_showcase_and_demo_pipeline)).
+- **Regenerate GIFs:** `dart run showcase/flutter_test_app/tool/regenerate.dart` (see showcase README).
+- **Weekly drive:** `.github/workflows/showcase_drive_weekly.yml` (informational).
+
+## ✅ Contract desk
+
+```bash
+make install
+make build
+make check-contracts
+make docs-reference          # after tool/CLI surface changes
+dart run tool/docs/check_example_snippets.dart
+```
+
+Includes: decisions sync, docs links, tool-count check, skill asset sync, IntentCall hosted gates.
+
+## 📜 ADR desk
+
+- Write new ADRs under `decisions/`; mirror with `rsync -a --delete decisions/ docs/decisions/`.
+- Index: [decisions/index](/decisions/index) — **0009** reserved/unused.
+- Format: `- **Status:** Accepted (YYYY-MM-DD)` at top of each ADR.
+
+## 🧭 North Star desk
+
+- Charter edits: [NORTH_STAR](NORTH_STAR.mdx) + classify `north_star_impact` in PR description.
+- Ethics/boundaries live in North Star — not a separate doc.
+
+## 🚀 Release desk
+
+- Version SSOT: `VERSION` + `make sync-version` when bumping.
+- Runbooks: [MCP registry publish](/contributing/mcp_registry_publish_runbook) · [Marketplace](/contributing/marketplace_submission_runbook).
+- Changelog: [CHANGELOG.md](https://github.com/Arenukvern/mcp_flutter/blob/main/CHANGELOG.md).
+
+## 🤖 Agent ops
+
+```bash
+steward doctor --json
+steward probe --json --profile quick
+steward action inspect <id> --json
+make sync-skills
+```
+
+Runtime UI proof: `fmt_get_screenshots` or `packages/harness/tool/shot.dart` — not host screen recording ([AGENTS.md](https://github.com/Arenukvern/mcp_flutter/blob/main/AGENTS.md)).

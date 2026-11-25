@@ -1,4 +1,4 @@
-> **ARCHIVED** — Historical snapshot (C5 complete). For current status see [deconstruct verification](../../evals/2026-05-26-deconstruct-verification.md) and [visual reconstruct plan](../2026-05-26-visual-reconstruct-next.md).
+> **ARCHIVED** — Historical snapshot (C5 complete). For current status see [deconstruct verification](../../evals/2026-05-26-deconstruct-verification.md).
 
 # Phase C coordination — deconstruct + reconstruct.start
 

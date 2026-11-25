@@ -88,5 +88,5 @@ dart run deconstruct lint --input ../mcp_flutter/flutter_test_app/test/goldens/v
 ## Related
 
 - [Phase C coordination (archived)](../plans/archive/2026-05-26-phase-c-deconstruct-coordination.md)
-- [Visual reconstruct plan](../plans/2026-05-26-visual-reconstruct-next.md)
+- Dogfood tracker: [`maintainers/evidence/dogfood/dogfood_web_eval.yaml`](../../evidence/dogfood/dogfood_web_eval.yaml)
 - [WebMCP verification](./2026-05-26-webmcp-verification.md) (warm path; distinct from cold IR)
