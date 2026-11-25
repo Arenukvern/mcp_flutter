@@ -1,0 +1,70 @@
+# Flutter MCP Toolkit — North Star
+
+**Status:** active · **Audience:** humans and agents · **Version train:** see [`VERSION`](https://github.com/Arenukvern/mcp_flutter/blob/main/VERSION) (do not hard-code in prose)
+
+## What we are
+
+**Flutter MCP Toolkit** is a **platform-neutral** runtime layer agents use to **see**, **drive**, and **verify** a **debug** Flutter app on any Flutter target. The repo ships the MCP server and CLI (`flutter-mcp-toolkit`, alias `fmtk`, and `flutter-mcp-toolkit-server`), the in-app `mcp_toolkit` package, programmatic `flutter_mcp_harness`, plugin Agent Skills, and the canonical showcase. Host binaries target **darwin-arm64** and **linux-x64**; app wiring works wherever Flutter debug runs (mobile, desktop, web).
+
+## Current proof
+
+| Status | Evidence | Do not overclaim |
+| --- | --- | --- |
+| **Proven** | VM-connected `fmt_*` tools, semantic snapshot + gestures, render-pipeline screenshots, MCPB + tarball release, `make check-contracts`, weekly showcase drive (non-gating) | Production release-mode apps, OS-wide automation without Flutter context |
+| **Emerging** | Web CDP tier, harness scenario reports, IntentCall consumer wiring, projections composition | Full web parity without scenario evidence for your app |
+| **Not owned** | IntentCall architecture (upstream), consumer product test suites, non-Flutter UI automation | Replacing Playwright for non-Flutter pages |
+
+## What we own
+
+| Own | Do not own |
+| --- | --- |
+| Connection, sticky sessions, doctor, `fmt_*` capabilities over the Dart VM | OS-level automation of non-Flutter apps (use OS/browser tiers only as fallbacks) |
+| Dynamic client tools/resources; app `addMcpTool()` | Agent client implementations |
+| IntentCall **consumer** wiring and hosted-dependency gates | IntentCall product architecture and extract repo lifecycle |
+| `flutter_mcp_harness` scenarios and evidence bundles | Your app's full CI matrix |
+| Canonical showcase (`showcase/flutter_test_app`: `/` shipments, `/qa` lab) | Extra demo apps per feature |
+| Platform-neutral API across Flutter debug targets | Platform-specific API forks |
+
+## Surfaces
+
+| Surface | Role |
+| --- | --- |
+| **CLI** | `flutter-mcp-toolkit` / `fmtk` — scripts, CI, one-shots |
+| **MCP server** | `flutter-mcp-toolkit-server` — in-chat agents |
+| **`mcp_toolkit`** | In-app extensions, snapshots, gestures, dynamic entries |
+| **`packages/harness`** | `flutter_mcp_harness` — launch, drive, scenario reports |
+| **Plugin skills** | Source in `plugin/skills/` — see [Skills reference](/reference/skills) |
+| **Showcase** | `showcase/flutter_test_app` — single drive target for GIFs, drivers, snippets |
+
+## Extension model
+
+1. **App (preferred):** `addMcpTool()` / projections — [custom tools](/use-cases/custom-tools), [ADR 0016](/decisions/0016_toolkit_projections_composition).
+2. **Host:** new server `Capability` wired in `mcp_server_dart` — [ADR 0001](/decisions/0001_capability_kernel_and_tool_prefix).
+
+## Distribution
+
+- **Primary:** MCPB bundle `flutter-mcp-toolkit.mcpb` (darwin-arm64 + linux-x64 in one bundle) — [Platforms](/install/platforms).
+- **Also:** per-triple tarballs via [`install.sh`](https://github.com/Arenukvern/mcp_flutter/blob/main/install.sh) for CLI/server install.
+- **Packages:** one pub.dev version train — `VERSION` at repo root is SSOT; packages stay in lockstep.
+- **OCI image:** documented under [Docker](/install/docker).
+
+## Boundaries (non-negotiable)
+
+- **Debug only** — no release-mode instrumentation contract.
+- **Observations never lie** — absent JSON key means **unknown**, not empty ([ADR 0024](/decisions/0024_observation_vs_empty_and_change_waits)).
+- **First-class entrypoints** in docs and demos — `dart run …`, `fmtk …`, `make …`; no shell glue scripts or Python helpers in examples ([ADR 0025](/decisions/0025_canonical_showcase_and_demo_pipeline)).
+- **No hard-coded MCP tool counts** in prose — counts live only in generated [reference](/reference/tools); CI enforces.
+- **Strategic why** → ADR; standing **why** → [DESIGN_FAQ](DESIGN_FAQ); operational **how** → [DX_FAQ](DX_FAQ).
+
+## Success looks like
+
+- A fresh agent or contributor finds charter, why, and how from [AGENTS.md](https://github.com/Arenukvern/mcp_flutter/blob/main/AGENTS.md) and the FAQ pair without ECS-era drift.
+- Snippets and GIFs exercise the same showcase code paths; contract gates stay green.
+- Harness and MCP paths share one semantic model; claims stay inside the proof table above.
+
+## References
+
+- [ADR index](/decisions/index) (note: **0009** intentionally unused)
+- [DESIGN_FAQ](DESIGN_FAQ) · [DX_FAQ](DX_FAQ)
+- [How it works](/concepts/how-it-works) · [llms.txt](https://github.com/Arenukvern/mcp_flutter/blob/main/llms.txt)
+- Maintainer evidence: `maintainers/evidence/` (not user onboarding)

@@ -182,6 +182,27 @@
       ]
     },
     {
+      "group": "Governance",
+      "pages": [
+        {
+          "title": "North Star",
+          "href": "/NORTH_STAR"
+        },
+        {
+          "title": "Design FAQ",
+          "href": "/DESIGN_FAQ"
+        },
+        {
+          "title": "DX FAQ",
+          "href": "/DX_FAQ"
+        },
+        {
+          "title": "ADR index",
+          "href": "/decisions"
+        }
+      ]
+    },
+    {
       "group": "Help",
       "pages": [
         {
@@ -222,8 +243,8 @@
           "href": "https://github.com/Arenukvern/mcp_flutter/tree/main/maintainers/evidence"
         },
         {
-          "title": "Superpowers / plans",
-          "href": "https://github.com/Arenukvern/mcp_flutter/tree/main/maintainers/superpowers"
+          "title": "Superpowers evals",
+          "href": "https://github.com/Arenukvern/mcp_flutter/tree/main/maintainers/superpowers/evals"
         },
         {
           "title": "Marketplace runbook",

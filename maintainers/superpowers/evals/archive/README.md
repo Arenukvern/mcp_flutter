@@ -5,6 +5,6 @@ Historical dogfood / visual eval write-ups. For current rubric and commands see 
 | Snapshot | Notes |
 |----------|-------|
 | [2026-05-26-dogfood-spec-gap-matrix.md](2026-05-26-dogfood-spec-gap-matrix.md) | Spec vs dogfood gaps (iterations 1–11) |
-| [2026-05-26-visual-reconstruct-critique.md](2026-05-26-visual-reconstruct-critique.md) | Visual reconstruct critique (superseded by [visual-reconstruct-next](../../plans/2026-05-26-visual-reconstruct-next.md)) |
+| [2026-05-26-visual-reconstruct-critique.md](2026-05-26-visual-reconstruct-critique.md) | Visual reconstruct critique (historical; see dogfood tracker for current warm-path status) |
 
-**Forward index:** [WHATS_NEXT](../../WHATS_NEXT.md).
+**Forward work:** `maintainers/evidence/dogfood/dogfood_web_eval.yaml` and [evals README](../README.md).

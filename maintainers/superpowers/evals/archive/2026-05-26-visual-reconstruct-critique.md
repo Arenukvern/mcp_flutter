@@ -1,4 +1,4 @@
-> **ARCHIVED** — Historical snapshot. For current status see [visual reconstruct plan](../../plans/2026-05-26-visual-reconstruct-next.md) and [evals README](../README.md).
+> **ARCHIVED** — Historical snapshot. For current status see [evals README](../README.md) and the dogfood tracker under `maintainers/evidence/dogfood/`.
 
 # Critique — visual reconstruct program (agents 1–2)
 

@@ -1,0 +1,15 @@
+# mcp_toolkit — Design FAQ (package scope)
+
+Package-level **why** for the in-app Flutter package. Repo-wide: [docs/DESIGN_FAQ](../../docs/DESIGN_FAQ.mdx) · [NORTH_STAR](../../docs/NORTH_STAR.mdx).
+
+**Q: Why must the app depend on `mcp_toolkit` in debug?**
+A: VM service extensions and semantic snapshots run in the app isolate; the server only bridges MCP to those extensions.
+
+**Q: Why semantic snapshots instead of raw widget trees?**
+A: Agents need stable keys, bounds, and text suited for driving — not full diagnostic dumps on every call.
+
+**Q: Why projections?**
+A: Compose platform adapters without forking the public app API for each target. [ADR 0016](../../decisions/0016_toolkit_projections_composition)
+
+**Q: Why DPR correction in snapshot bounds?**
+A: Hit testing uses logical pixels; uncorrected semantics rects miss taps on high-DPR displays. See `semantic_snapshot_service.dart` and `test/semantic_snapshot_dpr_test.dart`.
