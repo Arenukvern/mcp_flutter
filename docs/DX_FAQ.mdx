@@ -13,8 +13,8 @@ Use when a change might move charter, ownership, or boundaries — not for every
 | `none` | Local fix; no stewardship meaning. | Native gate (`make` / `dart test`). |
 | `applies` | Uses current North Star paths. | Implement + run focused checks. |
 | `clarifies` | Explains an existing boundary. | Update FAQ row, skill, or map link. |
-| `sub_star` | Package-local boundary (harness vs toolkit). | Package FAQ pair + link to root [NORTH_STAR](NORTH_STAR). |
-| `amends` | Changes what we own, refuse, or ship. | ADR + [NORTH_STAR](NORTH_STAR) diff before merge. |
+| `sub_star` | Package-local boundary (harness vs toolkit). | Package FAQ pair + link to root [NORTH_STAR](NORTH_STAR.mdx). |
+| `amends` | Changes what we own, refuse, or ship. | ADR + [NORTH_STAR](NORTH_STAR.mdx) diff before merge. |
 | `conflicts` | Pulls toward a different center. | Stop; ADR or reject. |
 
 ```text
@@ -64,7 +64,7 @@ void main() {
 }
 ```
 
-Deep dive: [App setup](/install/app-setup) · [Custom tools](/use-cases/custom-tools) · package [mcp_toolkit/DX_FAQ](../../mcp_toolkit/DX_FAQ.mdx).
+Deep dive: [App setup](/install/app-setup) · [Custom tools](/use-cases/custom-tools) · package [mcp_toolkit/DX_FAQ](../mcp_toolkit/DX_FAQ.mdx).
 
 ## 👀 Observe desk
 
@@ -94,7 +94,7 @@ make check-contracts          # before large harness changes
 dart run showcase/drivers/bin/drive_flutter.dart --help
 ```
 
-Layering and reports: [ADR 0019](/decisions/0019_harness_layering) · package [packages/harness/DX_FAQ](../../packages/harness/DX_FAQ.mdx) · skill `flutter-mcp-e2e-harness`.
+Layering and reports: [ADR 0019](/decisions/0019_harness_layering) · package [packages/harness/DX_FAQ](../packages/harness/DX_FAQ.mdx) · skill `flutter-mcp-e2e-harness`.
 
 ## 🏗️ Showcase garden
 
@@ -122,7 +122,7 @@ Includes: decisions sync, docs links, tool-count check, skill asset sync, Intent
 
 ## 🧭 North Star desk
 
-- Charter edits: [NORTH_STAR](NORTH_STAR) + classify `north_star_impact` in PR description.
+- Charter edits: [NORTH_STAR](NORTH_STAR.mdx) + classify `north_star_impact` in PR description.
 - Ethics/boundaries live in North Star — not a separate doc.
 
 ## 🚀 Release desk
