@@ -3,6 +3,7 @@ version: 8.1.0
 description: >-
   An MCP server for Flutter Inspector, exposing Flutter debugging and inspection
   tools to AI models via Dart VM service.
+repository: https://github.com/Arenukvern/mcp_flutter/tree/main/mcp_server_dart
 environment:
   sdk: '>=3.13.0 <4.0.0'
 resolution: workspace

@@ -56,8 +56,7 @@ class WaitPredicateService {
           'elapsedMs': stopwatch.elapsedMilliseconds,
         };
       }
-      final observed =
-          await SemanticSnapshotService.peekSemanticSnapshot();
+      final observed = await SemanticSnapshotService.peekSemanticSnapshot();
       return _successWithSnapshot(
         predicate,
         stopwatch.elapsedMilliseconds,
@@ -74,11 +73,9 @@ class WaitPredicateService {
     }
 
     final waitStartSnapshotId = SemanticSnapshotService.currentSnapshotId;
-    final waitRecord =
-        SemanticSnapshotService.lookupPublicObservation(waitStartSnapshotId);
-    final waitFilter = waitRecord != null
-        ? SemanticSnapshotFilter.fromFilterKey(waitRecord.filterKey)
-        : null;
+    final waitRecord = SemanticSnapshotService.lookupPublicObservation(
+      waitStartSnapshotId,
+    );
     final waitStartBaseline = waitRecord?.observation;
 
     if (kind == 'noError') {
@@ -192,16 +189,18 @@ class WaitPredicateService {
         'reason': 'changed_since_required',
         'predicate': predicate,
         'elapsedMs': stopwatch.elapsedMilliseconds,
-        'hint': 'Pass {"kind":"changed","since":<snapshotId from a public '
+        'hint':
+            'Pass {"kind":"changed","since":<snapshotId from a public '
             'semantic_snapshot>}',
       };
     }
 
     final record = SemanticObservationHistory.instance.lookupSince(since);
     if (record == null) {
-      final eviction =
-          SemanticObservationHistory.instance.evictionInfoFor(since);
-      final cap = SemanticObservationHistory.publicObservationRingCapacity;
+      final eviction = SemanticObservationHistory.instance.evictionInfoFor(
+        since,
+      );
+      const cap = SemanticObservationHistory.publicObservationRingCapacity;
       final hint = switch (eviction) {
         BaselineEvictionInfo(neverRecorded: true) =>
           'No public snapshot with id $since is in the observation ring '
@@ -266,13 +265,13 @@ class WaitPredicateService {
               deadline.inMilliseconds - stopwatch.elapsedMilliseconds;
           if (remainingMs < settleMs) {
             final late = SemanticSnapshotService.observationFromSnapshot(
-              lastPeek!,
+              lastPeek,
               filter: filter.isEmpty ? null : filter,
             );
             return _successWithSnapshot(
               predicate,
               stopwatch.elapsedMilliseconds,
-              lastPeek!,
+              lastPeek,
               measured: <String, Object?>{
                 'settled': false,
                 'since': since,
@@ -291,13 +290,13 @@ class WaitPredicateService {
           lastPeek = settle.lastPeek ?? lastPeek;
           if (!settled) {
             final late = SemanticSnapshotService.observationFromSnapshot(
-              lastPeek!,
+              lastPeek,
               filter: filter.isEmpty ? null : filter,
             );
             return _successWithSnapshot(
               predicate,
               stopwatch.elapsedMilliseconds,
-              lastPeek!,
+              lastPeek,
               measured: <String, Object?>{
                 'settled': false,
                 'since': since,
@@ -306,9 +305,10 @@ class WaitPredicateService {
             );
           }
         }
-        final finalSnapshot = await SemanticSnapshotService.buildSemanticSnapshot(
-          filter: filter.isEmpty ? null : filter,
-        );
+        final finalSnapshot =
+            await SemanticSnapshotService.buildSemanticSnapshot(
+              filter: filter.isEmpty ? null : filter,
+            );
         final finalObs = SemanticSnapshotService.observationFromSnapshot(
           finalSnapshot,
           filter: filter.isEmpty ? null : filter,
@@ -336,15 +336,13 @@ class WaitPredicateService {
     );
   }
 
-  static Future<({bool settled, Map<String, Object?>? lastPeek})>
-      _settleForMs({
+  static Future<({bool settled, Map<String, Object?>? lastPeek})> _settleForMs({
     required WidgetsBinding binding,
     required int settleMs,
     required Stopwatch stopwatch,
     required Duration deadline,
     SemanticSnapshotFilter? filter,
   }) async {
-    var stableSamples = 0;
     String? lastSerialised;
     var unchangedSinceMs = 0;
     Map<String, Object?>? lastPeek;
@@ -360,14 +358,10 @@ class WaitPredicateService {
       final serialised = _serialiseNodes(snapshot);
       final sampledAtMs = stopwatch.elapsedMilliseconds;
       if (lastSerialised == null || serialised != lastSerialised) {
-        stableSamples = 1;
         lastSerialised = serialised;
         unchangedSinceMs = sampledAtMs;
-      } else {
-        stableSamples++;
-        if (sampledAtMs - unchangedSinceMs >= settleMs) {
-          return (settled: true, lastPeek: lastPeek);
-        }
+      } else if (sampledAtMs - unchangedSinceMs >= settleMs) {
+        return (settled: true, lastPeek: lastPeek);
       }
     }
     return (settled: false, lastPeek: lastPeek);
@@ -426,8 +420,7 @@ class WaitPredicateService {
     if (nodes is! List) return false;
 
     final found = nodes.whereType<Map<Object?, Object?>>().any(
-      (node) =>
-          node['identifier'] == identifier && _flagsHold(predicate, node),
+      (node) => node['identifier'] == identifier && _flagsHold(predicate, node),
     );
     return predicate['absent'] == true ? !found : found;
   }
@@ -530,14 +523,12 @@ class WaitPredicateService {
     int? waitStartSnapshotId,
     Observation? waitStartBaseline,
   }) {
-    final observedRevision =
-        (lastSnapshot?['observedRevision'] as num?)?.toInt();
+    final observedRevision = (lastSnapshot?['observedRevision'] as num?)
+        ?.toInt();
     Map<String, Object?>? deltaWire;
     if (waitStartBaseline != null && lastSnapshot != null) {
       final filter = waitStartSnapshotId != null
-          ? SemanticSnapshotService.filterForPublicSnapshot(
-              waitStartSnapshotId,
-            )
+          ? SemanticSnapshotService.filterForPublicSnapshot(waitStartSnapshotId)
           : null;
       final current = SemanticSnapshotService.observationFromSnapshot(
         lastSnapshot,
@@ -549,9 +540,9 @@ class WaitPredicateService {
       'matched': false,
       'predicate': predicate,
       'elapsedMs': elapsedMs,
-      if (waitStartSnapshotId != null) 'lastSnapshotId': waitStartSnapshotId,
-      if (observedRevision != null) 'observedRevision': observedRevision,
-      if (deltaWire != null) ...deltaWire,
+      'lastSnapshotId': ?waitStartSnapshotId,
+      'observedRevision': ?observedRevision,
+      ...?deltaWire,
       ..._timeoutDiagnosis(
         predicate: predicate,
         lastSnapshot: lastSnapshot,
@@ -588,7 +579,7 @@ class WaitPredicateService {
       };
     }
     if (SemanticSnapshotService.observationForPublicSnapshot(since) == null) {
-      final cap = SemanticObservationHistory.publicObservationRingCapacity;
+      const cap = SemanticObservationHistory.publicObservationRingCapacity;
       return <String, Object?>{
         'hint':
             'Baseline snapshot $since was evicted from the observation ring '
@@ -752,10 +743,7 @@ class WaitPredicateService {
     };
   }
 
-  static (int, String?) _scanStrings(
-    Object? value,
-    String lowerNeedle,
-  ) {
+  static (int, String?) _scanStrings(Object? value, String lowerNeedle) {
     var count = 0;
     String? match;
     void walk(Object? current) {
@@ -855,11 +843,11 @@ class WaitPredicateService {
     return nodes
         .map((n) {
           if (n is! Map) return n.toString();
-          final copy = Map<String, Object?>.from(n.cast<String, Object?>());
           // Peeks omit ref/children; public builds include them. Stable/settle
           // compares semantic content, not bind generation.
-          copy.remove('ref');
-          copy.remove('children');
+          final copy = Map<String, Object?>.from(n.cast<String, Object?>())
+            ..remove('ref')
+            ..remove('children');
           return copy.toString();
         })
         .join('|');

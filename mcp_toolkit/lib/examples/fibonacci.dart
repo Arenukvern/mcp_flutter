@@ -8,7 +8,7 @@
 /// [fibonacci_tool_example.dart](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_toolkit/example/fibonacci_tool_example.dart).
 library;
 
-import 'package:mcp_toolkit/mcp_toolkit.dart';
+import '../mcp_toolkit.dart';
 
 /// Registers `app/calculate_fibonacci` — used by the pub.dev example app and
 /// `showcase/flutter_test_app` (integration catalog validation only).
