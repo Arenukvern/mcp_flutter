@@ -59,6 +59,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   strings (e.g. `08181`) and other non-canonical forms; **7.2.1** accepted
   leading-zero decimals such as `08181`.
 
+## [8.1.1] - 2026-11-26
+
+### Changed
+
+- Align package version with the Flutter MCP Toolkit 8.1.1 release.
+
 ## [7.2.3] - 2026-11-20
 
 ### Changed

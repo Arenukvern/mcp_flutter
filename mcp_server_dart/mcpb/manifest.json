@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "flutter-mcp-toolkit",
   "display_name": "Flutter MCP Toolkit",
-  "version": "8.1.0",
+  "version": "8.1.1",
   "description": "Inspect and drive Flutter debug apps/games: semantic snapshots, search, and custom client tools",
   "author": {
     "name": "Arenukvern"
