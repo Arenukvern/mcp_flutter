@@ -27,19 +27,16 @@ runtime_version="$(
 [[ "$runtime_version" == "$repo_version" ]] ||
   fail "kFlutterMcpVersion ($runtime_version) != VERSION ($repo_version)"
 
-for pubspec in \
-  "$ROOT_DIR/mcp_server_dart/pubspec.yaml" \
-  "$ROOT_DIR/mcp_toolkit/pubspec.yaml" \
-  "$ROOT_DIR/packages/core/pubspec.yaml" \
-  "$ROOT_DIR/packages/server_capability_kernel/pubspec.yaml" \
-  "$ROOT_DIR/packages/server_capability_core/pubspec.yaml" \
-  "$ROOT_DIR/packages/harness/pubspec.yaml"; do
-  pubspec_version="$(
-    sed -nE 's/^version:[[:space:]]*([^[:space:]#]+).*/\1/p' "$pubspec" | head -1
-  )"
-  [[ "$pubspec_version" == "$repo_version" ]] ||
-    fail "${pubspec#$ROOT_DIR/} version ($pubspec_version) != VERSION ($repo_version)"
-done
+# Per-package versions are owned by dart_changesets: a package bumped on its
+# own may sit ahead of VERSION until the product train moves, so only the
+# product package pins VERSION. Tag/pubspec drift is the engine's check
+# (dart_changesets version / publish-tag).
+product_pubspec="$ROOT_DIR/mcp_toolkit/pubspec.yaml"
+pubspec_version="$(
+  sed -nE 's/^version:[[:space:]]*([^[:space:]#]+).*/\1/p' "$product_pubspec" | head -1
+)"
+[[ "$pubspec_version" == "$repo_version" ]] ||
+  fail "mcp_toolkit/pubspec.yaml version ($pubspec_version) != VERSION ($repo_version)"
 
 fmt_capability_version="$(
   sed -nE "s/.*version => '([^']+)';.*$/\1/p" "$FMT_CAPABILITY_FILE" | head -1
@@ -80,13 +77,13 @@ for dep in \
   flutter_mcp_toolkit_core \
   flutter_mcp_toolkit_capability_kernel \
   flutter_mcp_toolkit_capability_core; do
-  if ! grep -R "^[[:space:]]*$dep:[[:space:]]*\\^$repo_version\\b" \
+  if ! grep -R "^[[:space:]]*$dep:[[:space:]]*\\^[0-9]" \
     "$ROOT_DIR/mcp_toolkit/pubspec.yaml" \
     "$ROOT_DIR/mcp_server_dart/pubspec.yaml" \
     "$ROOT_DIR/packages/server_capability_kernel/pubspec.yaml" \
     "$ROOT_DIR/packages/server_capability_core/pubspec.yaml" \
     "$ROOT_DIR/packages/harness/pubspec.yaml" >/dev/null; then
-    fail "no hosted dependency constraint found for $dep ^$repo_version"
+    fail "no hosted dependency constraint found for $dep"
   fi
 done
 

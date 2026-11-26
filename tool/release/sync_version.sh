@@ -16,9 +16,9 @@ usage() {
   cat <<USAGE
 Usage: tool/release/sync_version.sh [--version <semver>]
 
-Synchronizes package versions, same-train dependency constraints, runtime
-metadata, plugin manifests, marketplace metadata, release-please manifest,
+Synchronizes runtime metadata, plugin manifests, marketplace metadata,
 README dependency snippets, and package changelog entries from root VERSION.
+Package versions live in each pubspec and are bumped by dart_changesets.
 USAGE
 }
 
@@ -67,24 +67,13 @@ for file in "${release_touchpoint_files[@]}"; do
   printf '%s\n' "$version" > "$file"
 done
 
-pubspec_version_files=(
-  "$ROOT_DIR/mcp_server_dart/pubspec.yaml"
-  "$ROOT_DIR/mcp_toolkit/pubspec.yaml"
-  "$ROOT_DIR/packages/core/pubspec.yaml"
-  "$ROOT_DIR/packages/server_capability_kernel/pubspec.yaml"
-  "$ROOT_DIR/packages/server_capability_core/pubspec.yaml"
-  "$ROOT_DIR/packages/harness/pubspec.yaml"
-)
-for file in "${pubspec_version_files[@]}"; do
-  perl -0pi -e "s/^version:\\s*[^\\n#]+/version: $version/m" "$file"
-done
+# Package pubspec `version:` lines and sibling dependency constraints are
+# owned by dart_changesets (per-package bumps); this script must not rewrite
+# them. It used to stamp VERSION into every pubspec, which reverted an
+# independent bump on the version PR (flutter_mcp_harness 8.1.0 -> 8.0.0,
+# 2026-11-24) and left a release tag that could never publish.
 
 same_train_constraint_files=(
-  "$ROOT_DIR/mcp_server_dart/pubspec.yaml"
-  "$ROOT_DIR/mcp_toolkit/pubspec.yaml"
-  "$ROOT_DIR/packages/server_capability_kernel/pubspec.yaml"
-  "$ROOT_DIR/packages/server_capability_core/pubspec.yaml"
-  "$ROOT_DIR/packages/harness/pubspec.yaml"
   "$ROOT_DIR/packages/core/README.md"
   "$ROOT_DIR/packages/server_capability_kernel/README.md"
   "$ROOT_DIR/packages/server_capability_core/README.md"
