@@ -234,8 +234,7 @@ mixin SemanticSnapshotService {
       node == null || !node.attached ? null : _globalRect(node);
 
   /// Global center of [node] as it is **now**, in logical pixels.
-  static ui.Offset? liveCenter(SemanticsNode? node) =>
-      liveRect(node)?.center;
+  static ui.Offset? liveCenter(SemanticsNode? node) => liveRect(node)?.center;
 
   /// Visibility metadata for a ref computed from the node's current geometry,
   /// falling back to the snapshot capture when the node is gone.
@@ -415,9 +414,7 @@ mixin SemanticSnapshotService {
   /// or bump [currentSnapshotId]. It is for internal movement checks where the
   /// caller already owns a live semantics node and must not invalidate or
   /// silently rebind refs from the last public snapshot.
-  static Map<String, Object?> visibleSubtreeSignature(
-    SemanticsNode node,
-  ) {
+  static Map<String, Object?> visibleSubtreeSignature(SemanticsNode node) {
     final viewport = viewportRect;
     if (viewport == null) {
       return <String, Object?>{
@@ -787,7 +784,8 @@ mixin SemanticSnapshotService {
           );
     // The maxNodes cap hides the tail in walk order; refs stay
     // full-walk, so interaction tools keep resolving trimmed rows.
-    final capped = filter?.maxNodes != null && returned.length > filter!.maxNodes!;
+    final capped =
+        filter?.maxNodes != null && returned.length > filter!.maxNodes!;
 
     List<String>? nearLabels;
     if (filter?.identifierPrefix != null && returned.isEmpty) {
@@ -835,7 +833,9 @@ mixin SemanticSnapshotService {
           'baselineReason': 'no_prior_same_filter',
         },
         if (diff)
-          'delta': previous != null ? observation.diff(previous).render() : null,
+          'delta': previous != null
+              ? observation.diff(previous).render()
+              : null,
       };
     }
 
@@ -867,7 +867,7 @@ mixin SemanticSnapshotService {
           'filter': filter.toJson(),
         },
         ...?familyKeys,
-        if (nearLabels != null) 'nearLabels': nearLabels,
+        'nearLabels': ?nearLabels,
         if (warnings.isNotEmpty) 'warnings': warnings,
         if (viewport != null) 'viewport': _rectToMap(viewport),
       },
@@ -901,9 +901,9 @@ mixin SemanticSnapshotService {
     if (refBound) return nodes.cast<Object?>();
     return nodes
         .map((node) {
-          final copy = Map<String, Object?>.from(node);
-          copy.remove('ref');
-          copy.remove('children');
+          final copy = Map<String, Object?>.from(node)
+            ..remove('ref')
+            ..remove('children');
           return copy;
         })
         .cast<Object?>()
@@ -997,7 +997,7 @@ mixin SemanticSnapshotService {
     final nodes = refBound
         ? _nodeMaps(payload['nodes'])
         : (_lastWalkNodesForFamily ??
-            _rehydrateRefsForFamily(_nodeMaps(payload['nodes'])));
+              _rehydrateRefsForFamily(_nodeMaps(payload['nodes'])));
     final snapshotId = (payload['snapshot_id'] as num?)?.toInt() ?? 0;
     return Observation.of(
       familySnapshotFromNodes(
@@ -1086,15 +1086,14 @@ mixin SemanticSnapshotService {
     return 'hybrid';
   }
 
-  static Map<String, Object?> _rectToMap(ui.Rect rect) =>
-      <String, Object?>{
-        'left': rect.left,
-        'top': rect.top,
-        'right': rect.right,
-        'bottom': rect.bottom,
-        'width': rect.width,
-        'height': rect.height,
-      };
+  static Map<String, Object?> _rectToMap(ui.Rect rect) => <String, Object?>{
+    'left': rect.left,
+    'top': rect.top,
+    'right': rect.right,
+    'bottom': rect.bottom,
+    'width': rect.width,
+    'height': rect.height,
+  };
 
   // ---------------------------------------------------------------------------
   // Helpers

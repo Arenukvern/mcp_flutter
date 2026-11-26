@@ -23,7 +23,7 @@ Use this section when auditing **this** repository. Map the generic roles from S
 | Migrator | `intentcall_core/lib/src/migrate_agent_entries.dart` |
 | WebMCP | `intentcall` web bootstrap, `showcase/flutter_test_app/web/intentcall_webmcp.generated.js` |
 | Platform contract doc | `showcase/flutter_test_app/INTENTCALL_PLATFORM.md` |
-| Registration doc | `mcp_server_dart/docs/SIMPLIFIED_DYNAMIC_REGISTRATION.md` |
+| Registration doc | `mcp_server_dart/doc/SIMPLIFIED_DYNAMIC_REGISTRATION.md` |
 
 ### Gateway flow (mcp_flutter)
 

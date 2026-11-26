@@ -6,12 +6,12 @@ import 'package:intentcall_core/intentcall_core.dart';
 
 import '../agent_entry_helpers.dart';
 import '../mcp_models.dart';
+import '../services/await_change.dart';
 import '../services/control_flow_service.dart';
 import '../services/gesture_interaction_service.dart';
 import '../services/log_capture_service.dart';
 import '../services/reveal_search_service.dart';
 import '../services/semantic_snapshot_service.dart';
-import '../services/await_change.dart';
 import '../services/wait_predicate_service.dart';
 
 /// The refusal every interaction returns when the `snapshotId` it was given
