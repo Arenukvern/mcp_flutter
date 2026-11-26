@@ -1,32 +1,14 @@
 [
   {
-    "package": "flutter_mcp_toolkit_core",
-    "version": "8.1.0",
-    "tag": "flutter_mcp_toolkit_core-v8.1.0",
-    "directory": "packages/core"
-  },
-  {
-    "package": "flutter_mcp_harness",
-    "version": "8.1.1",
-    "tag": "flutter_mcp_harness-v8.1.1",
-    "directory": "packages/harness"
-  },
-  {
-    "package": "flutter_mcp_toolkit_capability_core",
-    "version": "8.1.0",
-    "tag": "flutter_mcp_toolkit_capability_core-v8.1.0",
-    "directory": "packages/server_capability_core"
-  },
-  {
     "package": "flutter_mcp_toolkit_server",
-    "version": "8.1.0",
-    "tag": "flutter_mcp_toolkit_server-v8.1.0",
+    "version": "8.1.1",
+    "tag": "flutter_mcp_toolkit_server-v8.1.1",
     "directory": "mcp_server_dart"
   },
   {
     "package": "mcp_toolkit",
-    "version": "8.1.0",
-    "tag": "mcp_toolkit-v8.1.0",
+    "version": "8.1.1",
+    "tag": "mcp_toolkit-v8.1.1",
     "directory": "mcp_toolkit"
   }
 ]

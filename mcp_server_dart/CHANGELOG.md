@@ -1,5 +1,11 @@
 # Changelog (mcp_server_dart package)
 
+## 8.1.1
+
+### Patch Changes
+
+- Make both packages pass `pub publish` validation again, which had blocked their release legs: `mcp_toolkit` clears the analyzer findings in `lib/` (unused locals in the wait-predicate service, redundant `!`, const and null-aware cleanups, directive order, relative import in the Fibonacci example); `flutter_mcp_toolkit_server` declares `repository` and moves its maintainer docs to `doc/`.
+
 ## 8.1.0
 
 ### Minor Changes
@@ -286,5 +292,6 @@ Example result:
 ## [0.1.0] - Initial
 
 - Initial beta release.
+
 
 
