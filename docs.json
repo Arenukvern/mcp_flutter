@@ -52,7 +52,7 @@
     "/decisions/0010-intentcall-extract": "/decisions/0010_intentcall_extract"
   },
   "variables": {
-    "version": "8.0.0",
+    "version": "8.1.0",
     "repo": "https://github.com/Arenukvern/mcp_flutter",
     "docs": "https://docs.page/arenukvern/mcp_flutter"
   },

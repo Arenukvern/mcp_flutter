@@ -9,18 +9,18 @@
     "subfolder": "mcp_server_dart"
   },
   "websiteUrl": "https://docs.page/arenukvern/mcp_flutter",
-  "version": "8.0.0",
+  "version": "8.1.0",
   "packages": [
     {
       "registryType": "oci",
-      "identifier": "ghcr.io/arenukvern/flutter-mcp-toolkit:8.0.0",
+      "identifier": "ghcr.io/arenukvern/flutter-mcp-toolkit:8.1.0",
       "transport": {
         "type": "stdio"
       }
     },
     {
       "registryType": "mcpb",
-      "identifier": "https://github.com/Arenukvern/mcp_flutter/releases/download/v8.0.0/flutter-mcp-toolkit.mcpb",
+      "identifier": "https://github.com/Arenukvern/mcp_flutter/releases/download/v8.1.0/flutter-mcp-toolkit.mcpb",
       "transport": {
         "type": "stdio"
       }
