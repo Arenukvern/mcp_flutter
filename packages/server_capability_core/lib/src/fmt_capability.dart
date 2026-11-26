@@ -26,7 +26,7 @@ final class FmtCapability implements Capability {
       'Flutter MCP Toolkit — interaction, inspection, hot reload, diagnostics.';
 
   @override
-  String get version => '8.1.0'; // x-release-please-version
+  String get version => '8.1.1'; // x-release-please-version
 
   @override
   Future<void> register(CapabilityContext context) async {
