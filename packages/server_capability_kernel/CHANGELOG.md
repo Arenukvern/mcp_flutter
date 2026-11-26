@@ -24,6 +24,12 @@
   ### Documentation
   
   - Regenerated CLI and server flag reference for strict ports and `--idle-exit-minutes`.
+## [8.1.0] - 2026-11-26
+
+### Changed
+
+- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit 8.1.0 release.
+
 ## [7.2.3] - 2026-11-20
 
 ### Changed

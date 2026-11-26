@@ -1,5 +1,27 @@
 # Changelog
 
+## 8.1.0
+
+### Minor Changes
+
+- Observation vs empty semantics (ADR 0024): `semantic_snapshot` exposes `diff`,
+  `render`, `labelPrefix`, and `maxNodes`; `wait_for` adds `changed`, timeout
+  delta, and optional `awaitChange` on actions. Doctor warns on unnamed tappable
+  controls.
+  
+  **Behavior change:** `wait_for` `{kind:"time"}` defaults `observe` to **true**,
+  returning a peek snapshot envelope after the delay (higher default token use than
+  `observe:false`). After this release, `time` with default observe uses a peek
+  that does **not** bump `snapshot_id`, rebind public refs, or consume a ring
+  slot — refs and `changed` baselines stay stable.
+  
+  **Included patch scope:** peek snapshots no longer rebind public `s_N` refs
+  while `snapshot_id` is frozen; timeouts report `lastSnapshotId` at wait start
+  and `observedRevision` from the latest peek.
+  
+  **Note:** `wait_for` text/node/stable predicates always evaluate on the full
+  tree; filter keys apply only to `changed` and timeout delta baselines.
+
 ## 8.0.0
 
 ### Major Changes
@@ -172,4 +194,5 @@
 - Raised Dart SDK floor to `>=3.12.0 <4.0.0`.
 - Initial pub.dev release (renamed from `mcp_capability_core`).
 - `FmtCapability` and Playwright-parity MCP tools for Flutter VM debugging.
+
 

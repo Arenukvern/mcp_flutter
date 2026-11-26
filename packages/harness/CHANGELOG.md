@@ -1,5 +1,11 @@
 # Changelog
 
+## 8.1.1
+
+### Patch Changes
+
+- Follow-up on scenario reports: skip/no-fail halt semantics, diff baseline loading for indented JSON and empty JSONL, move `requireHarnessReportArgs` to `tool/harness_report_argv.dart`, ADR/doc alignment.
+
 ## 8.1.0
 
 ### Minor Changes
@@ -299,5 +305,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   extensions), `BinaryAppTarget`/`LaunchedApp` with `MacosAppTarget` and
   `WindowsAppTarget` presets, and `ToolkitExtensions` (the extension verb
   name list).
+
 
 
