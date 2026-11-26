@@ -1,5 +1,40 @@
 # 7.2.3
 
+## 8.1.0
+
+### Minor Changes
+
+- Stop exporting the Fibonacci demo helper from the public `mcp_toolkit.dart` barrel. The single copy lives at `lib/examples/fibonacci.dart` (demo-only, no API stability guarantees); import `package:mcp_toolkit/examples/fibonacci.dart` from the package example app or showcase integration wiring — not a supported semver surface.
+- Re-`addEntries` for an existing tool name updates the live VM service extension handler via registry indirection (the Dart VM cannot unregister extensions). Document hot reload vs hot restart semantics in the package README.
+  
+  ### Behavior change (debug)
+  
+  `addEntries` now throws `StateError` instead of silently picking a winner when:
+  
+  - The same tool `name` is registered under two namespaces:  
+    `Duplicate tool name "…" in namespaces "…" and "…".`
+  - Two registry keys share one VM extension (`methodName` / `serviceExtensionName` collision):  
+    `Duplicate VM service extension "…" for registry keys "…" and "…". Give one tool a unique methodName or rename the tool.`
+  
+  **Migration:** Give one of the tools a unique `methodName`, or rename the tool so keys and VM extension names do not collide.
+- Observation vs empty semantics (ADR 0024): `semantic_snapshot` exposes `diff`,
+  `render`, `labelPrefix`, and `maxNodes`; `wait_for` adds `changed`, timeout
+  delta, and optional `awaitChange` on actions. Doctor warns on unnamed tappable
+  controls.
+  
+  **Behavior change:** `wait_for` `{kind:"time"}` defaults `observe` to **true**,
+  returning a peek snapshot envelope after the delay (higher default token use than
+  `observe:false`). After this release, `time` with default observe uses a peek
+  that does **not** bump `snapshot_id`, rebind public refs, or consume a ring
+  slot — refs and `changed` baselines stay stable.
+  
+  **Included patch scope:** peek snapshots no longer rebind public `s_N` refs
+  while `snapshot_id` is frozen; timeouts report `lastSnapshotId` at wait start
+  and `observedRevision` from the latest peek.
+  
+  **Note:** `wait_for` text/node/stable predicates always evaluate on the full
+  tree; filter keys apply only to `changed` and timeout delta baselines.
+
 ## 8.0.0
 
 ### Major Changes
@@ -264,4 +299,5 @@ Dart SDK: 3.8.0
 ## 0.1.0
 
 - Initial release.
+
 
